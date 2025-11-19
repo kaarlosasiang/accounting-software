@@ -2,10 +2,8 @@
 
 import * as React from "react"
 import {
-    AudioWaveform,
     Calculator,
     FileText,
-    GalleryVerticalEnd,
     LayoutDashboard,
     Receipt,
     Settings2,
@@ -33,152 +31,135 @@ const data = {
         email: "john@rrd10.com",
         avatar: "/avatars/user.jpg",
     },
-    teams: [
-        {
-            name: "RRD10 Main",
-            logo: GalleryVerticalEnd,
-            plan: "Enterprise",
-        },
-        {
-            name: "Tax Department",
-            logo: Calculator,
-            plan: "Professional",
-        },
-        {
-            name: "Audit Team",
-            logo: AudioWaveform,
-            plan: "Business",
-        },
-    ],
     navMain: [
         {
             title: "Dashboard",
-            url: "#",
+            url: "/dashboard",
             icon: LayoutDashboard,
             isActive: true,
             items: [
                 {
                     title: "Overview",
-                    url: "#",
+                    url: "/dashboard",
                 },
                 {
                     title: "Analytics",
-                    url: "#",
+                    url: "/dashboard/analytics",
                 },
                 {
                     title: "Reports",
-                    url: "#",
+                    url: "/dashboard/reports",
                 },
             ],
         },
         {
             title: "Transactions",
-            url: "#",
+            url: "/transactions",
             icon: Receipt,
             items: [
                 {
                     title: "All Transactions",
-                    url: "#",
+                    url: "/transactions",
                 },
                 {
                     title: "Income",
-                    url: "#",
+                    url: "/transactions/income",
                 },
                 {
                     title: "Expenses",
-                    url: "#",
+                    url: "/transactions/expenses",
                 },
                 {
                     title: "Recurring",
-                    url: "#",
+                    url: "/transactions/recurring",
                 },
             ],
         },
         {
             title: "Invoicing",
-            url: "#",
+            url: "/invoices",
             icon: FileText,
             items: [
                 {
                     title: "All Invoices",
-                    url: "#",
+                    url: "/invoices",
                 },
                 {
                     title: "Create Invoice",
-                    url: "#",
+                    url: "/invoices/create",
                 },
                 {
                     title: "Pending",
-                    url: "#",
+                    url: "/invoices/pending",
                 },
                 {
                     title: "Paid",
-                    url: "#",
+                    url: "/invoices/paid",
                 },
             ],
         },
         {
             title: "Clients",
-            url: "#",
+            url: "/clients",
             icon: Users,
             items: [
                 {
                     title: "All Clients",
-                    url: "#",
+                    url: "/clients",
                 },
                 {
                     title: "Active",
-                    url: "#",
+                    url: "/clients/active",
                 },
                 {
                     title: "Archived",
-                    url: "#",
+                    url: "/clients/archived",
                 },
             ],
         },
         {
             title: "Financial Reports",
-            url: "#",
+            url: "/reports",
             icon: TrendingUp,
             items: [
                 {
                     title: "Profit & Loss",
-                    url: "#",
+                    url: "/reports/profit-loss",
                 },
                 {
                     title: "Balance Sheet",
-                    url: "#",
+                    url: "/reports/balance-sheet",
                 },
                 {
                     title: "Cash Flow",
-                    url: "#",
+                    url: "/reports/cash-flow",
                 },
                 {
                     title: "Tax Summary",
-                    url: "#",
+                    url: "/reports/tax-summary",
                 },
             ],
         },
         {
             title: "Settings",
-            url: "#",
+            url: "/settings",
             icon: Settings2,
             items: [
                 {
                     title: "General",
-                    url: "#",
+                    url: "/settings/general",
                 },
                 {
                     title: "Company",
-                    url: "#",
+                    url: "/settings/company",
                 },
                 {
                     title: "Billing",
-                    url: "#",
+                    url: "/settings/billing",
                 },
                 {
                     title: "Integrations",
-                    url: "#",
+                    url: "/settings/integrations",
                 },
             ],
         },
@@ -186,17 +167,17 @@ const data = {
     projects: [
         {
             name: "Q4 Tax Filing",
-            url: "#",
+            url: "/projects/q4-tax-filing",
             icon: Calculator,
         },
         {
             name: "Annual Audit 2025",
-            url: "#",
+            url: "/projects/annual-audit-2025",
             icon: FileText,
         },
         {
             name: "Payroll Management",
-            url: "#",
+            url: "/projects/payroll-management",
             icon: Wallet,
         },
     ],
