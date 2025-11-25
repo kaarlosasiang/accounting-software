@@ -1,4 +1,4 @@
-import { Schema, model, Document, Types } from "mongoose";
+import { Document, model, Schema, Types } from "mongoose";
 
 /**
  * User document interface
@@ -88,7 +88,7 @@ const userSchema = new Schema<IUser>(
     toObject: {
       virtuals: true,
     },
-  }
+  },
 );
 
 // Virtual for full name

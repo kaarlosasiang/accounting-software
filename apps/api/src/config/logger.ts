@@ -1,11 +1,17 @@
-import winston, { format, transports, Logger } from "winston";
-import DailyRotateFile from "winston-daily-rotate-file";
 import path from "path";
+
+import winston, { format, Logger, transports } from "winston";
+import DailyRotateFile from "winston-daily-rotate-file";
 
 // Create custom interface extending Winston Logger
 interface CustomLogger extends Logger {
   logRequest: (req: any, responseTime?: number, correlationId?: string) => void;
-  logResponse: (req: any, res: any, responseTime: number, correlationId?: string) => void;
+  logResponse: (
+    req: any,
+    res: any,
+    responseTime: number,
+    correlationId?: string,
+  ) => void;
   logError: (error: Error, context?: any) => void;
 }
 
@@ -86,7 +92,7 @@ const customFormat = format.printf(
       ? `\n${JSON.stringify(meta, null, 2)}`
       : "";
     return `${timestamp} [${service}] ${prefix}${level}: ${message}${metaStr}`;
-  }
+  },
 );
 
 // Base format used in all transports
@@ -95,8 +101,15 @@ const baseFormat = format.combine(
   format.errors({ stack: true }),
   format.splat(),
   format.metadata({
-    fillExcept: ["message", "level", "timestamp", "label", "service", "correlationId"],
-  })
+    fillExcept: [
+      "message",
+      "level",
+      "timestamp",
+      "label",
+      "service",
+      "correlationId",
+    ],
+  }),
 );
 
 // Create transports array based on environment
@@ -109,7 +122,7 @@ const configureTransports = () => {
       new transports.Console({
         level: LOG_LEVEL,
         format: format.combine(format.colorize(), customFormat),
-      })
+      }),
     );
   } else {
     // JSON format for production (better for log aggregation tools)
@@ -117,7 +130,7 @@ const configureTransports = () => {
       new transports.Console({
         level: LOG_LEVEL,
         format: format.combine(format.json(), format.timestamp()),
-      })
+      }),
     );
 
     // Add file transports for production
@@ -130,7 +143,7 @@ const configureTransports = () => {
         datePattern: "YYYY-MM-DD",
         maxFiles: "14d",
         format: format.combine(format.uncolorize(), customFormat),
-      })
+      }),
     );
 
     // Combined logs
@@ -142,7 +155,7 @@ const configureTransports = () => {
         datePattern: "YYYY-MM-DD",
         maxFiles: "7d",
         format: format.combine(format.uncolorize(), customFormat),
-      })
+      }),
     );
   }
 
@@ -168,7 +181,7 @@ const LoggerInstance = logger as CustomLogger;
 LoggerInstance.logRequest = (
   req: any,
   responseTime?: number,
-  correlationId?: string
+  correlationId?: string,
 ) => {
   const logData = sanitizeData({
     method: req.method,
@@ -188,7 +201,7 @@ LoggerInstance.logResponse = (
   req: any,
   res: any,
   responseTime: number,
-  correlationId?: string
+  correlationId?: string,
 ) => {
   const logData = sanitizeData({
     method: req.method,
@@ -212,7 +225,7 @@ LoggerInstance.logResponse = (
   LoggerInstance.log(
     level,
     `Response: ${res.statusCode} ${req.method} ${req.originalUrl}`,
-    logData
+    logData,
   );
 };
 

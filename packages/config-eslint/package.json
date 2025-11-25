@@ -1,0 +1,29 @@
+{
+  "name": "@rrd10-sas/config-eslint",
+  "version": "1.0.0",
+  "description": "Shared ESLint configuration for RRD10 SAS monorepo",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "next.js",
+    "node.js"
+  ],
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.19.1",
+    "@typescript-eslint/parser": "^8.19.1",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.1",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "eslint-plugin-simple-import-sort": "^12.1.1"
+  },
+  "devDependencies": {
+    "eslint": "^9",
+    "prettier": "^3.4.2",
+    "typescript": "^5"
+  },
+  "peerDependencies": {
+    "eslint": "^9",
+    "prettier": "^3",
+    "typescript": "^5"
+  }
+}

@@ -1,6 +1,7 @@
-import { AuthorizationError } from "../error-types/authorization.error";
 import { NextFunction, Request, Response } from "express";
+
 import logger from "../../config/logger";
+import { AuthorizationError } from "../error-types/authorization.error";
 
 const apiKeyMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Skip API key check for health endpoints

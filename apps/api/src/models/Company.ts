@@ -1,4 +1,4 @@
-import { Schema, model, Document, Types } from "mongoose";
+import { Document, model, Schema, Types } from "mongoose";
 
 /**
  * Company document interface
@@ -143,7 +143,7 @@ const companySchema = new Schema<ICompany>(
     toObject: {
       virtuals: true,
     },
-  }
+  },
 );
 
 // Virtual for full address
