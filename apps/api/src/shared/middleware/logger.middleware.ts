@@ -1,6 +1,8 @@
-import { Request, Response, NextFunction } from "express";
-import logger from "../../config/logger";
 import { randomUUID } from "crypto";
+
+import { NextFunction, Request, Response } from "express";
+
+import logger from "../../config/logger";
 
 // Extend Express Request type to include correlation ID
 declare global {
@@ -19,7 +21,7 @@ declare global {
 export const requestLogger = (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   // Generate or extract correlation ID for request tracking
   const correlationId =
@@ -64,13 +66,14 @@ export const errorLogger = (
   err: Error,
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ): void => {
   logger.logError(err, {
     method: req.method,
     url: req.originalUrl,
     correlationId: req.correlationId,
-    userId: (req as any)?.currentUser?._id || (req as any)?.user?.id || "anonymous",
+    userId:
+      (req as any)?.currentUser?._id || (req as any)?.user?.id || "anonymous",
     body: req.body,
     query: req.query,
     params: req.params,

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 import logger from "./logger";
 
 // Mongoose configuration
@@ -10,15 +11,15 @@ const options: mongoose.ConnectOptions = {
   // Connection pool size
   maxPoolSize: 10,
   minPoolSize: 2,
-  
+
   // Timeout settings
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
-  
+
   // Retry settings
   retryWrites: true,
   retryReads: true,
-  
+
   // Database name
   dbName: DB_NAME,
 };
@@ -48,7 +49,9 @@ const connect = async (): Promise<void> => {
   } catch (error) {
     logger.logError(error as Error, {
       operation: "database-connection",
-      uri: MONGODB_URI ? MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@") : "not-provided",
+      uri: MONGODB_URI
+        ? MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, "//$1:****@")
+        : "not-provided",
     });
     process.exit(1);
   }
@@ -90,8 +93,8 @@ process.on("SIGINT", async () => {
   process.exit(0);
 });
 
-export default { 
-  connect, 
+export default {
+  connect,
   disconnect,
   mongoose, // Export mongoose instance for connection status checks
 };

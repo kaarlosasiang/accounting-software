@@ -1,12 +1,17 @@
-import express, { Application } from "express";
-import morgan from "morgan";
-import cors from "cors";
-import helmet from "helmet";
 import cookieParser from "cookie-parser";
-import { constants } from ".";
+import cors from "cors";
+import express, { Application } from "express";
+import helmet from "helmet";
+import morgan from "morgan";
+
 import apiKeyMiddleware from "../shared/middleware/apiKey.middleware";
-import { requestLogger, errorLogger } from "../shared/middleware/logger.middleware";
+import {
+  errorLogger,
+  requestLogger,
+} from "../shared/middleware/logger.middleware";
+
 import logger from "./logger";
+import { constants } from ".";
 
 export default (app: Application): Application => {
   // Security middleware
@@ -18,7 +23,7 @@ export default (app: Application): Application => {
       origin: constants.corsOrigin,
       credentials: true,
       optionsSuccessStatus: 200,
-    })
+    }),
   );
 
   // Body parsing middleware
@@ -40,7 +45,7 @@ export default (app: Application): Application => {
             logger.info(message.trim());
           },
         },
-      })
+      }),
     );
   }
 
@@ -49,7 +54,7 @@ export default (app: Application): Application => {
 
   // Default route
   app.get("/", (req, res) => {
-    res.json({ 
+    res.json({
       message: "RRD10 SAS API is running",
       version: "1.0.0",
       environment: constants.nodeEnv,
@@ -63,7 +68,7 @@ export default (app: Application): Application => {
       dbConnection.mongoose?.connection?.readyState === 1
         ? "connected"
         : "disconnected";
-    
+
     res.json({
       status: "ok",
       timestamp: new Date().toISOString(),

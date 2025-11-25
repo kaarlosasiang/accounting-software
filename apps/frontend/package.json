@@ -57,6 +57,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@rrd10-sas/config-eslint": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
