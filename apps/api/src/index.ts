@@ -1,48 +1,36 @@
-import express, { Request, Response } from 'express';
-import { userLoginSchema, userRegistrationSchema } from '@rrd10-sas/validators';
-import { z } from 'zod';
+import "./config/env";
+
+import express from "express";
+import logger from "./config/logger";
+import { dbConnection, constants } from "./config";
+import configureApp from "./config/app";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(express.json());
+// Configure all middleware (includes global error handler)
+configureApp(app);
 
-app.get('/', (req: Request, res: Response) => {
-  res.json({ message: 'API is running' });
-});
-
-// Example: Login endpoint with validation
-app.post('/auth/login', (req: Request, res: Response) => {
+// Start server function
+const startServer = async () => {
   try {
-    const data = userLoginSchema.parse(req.body);
-    // Data is now validated and type-safe
-    res.json({ message: 'Login successful', user: { email: data.email } });
-  } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ errors: error.issues });
-    }
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
+    // Connect to database first
+    await dbConnection.connect();
 
-// Example: Registration endpoint with validation
-app.post('/auth/register', (req: Request, res: Response) => {
-  try {
-    const data = userRegistrationSchema.parse(req.body);
-    // Data is now validated and type-safe
-    res.json({
-      message: 'Registration successful',
-      user: { email: data.email, name: data.name }
+    // Then start the server
+    app.listen(constants.port, () => {
+      logger.info(`Server started on port ${constants.port}`, {
+        port: constants.port,
+        environment: constants.nodeEnv,
+        frontendUrl: constants.frontEndUrl,
+      });
     });
-  } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ errors: error.issues });
-    }
-    res.status(500).json({ message: 'Internal server error' });
+  } catch (error) {
+    logger.logError(error as Error, {
+      operation: "server-startup",
+    });
+    process.exit(1);
   }
-});
+};
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
+// Start the application
+startServer();
