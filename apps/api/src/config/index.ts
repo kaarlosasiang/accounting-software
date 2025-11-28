@@ -36,8 +36,7 @@ const constants = {
   betterAuthSecret: process.env.BETTER_AUTH_SECRET || "dev-better-auth-secret",
   betterAuthUrl:
     process.env.BETTER_AUTH_URL ||
-    process.env.API_BASE_URL ||
-    `http://localhost:${Number(process.env.PORT) || 4000}`,
+    `${process.env.API_BASE_URL || `http://localhost:${Number(process.env.PORT) || 4000}`}/api/v1/auth`,
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
 };

@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { oneTap } from "better-auth/plugins";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
 
@@ -56,6 +57,11 @@ export const authServer = betterAuth({
     },
   },
   database: mongodbAdapter(db, { client: mongoClient }),
+  plugins: [
+    oneTap({
+      disableSignup: false,
+    }),
+  ],
 });
 
 mongoClient
