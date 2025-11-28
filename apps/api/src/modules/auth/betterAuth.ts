@@ -11,38 +11,33 @@ const mongoClient = new MongoClient(constants.mongodbUri, {
 
 const db = mongoClient.db(constants.dbName);
 
-const socialProviders =
-  constants.googleClientId && constants.googleClientSecret
-    ? {
-        google: {
-          clientId: constants.googleClientId,
-          clientSecret: constants.googleClientSecret,
-        },
-      }
-    : undefined;
-
 export const authServer = betterAuth({
-  appUrl: constants.frontEndUrl,
-  server: {
-    baseURL: constants.betterAuthUrl,
-  },
+  appUrl: constants.frontEndUrl, // Frontend URL for redirects
+  baseURL: constants.betterAuthUrl, // API auth endpoint
   secret: constants.betterAuthSecret,
   trustedOrigins: [constants.frontEndUrl, constants.corsOrigin],
   emailAndPassword: {
     enabled: true,
   },
+  socialProviders: {
+    google: {
+      clientId: constants.googleClientId,
+      clientSecret: constants.googleClientSecret,
+      enabled: !!(constants.googleClientId && constants.googleClientSecret),
+    },
+  },
   user: {
     additionalFields: {
-      companyId: { type: "string", required: true },
+      companyId: { type: "string", required: false }, // Optional for social login
       role: {
         type: "string",
-        required: true,
+        required: false, // Will be set after social login
       },
-      first_name: { type: "string", required: true },
+      first_name: { type: "string", required: false },
       middle_name: { type: "string", required: false },
-      last_name: { type: "string", required: true },
-      phone_number: { type: "string", required: true },
-      username: { type: "string", required: true },
+      last_name: { type: "string", required: false },
+      phone_number: { type: "string", required: false },
+      username: { type: "string", required: false },
     },
   },
   session: {
@@ -60,7 +55,6 @@ export const authServer = betterAuth({
       secure: constants.nodeEnv === "production",
     },
   },
-  socialProviders,
   database: mongodbAdapter(db, { client: mongoClient }),
 });
 

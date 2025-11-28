@@ -12,6 +12,8 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { signUp } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { GoogleSignInButton } from "@/components/auth/google-signin-button";
+import { AuthDivider } from "@/components/auth/auth-divider";
 import {
   Field,
   FieldDescription,
@@ -126,6 +128,11 @@ export function SignupForm({
               </Link>
             </FieldDescription>
           </div>
+
+          {/* Social Login */}
+          <GoogleSignInButton callbackURL="/dashboard" mode="signup" />
+          <AuthDivider />
+
           <div className="grid gap-4 sm:grid-cols-2">
             <Field>
               <FieldLabel htmlFor="firstName">First Name</FieldLabel>

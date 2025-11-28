@@ -1,10 +1,11 @@
+import "./config/env";
+
 import express from "express";
 
 import configureApp from "./config/app";
 import logger from "./config/logger";
 import { constants, dbConnection } from "./config";
 
-import "./config/env";
 
 const app = express();
 

@@ -12,6 +12,8 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { signIn } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
+import { GoogleSignInButton } from "@/components/auth/google-signin-button";
+import { AuthDivider } from "@/components/auth/auth-divider";
 import {
   Field,
   FieldDescription,
@@ -93,6 +95,11 @@ export function LoginForm({
               </Link>
             </FieldDescription>
           </div>
+
+          {/* Social Login */}
+          <GoogleSignInButton callbackURL="/dashboard" mode="signin" />
+          <AuthDivider />
+
           <Field>
             <FieldLabel htmlFor="email">Email</FieldLabel>
             <Input
