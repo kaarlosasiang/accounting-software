@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
-import { oneTap } from "better-auth/plugins";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
+import { oneTap } from "better-auth/plugins";
 import { MongoClient } from "mongodb";
 
 import { constants } from "../../config";

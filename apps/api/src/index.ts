@@ -1,3 +1,4 @@
+// eslint-disable-next-line
 import "./config/env";
 
 import express from "express";
@@ -5,7 +6,6 @@ import express from "express";
 import configureApp from "./config/app";
 import logger from "./config/logger";
 import { constants, dbConnection } from "./config";
-
 
 const app = express();
 
