@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "pnpm --filter @rrd10-sas/validators build && next build",
+    "vercel-build": "pnpm --filter @rrd10-sas/validators build && next build",
     "start": "next start",
     "lint": "eslint"
   },
@@ -36,6 +37,8 @@
     "@radix-ui/react-toggle": "^1.1.10",
     "@radix-ui/react-toggle-group": "^1.1.11",
     "@radix-ui/react-tooltip": "^1.2.8",
+    "@rrd10-sas/validators": "workspace:*",
+    "better-auth": "^1.4.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
@@ -57,10 +60,12 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@rrd10-sas/config-eslint": "workspace:*",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",

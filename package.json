@@ -4,6 +4,7 @@
   "description": "RRD10-SAS Monorepo",
   "private": true,
   "scripts": {
+    "postinstall": "node scripts/ensure-better-auth-tsconfig-base.mjs",
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "dev:api": "pnpm --filter api dev",
     "dev:frontend": "pnpm --filter frontend dev",

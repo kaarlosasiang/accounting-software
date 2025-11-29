@@ -1,0 +1,195 @@
+graph TD
+    Start([User Visits Platform]) --> Register[User Registration]
+    Register --> EmailVerify{Email Verified?}
+    EmailVerify -->|No| SendEmail[Send Verification Email]
+    SendEmail --> EmailVerify
+    EmailVerify -->|Yes| SelectPlan[Select Subscription Plan]
+    
+    SelectPlan --> PlanChoice{Plan Type?}
+    PlanChoice -->|Free| FreePlan[Free Plan - Instant Access]
+    PlanChoice -->|Pro| ProTrial[14-Day Pro Trial]
+    PlanChoice -->|Premium| Payment[Payment Processing]
+    
+    FreePlan --> Dashboard
+    ProTrial --> Dashboard
+    Payment --> PaymentSuccess{Payment Success?}
+    PaymentSuccess -->|No| SelectPlan
+    PaymentSuccess -->|Yes| Dashboard
+    
+    Dashboard[Access Dashboard] --> FirstTime{First Time Login?}
+    FirstTime -->|Yes| Onboarding[Onboarding Wizard]
+    FirstTime -->|No| MainDashboard
+    
+    Onboarding --> CompanySetup[1. Company Profile Setup]
+    CompanySetup --> ChartSetup[2. Chart of Accounts Setup]
+    ChartSetup --> FiscalYear[3. Fiscal Year & Settings]
+    FiscalYear --> MainDashboard[Main Dashboard]
+    
+    MainDashboard --> UserChoice{What to do?}
+    
+    UserChoice -->|Manage Users| UserMgmt[User Management]
+    UserMgmt --> AddUsers[Add Users with Roles]
+    AddUsers --> CheckLimit{Within User Limit?}
+    CheckLimit -->|No| UpgradePrompt1[Upgrade Prompt]
+    CheckLimit -->|Yes| UserAdded[Users Added]
+    UserAdded --> MainDashboard
+    
+    UserChoice -->|Setup Data| MasterData[Master Data Entry]
+    MasterData --> Customers[Add Customers]
+    Customers --> Suppliers[Add Suppliers]
+    Suppliers --> Inventory[Add Inventory Items]
+    Inventory --> Accounts[Configure Accounts]
+    Accounts --> MainDashboard
+    
+    UserChoice -->|Record Transaction| TransType{Transaction Type?}
+    
+    TransType -->|Sales| CreateInvoice[Create Invoice]
+    CreateInvoice --> InvoiceDetails[Enter Invoice Details]
+    InvoiceDetails --> SaveInvoice[Save Invoice]
+    SaveInvoice --> AutoJE1[Auto-Generate Journal Entry]
+    AutoJE1 --> UpdateLedger1[Update Ledgers & Balances]
+    UpdateLedger1 --> MainDashboard
+    
+    TransType -->|Purchase| CreateBill[Create Bill]
+    CreateBill --> BillDetails[Enter Bill Details]
+    BillDetails --> SaveBill[Save Bill]
+    SaveBill --> AutoJE2[Auto-Generate Journal Entry]
+    AutoJE2 --> UpdateLedger2[Update Ledgers & Balances]
+    UpdateLedger2 --> MainDashboard
+    
+    TransType -->|Payment Received| RecordPayment[Record Payment Received]
+    RecordPayment --> SelectInvoices[Select Invoices to Pay]
+    SelectInvoices --> ProcessPayment1[Process Payment]
+    ProcessPayment1 --> AutoJE3[Auto-Generate Journal Entry]
+    AutoJE3 --> UpdateAR[Update Accounts Receivable]
+    UpdateAR --> MainDashboard
+    
+    TransType -->|Payment Made| RecordPaymentOut[Record Payment Made]
+    RecordPaymentOut --> SelectBills[Select Bills to Pay]
+    SelectBills --> ProcessPayment2[Process Payment]
+    ProcessPayment2 --> AutoJE4[Auto-Generate Journal Entry]
+    AutoJE4 --> UpdateAP[Update Accounts Payable]
+    UpdateAP --> MainDashboard
+    
+    TransType -->|Manual Entry| ManualJE[Create Manual Journal Entry]
+    ManualJE --> EnterDebitsCredits[Enter Debits & Credits]
+    EnterDebitsCredits --> ValidateBalance{Balanced?}
+    ValidateBalance -->|No| EnterDebitsCredits
+    ValidateBalance -->|Yes| SaveDraft[Save as Draft]
+    SaveDraft --> ReviewJE{Review & Approve?}
+    ReviewJE -->|No| SaveDraft
+    ReviewJE -->|Yes| PostJE[Post Journal Entry]
+    PostJE --> UpdateLedger3[Update Ledgers]
+    UpdateLedger3 --> MainDashboard
+    
+    UserChoice -->|Inventory| InventoryMgmt[Inventory Management]
+    InventoryMgmt --> StockAction{Action Type?}
+    StockAction -->|Receive| ReceiveStock[Receive Stock]
+    StockAction -->|Adjust| AdjustStock[Adjust Stock]
+    StockAction -->|Transfer| TransferStock[Transfer Stock]
+    ReceiveStock --> UpdateInventory[Update Inventory Levels]
+    AdjustStock --> UpdateInventory
+    TransferStock --> UpdateInventory
+    UpdateInventory --> MainDashboard
+    
+    UserChoice -->|View Reports| ReportChoice{Report Type?}
+    
+    ReportChoice -->|Financial Statements| FinStatements[Financial Statements]
+    FinStatements --> SelectStatement{Which Statement?}
+    SelectStatement -->|Income Statement| IncomeStmt[Generate Income Statement]
+    SelectStatement -->|Balance Sheet| BalanceSheet[Generate Balance Sheet]
+    SelectStatement -->|Cash Flow| CashFlow[Generate Cash Flow Statement]
+    
+    IncomeStmt --> SetDateRange[Set Date Range]
+    BalanceSheet --> SetDateRange
+    CashFlow --> SetDateRange
+    SetDateRange --> GenerateReport[Generate Report]
+    GenerateReport --> ViewReport[View Report]
+    
+    ReportChoice -->|Trial Balance| TrialBalance[Generate Trial Balance]
+    TrialBalance --> SetDateRange
+    
+    ReportChoice -->|AR/AP Reports| ARAPreports[Aging Reports]
+    ARAPreports --> SetDateRange
+    
+    ReportChoice -->|Ledgers| LedgerReports[Account Ledgers]
+    LedgerReports --> SelectAccounts[Select Accounts]
+    SelectAccounts --> SetDateRange
+    
+    ViewReport --> ExportChoice{Export Report?}
+    ExportChoice -->|Yes| CheckExportFeature{Export Allowed?}
+    CheckExportFeature -->|No| UpgradePrompt2[Upgrade to Pro/Premium]
+    CheckExportFeature -->|Yes| SelectFormat{Select Format}
+    SelectFormat -->|PDF| ExportPDF[Export as PDF]
+    SelectFormat -->|Excel| ExportExcel[Export as Excel]
+    SelectFormat -->|CSV| ExportCSV[Export as CSV]
+    
+    ExportPDF --> AuditLogExport[Log Export Action]
+    ExportExcel --> AuditLogExport
+    ExportCSV --> AuditLogExport
+    AuditLogExport --> DownloadFile[Download File]
+    
+    ExportChoice -->|No| PrintReport[Print Report]
+    PrintReport --> Done1
+    DownloadFile --> Done1[Complete]
+    
+    UserChoice -->|Manage Subscription| SubManagement[Subscription Management]
+    SubManagement --> SubAction{Action?}
+    SubAction -->|Upgrade| UpgradePlan[Upgrade Plan]
+    SubAction -->|Downgrade| DowngradePlan[Downgrade Plan]
+    SubAction -->|Cancel| CancelSub[Cancel Subscription]
+    SubAction -->|Payment| UpdatePayment[Update Payment Method]
+    
+    UpgradePlan --> ProcessUpgrade[Process Upgrade Payment]
+    ProcessUpgrade --> UnlockFeatures[Unlock New Features]
+    UnlockFeatures --> MainDashboard
+    
+    DowngradePlan --> ConfirmDowngrade{Confirm Downgrade?}
+    ConfirmDowngrade -->|Yes| ApplyLimits[Apply New Limits]
+    ApplyLimits --> MainDashboard
+    ConfirmDowngrade -->|No| MainDashboard
+    
+    UserChoice -->|Settings| SettingsMenu[Company Settings]
+    SettingsMenu --> ConfigOptions{Configuration?}
+    ConfigOptions -->|General| GeneralSettings[Update General Settings]
+    ConfigOptions -->|Accounting| AccountingSettings[Update Accounting Method]
+    ConfigOptions -->|Users| UserSettings[Manage User Permissions]
+    ConfigOptions -->|Backup| BackupSettings[Configure Auto-Backup]
+    
+    GeneralSettings --> SaveSettings[Save Settings]
+    AccountingSettings --> SaveSettings
+    UserSettings --> SaveSettings
+    BackupSettings --> SaveSettings
+    SaveSettings --> MainDashboard
+    
+    UserChoice -->|Audit Logs| ViewAudit[View Audit Logs]
+    ViewAudit --> CheckAuditFeature{Audit Log Available?}
+    CheckAuditFeature -->|No| UpgradePrompt3[Upgrade to Pro/Premium]
+    CheckAuditFeature -->|Yes| FilterAudit[Filter by User/Date/Action]
+    FilterAudit --> DisplayAudit[Display Audit Trail]
+    DisplayAudit --> MainDashboard
+    
+    UserChoice -->|Backup| BackupAction[Manual Backup]
+    BackupAction --> CreateBackup[Create Backup]
+    CreateBackup --> StoreBackup[Store to Cloud/Local]
+    StoreBackup --> BackupComplete[Backup Complete]
+    BackupComplete --> MainDashboard
+    
+    UserChoice -->|Logout| Logout[Logout]
+    Logout --> End([Session Ended])
+    
+    Done1 --> ContinueWork{Continue Working?}
+    ContinueWork -->|Yes| MainDashboard
+    ContinueWork -->|No| Logout
+    
+    UpgradePrompt1 --> MainDashboard
+    UpgradePrompt2 --> MainDashboard
+    UpgradePrompt3 --> MainDashboard
+    
+    style Start fill:#e1f5e1
+    style End fill:#ffe1e1
+    style MainDashboard fill:#e1f0ff
+    style UpgradePrompt1 fill:#fff4e1
+    style UpgradePrompt2 fill:#fff4e1
+    style UpgradePrompt3 fill:#fff4e1
+    style Done1 fill:#e1ffe1
