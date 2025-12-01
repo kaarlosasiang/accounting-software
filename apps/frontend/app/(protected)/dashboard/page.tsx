@@ -101,7 +101,7 @@ const chartConfig = {
 
 export default function DashboardPage() {
     return (
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-4">
             {/* Header with Advanced Filters */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -155,7 +155,7 @@ export default function DashboardPage() {
             {/* Key Metrics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-linear-to-br from-green-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 relative">
                         <CardTitle className="text-sm font-medium">
                             Total Revenue
@@ -176,7 +176,7 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-linear-to-br from-red-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 relative">
                         <CardTitle className="text-sm font-medium">
                             Total Expenses
@@ -197,7 +197,7 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 relative">
                         <CardTitle className="text-sm font-medium">
                             Net Profit
@@ -218,7 +218,7 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-linear-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 relative">
                         <CardTitle className="text-sm font-medium">
                             Active Clients
@@ -258,7 +258,7 @@ export default function DashboardPage() {
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <ChartContainer config={chartConfig} className="h-[350px]">
+                                <ChartContainer config={chartConfig} className="h-full">
                                     <AreaChart
                                         data={revenueData}
                                         margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
@@ -496,7 +496,7 @@ export default function DashboardPage() {
                                             color: "hsl(346, 77%, 50%)",
                                         },
                                     }}
-                                    className="h-[300px]"
+                                    className="h-full"
                                 >
                                     <BarChart
                                         data={cashFlowData}
