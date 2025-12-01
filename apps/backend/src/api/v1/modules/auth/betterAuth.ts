@@ -1,10 +1,11 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { oneTap } from "better-auth/plugins";
+import { emailOTP, oneTap } from "better-auth/plugins";
 import { MongoClient } from "mongodb";
 
 import { constants } from "../../config";
 import logger from "../../config/logger";
+import { EmailService } from "../../services/email.service";
 
 const mongoClient = new MongoClient(constants.mongodbUri, {
   maxPoolSize: 5,
@@ -60,6 +61,21 @@ export const authServer = betterAuth({
   plugins: [
     oneTap({
       disableSignup: false,
+    }),
+    emailOTP({
+      async sendVerificationOTP({ email, otp, type }) {
+        // Send OTP via email service (non-blocking to prevent timing attacks)
+        EmailService.sendVerificationOTP({ email, otp, type }).catch(
+          (error) => {
+            logger.error("Failed to send OTP email", { error, email, type });
+          },
+        );
+      },
+      otpLength: 6, // 6-digit OTP
+      expiresIn: 300, // 5 minutes
+      sendVerificationOnSignUp: true, // Auto-send verification on signup
+      disableSignUp: false, // Allow signup via OTP
+      allowedAttempts: 3, // Max 3 verification attempts per OTP
     }),
   ],
 });

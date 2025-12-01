@@ -58,54 +58,6 @@ export function LoginForm({
     }
   };
 
-  useEffect(() => {
-    const initOneTap = async () => {
-      // Only initialize if Google Client ID is configured
-      if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
-        console.debug("Google One Tap not configured - skipping");
-        return;
-      }
-
-      // Skip One Tap on localhost due to FedCM limitations
-      if (
-        typeof window !== "undefined" &&
-        (window.location.hostname === "localhost" ||
-          window.location.hostname === "127.0.0.1")
-      ) {
-        console.debug(
-          "Google One Tap disabled on localhost due to FedCM restrictions. Use the Google Sign-In button instead or test on a deployed environment."
-        );
-        return;
-      }
-
-      // Wait for DOM to be ready and Google script to load
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      try {
-        await authClient.oneTap({
-          fetchOptions: {
-            onSuccess: () => {
-              toast.success("Welcome back! You are now signed in.");
-              router.push("/dashboard");
-            },
-            onError: (ctx) => {
-              console.error("One Tap error:", ctx.error);
-            },
-          },
-          onPromptNotification: (notification) => {
-            // Handle prompt dismissals
-            console.debug("One Tap prompt notification:", notification);
-          },
-        });
-      } catch (error) {
-        // OneTap dismissed or failed - silent fail is fine
-        console.debug("One Tap prompt dismissed or failed", error);
-      }
-    };
-
-    initOneTap();
-  }, [router]);
-
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -117,15 +69,18 @@ export function LoginForm({
             >
               <div className="flex items-center justify-center rounded-md">
                 <Image
-                  src={"/rrd10_logo.png"}
-                  alt={"RRD10 Logo"}
-                  width={150}
-                  height={150}
+                  src={"/am-fintrass-icon.png"}
+                  alt={"Am Fintrass Logo"}
+                  width={100}
+                  height={100}
                 />
               </div>
-              <span className="sr-only">RRD10 SAS</span>
+              <span className="sr-only">Am Fintrass</span>
             </Link>
-            <h1 className="text-xl font-bold">Welcome to RRD10 S.A.S.</h1>
+            <h1 className="text-xl font-semibold">
+              Welcome to <span className="text-primary font-bold">AM</span>{" "}
+              <span className="text-zinc-700 font-bold">FINTRASS</span>
+            </h1>
           </div>
 
           <Field>

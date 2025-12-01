@@ -41,8 +41,11 @@ const defaultValues: FormValues = {
 
 export function SignupForm({
   className,
+  onRegistrationSuccess,
   ...props
-}: React.ComponentProps<"div">) {
+}: React.ComponentProps<"div"> & {
+  onRegistrationSuccess?: (email: string) => void;
+}) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
@@ -63,9 +66,16 @@ export function SignupForm({
     setIsSubmitting(true);
     try {
       await signUp(values);
-      toast.success("Account created! You can now sign in.");
+      toast.success("Account created! Please verify your email.");
       reset(defaultValues);
-      router.push("/login");
+
+      // If callback provided, trigger email verification flow
+      if (onRegistrationSuccess) {
+        onRegistrationSuccess(values.email);
+      } else {
+        // Fallback: redirect to login
+        router.push("/login");
+      }
     } catch (error) {
       const message =
         error instanceof Error
@@ -88,13 +98,13 @@ export function SignupForm({
             >
               <div className="flex items-center justify-center rounded-md">
                 <Image
-                  src={"/rrd10_logo.png"}
-                  alt={"RRD10 Logo"}
-                  width={150}
-                  height={150}
+                  src={"/am-fintrass-icon.png"}
+                  alt={"AM FINTRASS Logo"}
+                  width={100}
+                  height={100}
                 />
               </div>
-              <span className="sr-only">RRD10 SAS</span>
+              <span className="sr-only">AM FINTRASS</span>
             </Link>
             <h1 className="text-xl font-bold">Create your account</h1>
             <FieldDescription>
@@ -104,10 +114,6 @@ export function SignupForm({
               </Link>
             </FieldDescription>
           </div>
-
-          {/* Social Login */}
-          <GoogleSignInButton callbackURL="/dashboard" mode="signup" />
-          <AuthDivider />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field>
@@ -291,6 +297,9 @@ export function SignupForm({
             </Button>
           </Field>
         </FieldGroup>
+        {/* Social Login */}
+          <AuthDivider />
+          <GoogleSignInButton callbackURL="/dashboard" mode="signup" />
       </form>
       <FieldDescription className="px-6 text-center text-sm">
         By clicking continue, you agree to our{" "}

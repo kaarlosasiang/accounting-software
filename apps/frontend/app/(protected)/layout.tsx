@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/common/app-sidebar";
+import { EmailVerificationBanner } from "@/components/common/auth/email-verification-banner";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import {
   Breadcrumb,
@@ -47,7 +48,10 @@ export default function ProtectedLayout({
           </div>
           <AnimatedThemeToggler className="cursor-pointer" />
         </header>
-        <div className="flex flex-1 flex-col gap-4 pl-2 pr-4 pt-0 pb-2">{children}</div>
+        <div className="flex flex-1 flex-col gap-4 pl-2 pr-4 pt-0 pb-2">
+          <EmailVerificationBanner />
+          {children}
+        </div>
       </SidebarInset>
     </SidebarProvider>
   );

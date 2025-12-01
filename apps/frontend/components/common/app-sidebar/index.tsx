@@ -181,23 +181,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     <Sidebar collapsible="icon" variant="floating" {...props}>
       <SidebarHeader>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton size="lg">
-              <div className="flex aspect-square items-center justify-center rounded-lg">
-                <Image
-                  src={"/rrd10_icon.png"}
-                  alt={"RRD10 Icon"}
-                  width={32}
-                  height={32}
-                />
-              </div>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-bold">RRD10</span>
-                <span className="truncate text-xs">
-                  Smart Accounting System
-                </span>
-              </div>
-            </SidebarMenuButton>
+          <SidebarMenuItem className="flex relative mt-2">
+            <div className="flex aspect-square items-center justify-center rounded-lg">
+              <Image
+                src={"/am-fintrass-icon.png"}
+                alt={"AM FINTRASS Icon"}
+                width={32}
+                height={32}
+              />
+            </div>
+            <div className="grid flex-1 text-left text-sm leading-tight absolute left-10">
+              <span className="truncate font-bold">
+                <span className="text-primary">AM</span> FINTRASS
+              </span>
+              <span className="truncate text-xs">Smart Accounting System</span>
+            </div>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
