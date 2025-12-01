@@ -17,14 +17,15 @@ import {
 } from "@/components/ui/table"
 import { Download, Calendar, TrendingUp, TrendingDown } from "lucide-react"
 import { Progress } from "@/components/ui/progress"
+import { formatCurrency } from "@/lib/utils"
 
 export default function CashFlowPage() {
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Cash Flow Statement</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Cash Flow Statement</h1>
+                    <p className="text-muted-foreground mt-2">
                         Track the movement of cash in and out of your business
                     </p>
                 </div>
@@ -57,7 +58,7 @@ export default function CashFlowPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">$167,500</div>
+                        <div className="text-2xl font-bold text-green-600">{formatCurrency(167500)}</div>
                         <Progress value={75} className="mt-2 h-2" />
                         <p className="text-xs text-muted-foreground mt-2">75% of total activity</p>
                     </CardContent>
@@ -70,7 +71,7 @@ export default function CashFlowPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-600">$55,250</div>
+                        <div className="text-2xl font-bold text-red-600">{formatCurrency(55250)}</div>
                         <Progress value={25} className="mt-2 h-2" />
                         <p className="text-xs text-muted-foreground mt-2">25% of total activity</p>
                     </CardContent>
@@ -80,7 +81,7 @@ export default function CashFlowPage() {
                         <CardTitle className="text-sm font-medium">Net Cash Flow</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">$112,250</div>
+                        <div className="text-2xl font-bold text-blue-600">{formatCurrency(112250)}</div>
                         <p className="text-xs text-muted-foreground mt-2">
                             Positive cash flow
                         </p>
@@ -91,7 +92,7 @@ export default function CashFlowPage() {
                         <CardTitle className="text-sm font-medium">Cash Balance</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">$85,200</div>
+                        <div className="text-2xl font-bold">{formatCurrency(85200)}</div>
                         <p className="text-xs text-muted-foreground mt-2">
                             As of Nov 20, 2025
                         </p>
@@ -116,7 +117,7 @@ export default function CashFlowPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Net Income</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$75,100.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(75100)}</TableCell>
                                         </TableRow>
                                         <TableRow>
                                             <TableCell colSpan={2} className="pt-4 pb-2 text-sm font-semibold">
@@ -125,35 +126,35 @@ export default function CashFlowPage() {
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Depreciation and Amortization</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$20,000.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(20000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Decrease in Accounts Receivable</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$8,500.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(8500)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Increase in Inventory</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">($5,200.00)</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">({formatCurrency(5200)})</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Increase in Prepaid Expenses</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">($2,000.00)</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">({formatCurrency(2000)})</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Increase in Accounts Payable</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$4,500.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(4500)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Increase in Accrued Expenses</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$3,150.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(3150)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Increase in Unearned Revenue</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$7,500.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(7500)}</TableCell>
                                         </TableRow>
                                         <TableRow className="border-t-2 bg-blue-50 dark:bg-blue-950/20">
                                             <TableCell className="font-bold">Net Cash Provided by Operating Activities</TableCell>
-                                            <TableCell className="text-right font-bold text-blue-600">$111,550.00</TableCell>
+                                            <TableCell className="text-right font-bold text-blue-600">{formatCurrency(111550)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -168,23 +169,23 @@ export default function CashFlowPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Purchase of Property and Equipment</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">($25,000.00)</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">({formatCurrency(25000)})</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Purchase of Furniture and Fixtures</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">($8,000.00)</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">({formatCurrency(8000)})</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Investment in Intangible Assets</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">($10,000.00)</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">({formatCurrency(10000)})</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Proceeds from Sale of Equipment</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$5,000.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(5000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="border-t-2 bg-purple-50 dark:bg-purple-950/20">
                                             <TableCell className="font-bold">Net Cash Used in Investing Activities</TableCell>
-                                            <TableCell className="text-right font-bold text-purple-600">($38,000.00)</TableCell>
+                                            <TableCell className="text-right font-bold text-purple-600">({formatCurrency(38000)})</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -199,23 +200,23 @@ export default function CashFlowPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Proceeds from Long-term Debt</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$40,000.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(40000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Repayment of Short-term Debt</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">($10,000.00)</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">({formatCurrency(10000)})</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Owner Contributions</TableCell>
-                                            <TableCell className="text-right font-medium text-green-600">$25,000.00</TableCell>
+                                            <TableCell className="text-right font-medium text-green-600">{formatCurrency(25000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Owner Draws</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">($16,300.00)</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">({formatCurrency(16300)})</TableCell>
                                         </TableRow>
                                         <TableRow className="border-t-2 bg-orange-50 dark:bg-orange-950/20">
                                             <TableCell className="font-bold">Net Cash Provided by Financing Activities</TableCell>
-                                            <TableCell className="text-right font-bold text-orange-600">$38,700.00</TableCell>
+                                            <TableCell className="text-right font-bold text-orange-600">{formatCurrency(38700)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -228,15 +229,15 @@ export default function CashFlowPage() {
                                 <TableBody>
                                     <TableRow className="hover:bg-muted/50">
                                         <TableCell className="font-semibold">Net Increase in Cash and Cash Equivalents</TableCell>
-                                        <TableCell className="text-right font-semibold text-green-600">$112,250.00</TableCell>
+                                        <TableCell className="text-right font-semibold text-green-600">{formatCurrency(112250)}.00</TableCell>
                                     </TableRow>
                                     <TableRow className="hover:bg-muted/50">
                                         <TableCell>Cash and Cash Equivalents at Beginning of Period</TableCell>
-                                        <TableCell className="text-right font-medium">($27,050.00)</TableCell>
+                                        <TableCell className="text-right font-medium">({formatCurrency(27050)})</TableCell>
                                     </TableRow>
                                     <TableRow className="border-t-2 bg-primary/10">
                                         <TableCell className="text-lg font-bold">Cash and Cash Equivalents at End of Period</TableCell>
-                                        <TableCell className="text-right text-lg font-bold text-primary">$85,200.00</TableCell>
+                                        <TableCell className="text-right text-lg font-bold text-primary">{formatCurrency(85200)}.00</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -250,11 +251,11 @@ export default function CashFlowPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Cash Paid for Interest</TableCell>
-                                            <TableCell className="text-right">$3,200.00</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(3200)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell>Cash Paid for Income Taxes</TableCell>
-                                            <TableCell className="text-right">$18,750.00</TableCell>
+                                            <TableCell className="text-right">{formatCurrency(18750)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -285,7 +286,7 @@ export default function CashFlowPage() {
                         <CardTitle className="text-sm font-medium">Free Cash Flow</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">$73,550</div>
+                        <div className="text-2xl font-bold text-blue-600">{formatCurrency(73550)}</div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Operating Cash Flow - Capital Expenditures
                         </p>

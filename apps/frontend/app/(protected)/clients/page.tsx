@@ -46,8 +46,11 @@ import {
     Building2,
     Eye,
     Edit,
+    TrendingUp,
+    Download,
 } from "lucide-react"
 import { ClientForm } from "@/components/forms/client-form/form"
+import { formatCurrency } from "@/lib/utils"
 
 interface Client {
     id: string
@@ -124,6 +127,21 @@ export default function ClientsPage() {
     const [searchQuery, setSearchQuery] = useState("")
     const [filterStatus, setFilterStatus] = useState<string>("all")
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [startDate, setStartDate] = useState("")
+    const [endDate, setEndDate] = useState("")
+
+    const handleExportCSV = () => {
+        const csv = [
+            ["Client ID", "Name", "Email", "Phone", "Company", "Status", "Total Invoiced", "Outstanding Balance", "Last Invoice"],
+            ...filteredClients.map(c => [c.id, c.name, c.email, c.phone, c.company, c.status, c.totalInvoiced, c.outstandingBalance, c.lastInvoice])
+        ].map(row => row.join(",")).join("\n")
+        const blob = new Blob([csv], { type: "text/csv" })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "clients.csv"
+        a.click()
+    }
 
     const filteredClients = clients.filter(client => {
         const matchesSearch =
@@ -132,13 +150,20 @@ export default function ClientsPage() {
             client.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
             client.id.toLowerCase().includes(searchQuery.toLowerCase())
         const matchesStatus = filterStatus === "all" || client.status === filterStatus
-        return matchesSearch && matchesStatus
+        const matchesDateRange = (!startDate || new Date(client.lastInvoice) >= new Date(startDate)) &&
+                                 (!endDate || new Date(client.lastInvoice) <= new Date(endDate))
+        return matchesSearch && matchesStatus && matchesDateRange
     })
 
     const totalClients = clients.length
     const activeClients = clients.filter(c => c.status === "active").length
     const totalRevenue = clients.reduce((sum, c) => sum + c.totalInvoiced, 0)
     const totalOutstanding = clients.reduce((sum, c) => sum + c.outstandingBalance, 0)
+    
+    const activePct = totalClients > 0 ? ((activeClients / totalClients) * 100).toFixed(1) : "0.0"
+    const collectionRate = totalRevenue > 0 ? (((totalRevenue - totalOutstanding) / totalRevenue) * 100).toFixed(1) : "0.0"
+    const avgRevenue = activeClients > 0 ? (totalRevenue / activeClients).toFixed(0) : "0"
+    const outstandingPct = totalRevenue > 0 ? ((totalOutstanding / totalRevenue) * 100).toFixed(1) : "0.0"
 
     const getStatusColor = (status: Client["status"]) => {
         switch (status) {
@@ -150,11 +175,11 @@ export default function ClientsPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Clients</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Clients</h1>
+                    <p className="text-muted-foreground mt-2">
                         Manage your client relationships and contacts
                     </p>
                 </div>
@@ -179,62 +204,78 @@ export default function ClientsPage() {
 
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-4">
-                <Card>
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <div className="rounded-full bg-blue-500/10 p-2.5 group-hover:bg-blue-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Users className="h-4 w-4 text-blue-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{totalClients}</div>
-                        <p className="text-xs text-muted-foreground">
-                            All time
-                        </p>
+                        <div className="text-2xl font-bold text-blue-600">{totalClients}</div>
+                        <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{activePct}% active</span>
+                        </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-                        <Users className="h-4 w-4 text-green-600" />
+                        <div className="rounded-full bg-green-500/10 p-2.5 group-hover:bg-green-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Users className="h-4 w-4 text-green-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-green-600">{activeClients}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Currently active
-                        </p>
+                        <div className="flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{avgRevenue} avg value</span>
+                        </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <Building2 className="h-4 w-4 text-blue-600" />
+                        <div className="rounded-full bg-purple-500/10 p-2.5 group-hover:bg-purple-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Building2 className="h-4 w-4 text-purple-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">
-                            ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        <div className="text-2xl font-bold text-purple-600">
+                            {formatCurrency(totalRevenue)}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            From all clients
-                        </p>
+                        <div className="flex items-center gap-1 text-xs text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{collectionRate}% collected</span>
+                        </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
-                        <Building2 className="h-4 w-4 text-orange-600" />
+                        <div className="rounded-full bg-orange-500/10 p-2.5 group-hover:bg-orange-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Building2 className="h-4 w-4 text-orange-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-orange-600">
-                            ${totalOutstanding.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            {formatCurrency(totalOutstanding)}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            Pending payments
-                        </p>
+                        <div className="flex items-center gap-1 text-xs text-orange-600 bg-orange-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{outstandingPct}% pending</span>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Clients Table */}
-            <Card>
+            <Card className="border border-border/50">
                 <CardHeader>
                     <CardTitle>All Clients</CardTitle>
                     <CardDescription>
@@ -243,8 +284,8 @@ export default function ClientsPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col gap-4 mb-4">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="relative flex-1">
+                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+                            <div className="relative md:col-span-2">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search clients..."
@@ -254,7 +295,7 @@ export default function ClientsPage() {
                                 />
                             </div>
                             <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectTrigger>
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -264,7 +305,33 @@ export default function ClientsPage() {
                                     <SelectItem value="archived">Archived</SelectItem>
                                 </SelectContent>
                             </Select>
+                            <Input
+                                type="date"
+                                placeholder="Start Date"
+                                value={startDate}
+                                onChange={(e) => setStartDate(e.target.value)}
+                            />
+                            <Input
+                                type="date"
+                                placeholder="End Date"
+                                value={endDate}
+                                onChange={(e) => setEndDate(e.target.value)}
+                            />
+                            <Button variant="outline" onClick={handleExportCSV}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Export CSV
+                            </Button>
                         </div>
+                        {(startDate || endDate) && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => { setStartDate(""); setEndDate(""); }}
+                                className="w-fit"
+                            >
+                                Clear Dates
+                            </Button>
+                        )}
                     </div>
 
                     <div className="rounded-md border">
@@ -308,11 +375,11 @@ export default function ClientsPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-semibold">
-                                            ${client.totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            {formatCurrency(client.totalInvoiced)}
                                         </TableCell>
                                         <TableCell>
                                             <span className={client.outstandingBalance > 0 ? "text-orange-600 font-semibold" : "text-muted-foreground"}>
-                                                ${client.outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                {formatCurrency(client.outstandingBalance)}
                                             </span>
                                         </TableCell>
                                         <TableCell>

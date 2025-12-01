@@ -101,18 +101,20 @@ const chartConfig = {
 
 export default function DashboardPage() {
     return (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6 pb-8">
             {/* Header with Advanced Filters */}
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Financial Dashboard</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-gradient-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                        Financial Dashboard
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
                         Comprehensive overview of your business finances
                     </p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                     <Select defaultValue="month">
-                        <SelectTrigger className="w-[180px]">
+                        <SelectTrigger className="w-[180px] border-border/60 hover:border-border transition-colors">
                             <Calendar className="mr-2 h-4 w-4" />
                             <SelectValue placeholder="Select period" />
                         </SelectTrigger>
@@ -125,11 +127,11 @@ export default function DashboardPage() {
                             <SelectItem value="custom">Custom Range</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="hover:bg-accent/50">
                         <Filter className="mr-2 h-4 w-4" />
                         Filters
                     </Button>
-                    <Button size="sm">
+                    <Button size="sm" className="shadow-md hover:shadow-lg transition-all">
                         <Download className="mr-2 h-4 w-4" />
                         Export
                     </Button>
@@ -137,16 +139,18 @@ export default function DashboardPage() {
             </div>
 
             {/* Alert Banner */}
-            <Card className="border-yellow-500/50 bg-yellow-500/10">
+            <Card className="border-yellow-500/50 bg-linear-to-r from-yellow-500/10 via-yellow-500/5 to-transparent shadow-sm">
                 <CardContent className="flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5 text-yellow-600" />
+                    <div className="bg-yellow-500/20 p-2 rounded-full">
+                        <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-500" />
+                    </div>
                     <div className="flex-1">
-                        <p className="text-sm font-medium">3 invoices are overdue</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-sm font-semibold text-foreground">3 invoices are overdue</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
                             Total amount: ₱15,680.00 - Review pending payments
                         </p>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="hover:bg-yellow-500/10 border-yellow-500/30">
                         View Details
                     </Button>
                 </CardContent>
@@ -154,104 +158,124 @@ export default function DashboardPage() {
 
             {/* Key Metrics */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative">
-                    <div className="absolute inset-0 bg-linear-to-br from-green-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 relative">
-                        <CardTitle className="text-sm font-medium">
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
                             Total Revenue
                         </CardTitle>
-                        <div className="rounded-full bg-green-500/10 p-2 group-hover:bg-green-500/20 transition-colors duration-300">
-                            <DollarSign className="h-4 w-4 text-green-600" />
+                        <div className="rounded-full bg-green-500/10 p-2.5 group-hover:bg-green-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <DollarSign className="h-4 w-4 text-green-600 dark:text-green-500" />
                         </div>
                     </CardHeader>
                     <CardContent className="relative">
                         <div className="text-2xl font-bold">₱85,231.89</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <ArrowUpRight className="h-3 w-3 text-green-600" />
-                            <span className="text-green-600 font-medium">+20.1%</span> from last month
-                        </p>
-                        <Progress value={75} className="mt-3 h-1.5 bg-green-500/10" />
-                        <p className="text-xs text-muted-foreground mt-2">75% of yearly goal</p>
+                        <div className="flex items-center gap-1 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500 font-medium bg-green-500/10 px-2 py-0.5 rounded-full">
+                                <ArrowUpRight className="h-3 w-3" />
+                                <span>+20.1%</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">from last month</span>
+                        </div>
+                        <div className="mt-3 space-y-1.5">
+                            <Progress value={75} className="h-1.5 bg-green-500/10" />
+                            <p className="text-xs text-muted-foreground">75% of yearly goal (₱113,642)</p>
+                        </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative">
-                    <div className="absolute inset-0 bg-linear-to-br from-red-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 relative">
-                        <CardTitle className="text-sm font-medium">
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
                             Total Expenses
                         </CardTitle>
-                        <div className="rounded-full bg-red-500/10 p-2 group-hover:bg-red-500/20 transition-colors duration-300">
-                            <CreditCard className="h-4 w-4 text-red-600" />
+                        <div className="rounded-full bg-red-500/10 p-2.5 group-hover:bg-red-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <CreditCard className="h-4 w-4 text-red-600 dark:text-red-500" />
                         </div>
                     </CardHeader>
                     <CardContent className="relative">
                         <div className="text-2xl font-bold">₱46,456.00</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <ArrowUpRight className="h-3 w-3 text-red-600" />
-                            <span className="text-red-600 font-medium">+4.3%</span> from last month
-                        </p>
-                        <Progress value={54} className="mt-3 h-1.5 bg-red-500/10" />
-                        <p className="text-xs text-muted-foreground mt-2">54% of revenue</p>
+                        <div className="flex items-center gap-1 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-500 font-medium bg-red-500/10 px-2 py-0.5 rounded-full">
+                                <ArrowUpRight className="h-3 w-3" />
+                                <span>+4.3%</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">from last month</span>
+                        </div>
+                        <div className="mt-3 space-y-1.5">
+                            <Progress value={54} className="h-1.5 bg-red-500/10" />
+                            <p className="text-xs text-muted-foreground">54% of revenue spent</p>
+                        </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative">
-                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 relative">
-                        <CardTitle className="text-sm font-medium">
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
                             Net Profit
                         </CardTitle>
-                        <div className="rounded-full bg-blue-500/10 p-2 group-hover:bg-blue-500/20 transition-colors duration-300">
-                            <TrendingUp className="h-4 w-4 text-blue-600" />
+                        <div className="rounded-full bg-blue-500/10 p-2.5 group-hover:bg-blue-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-500" />
                         </div>
                     </CardHeader>
                     <CardContent className="relative">
                         <div className="text-2xl font-bold">₱38,775.89</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <ArrowUpRight className="h-3 w-3 text-green-600" />
-                            <span className="text-green-600 font-medium">+28.4%</span> from last month
-                        </p>
-                        <Progress value={85} className="mt-3 h-1.5 bg-blue-500/10" />
-                        <p className="text-xs text-muted-foreground mt-2">46% profit margin</p>
+                        <div className="flex items-center gap-1 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500 font-medium bg-green-500/10 px-2 py-0.5 rounded-full">
+                                <ArrowUpRight className="h-3 w-3" />
+                                <span>+28.4%</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">from last month</span>
+                        </div>
+                        <div className="mt-3 space-y-1.5">
+                            <Progress value={85} className="h-1.5 bg-blue-500/10" />
+                            <p className="text-xs text-muted-foreground">46% profit margin</p>
+                        </div>
                     </CardContent>
                 </Card>
 
-                <Card className="hover:shadow-xl transition-all duration-300 hover:scale-[1.02] overflow-hidden group relative">
-                    <div className="absolute inset-0 bg-linear-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 relative">
-                        <CardTitle className="text-sm font-medium">
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
                             Active Clients
                         </CardTitle>
-                        <div className="rounded-full bg-purple-500/10 p-2 group-hover:bg-purple-500/20 transition-colors duration-300">
-                            <Users className="h-4 w-4 text-purple-600" />
+                        <div className="rounded-full bg-purple-500/10 p-2.5 group-hover:bg-purple-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Users className="h-4 w-4 text-purple-600 dark:text-purple-500" />
                         </div>
                     </CardHeader>
                     <CardContent className="relative">
                         <div className="text-2xl font-bold">573</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <ArrowUpRight className="h-3 w-3 text-green-600" />
-                            <span className="text-green-600 font-medium">+35%</span> since last month
-                        </p>
-                        <Progress value={68} className="mt-3 h-1.5 bg-purple-500/10" />
-                        <p className="text-xs text-muted-foreground mt-2">68% retention rate</p>
+                        <div className="flex items-center gap-1 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500 font-medium bg-green-500/10 px-2 py-0.5 rounded-full">
+                                <ArrowUpRight className="h-3 w-3" />
+                                <span>+35 clients</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">since last month</span>
+                        </div>
+                        <div className="mt-3 space-y-1.5">
+                            <Progress value={68} className="h-1.5 bg-purple-500/10" />
+                            <p className="text-xs text-muted-foreground">68% retention rate</p>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Financial Charts with Tabs */}
             <Tabs defaultValue="overview" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
-                    <TabsTrigger value="reports">Reports</TabsTrigger>
+                <TabsList className="bg-muted/50">
+                    <TabsTrigger value="overview" className="data-[state=active]:bg-background">Overview</TabsTrigger>
+                    <TabsTrigger value="analytics" className="data-[state=active]:bg-background">Analytics</TabsTrigger>
+                    <TabsTrigger value="reports" className="data-[state=active]:bg-background">Reports</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                         {/* Revenue Chart */}
-                        <Card className="col-span-4 overflow-hidden">
-                            <CardHeader>
+                        <Card className="col-span-4 overflow-hidden border-border/50">
+                            <CardHeader className="border-b border-border/50 bg-muted/30">
                                 <CardTitle>Revenue vs Expenses</CardTitle>
                                 <CardDescription>
                                     12-month financial performance trend
@@ -373,8 +397,8 @@ export default function DashboardPage() {
                         </Card>
 
                         {/* Category Breakdown */}
-                        <Card className="col-span-3 overflow-hidden">
-                            <CardHeader>
+                        <Card className="col-span-3 overflow-hidden border-border/50">
+                            <CardHeader className="border-b border-border/50 bg-muted/30">
                                 <CardTitle>Revenue by Category</CardTitle>
                                 <CardDescription>
                                     Service breakdown for this month
@@ -448,11 +472,11 @@ export default function DashboardPage() {
                                     {categoryData.map((item, index) => (
                                         <div
                                             key={index}
-                                            className="flex items-center justify-between text-sm p-2 rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
+                                            className="flex items-center justify-between text-sm p-2.5 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group border border-transparent hover:border-border/50"
                                         >
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2.5">
                                                 <div
-                                                    className="h-3 w-3 rounded-full shadow-sm"
+                                                    className="h-3 w-3 rounded-full shadow-sm ring-2 ring-background group-hover:scale-110 transition-transform"
                                                     style={{
                                                         backgroundColor:
                                                             index === 0 ? "hsl(271, 91%, 65%)" :
@@ -465,7 +489,7 @@ export default function DashboardPage() {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <span className="font-semibold">₱{item.amount.toLocaleString()}</span>
-                                                <Badge variant="secondary" className="text-xs">{item.value}%</Badge>
+                                                <Badge variant="secondary" className="text-xs font-medium">{item.value}%</Badge>
                                             </div>
                                         </div>
                                     ))}
@@ -477,8 +501,8 @@ export default function DashboardPage() {
                     {/* Cash Flow and Invoices */}
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
                         {/* Cash Flow Chart */}
-                        <Card className="col-span-4 overflow-hidden">
-                            <CardHeader>
+                        <Card className="col-span-4 overflow-hidden border-border/50">
+                            <CardHeader className="border-b border-border/50 bg-muted/30">
                                 <CardTitle>Cash Flow</CardTitle>
                                 <CardDescription>
                                     Weekly inflow vs outflow comparison
@@ -562,93 +586,93 @@ export default function DashboardPage() {
 
 
                         {/* Recent Invoices */}
-                        <Card className="col-span-3">
-                            <CardHeader className="flex flex-row items-center justify-between">
+                        <Card className="col-span-3 border-border/50">
+                            <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 bg-muted/30">
                                 <div>
                                     <CardTitle>Recent Invoices</CardTitle>
                                     <CardDescription>
                                         Latest invoice activities
                                     </CardDescription>
                                 </div>
-                                <Button variant="ghost" size="icon">
+                                <Button variant="ghost" size="icon" className="hover:bg-muted">
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                             </CardHeader>
-                            <CardContent>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                            <CardContent className="pt-6">
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-all hover:shadow-sm">
                                         <div className="flex items-center gap-3">
-                                            <div className="bg-green-500/10 p-2 rounded-full">
-                                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                            <div className="bg-green-500/10 p-2 rounded-full ring-2 ring-green-500/20">
+                                                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium">INV-001</p>
+                                                <p className="text-sm font-semibold">INV-001</p>
                                                 <p className="text-xs text-muted-foreground">Acme Corp</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-medium">₱5,240.00</p>
-                                            <Badge variant="outline" className="text-xs text-green-600 mt-1">
+                                            <p className="text-sm font-semibold">₱5,240.00</p>
+                                            <Badge variant="outline" className="text-xs text-green-600 border-green-500/30 bg-green-500/10 mt-1">
                                                 Paid
                                             </Badge>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                                    <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-all hover:shadow-sm">
                                         <div className="flex items-center gap-3">
-                                            <div className="bg-yellow-500/10 p-2 rounded-full">
-                                                <Clock className="h-4 w-4 text-yellow-600" />
+                                            <div className="bg-yellow-500/10 p-2 rounded-full ring-2 ring-yellow-500/20">
+                                                <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium">INV-002</p>
+                                                <p className="text-sm font-semibold">INV-002</p>
                                                 <p className="text-xs text-muted-foreground">Tech Solutions</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-medium">₱3,890.00</p>
-                                            <Badge variant="outline" className="text-xs text-yellow-600 mt-1">
+                                            <p className="text-sm font-semibold">₱3,890.00</p>
+                                            <Badge variant="outline" className="text-xs text-yellow-600 border-yellow-500/30 bg-yellow-500/10 mt-1">
                                                 Pending
                                             </Badge>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                                    <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-all hover:shadow-sm">
                                         <div className="flex items-center gap-3">
-                                            <div className="bg-green-500/10 p-2 rounded-full">
-                                                <CheckCircle2 className="h-4 w-4 text-green-600" />
+                                            <div className="bg-green-500/10 p-2 rounded-full ring-2 ring-green-500/20">
+                                                <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-500" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium">INV-003</p>
+                                                <p className="text-sm font-semibold">INV-003</p>
                                                 <p className="text-xs text-muted-foreground">Global Enterprises</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-medium">₱8,120.00</p>
-                                            <Badge variant="outline" className="text-xs text-green-600 mt-1">
+                                            <p className="text-sm font-semibold">₱8,120.00</p>
+                                            <Badge variant="outline" className="text-xs text-green-600 border-green-500/30 bg-green-500/10 mt-1">
                                                 Paid
                                             </Badge>
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
+                                    <div className="flex items-center justify-between p-3 rounded-lg border border-border/50 bg-card hover:bg-muted/30 transition-all hover:shadow-sm">
                                         <div className="flex items-center gap-3">
-                                            <div className="bg-red-500/10 p-2 rounded-full">
-                                                <AlertCircle className="h-4 w-4 text-red-600" />
+                                            <div className="bg-red-500/10 p-2 rounded-full ring-2 ring-red-500/20">
+                                                <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-500" />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium">INV-004</p>
+                                                <p className="text-sm font-semibold">INV-004</p>
                                                 <p className="text-xs text-muted-foreground">StartUp Inc</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-sm font-medium">₱2,450.00</p>
-                                            <Badge variant="outline" className="text-xs text-red-600 mt-1">
+                                            <p className="text-sm font-semibold">₱2,450.00</p>
+                                            <Badge variant="outline" className="text-xs text-red-600 border-red-500/30 bg-red-500/10 mt-1">
                                                 Overdue
                                             </Badge>
                                         </div>
                                     </div>
 
-                                    <Button variant="outline" className="w-full mt-4">
+                                    <Button variant="outline" className="w-full mt-4 hover:bg-muted/50">
                                         View All Invoices
                                         <ArrowUpRight className="ml-2 h-4 w-4" />
                                     </Button>
@@ -659,8 +683,8 @@ export default function DashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="analytics" className="space-y-4">
-                    <Card className="overflow-hidden">
-                        <CardHeader>
+                    <Card className="overflow-hidden border-border/50">
+                        <CardHeader className="border-b border-border/50 bg-muted/30">
                             <CardTitle>Profit Trend</CardTitle>
                             <CardDescription>Monthly profit analysis with growth indicators</CardDescription>
                         </CardHeader>
@@ -750,31 +774,40 @@ export default function DashboardPage() {
 
                 <TabsContent value="reports" className="space-y-4">
                     <div className="grid gap-4 md:grid-cols-3">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm font-medium">Average Transaction</CardTitle>
+                        <Card className="border-border/50 hover:shadow-md transition-all">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">Average Transaction</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">₱3,456</div>
-                                <p className="text-xs text-muted-foreground mt-1">Per invoice</p>
+                                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                    Per invoice
+                                </p>
                             </CardContent>
                         </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm font-medium">Payment Success Rate</CardTitle>
+                        <Card className="border-border/50 hover:shadow-md transition-all">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">Payment Success Rate</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">94.5%</div>
-                                <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
+                                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                    Last 30 days
+                                </p>
                             </CardContent>
                         </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-sm font-medium">Outstanding Balance</CardTitle>
+                        <Card className="border-border/50 hover:shadow-md transition-all">
+                            <CardHeader className="pb-3">
+                                <CardTitle className="text-sm font-medium text-muted-foreground">Outstanding Balance</CardTitle>
                             </CardHeader>
                             <CardContent>
                                 <div className="text-2xl font-bold">₱24,890</div>
-                                <p className="text-xs text-muted-foreground mt-1">Pending collection</p>
+                                <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                    Pending collection
+                                </p>
                             </CardContent>
                         </Card>
                     </div>
@@ -783,20 +816,20 @@ export default function DashboardPage() {
 
 
             {/* Recent Transactions */}
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
+            <Card className="border-border/50">
+                <CardHeader className="flex flex-row items-center justify-between border-b border-border/50 bg-muted/30">
                     <div>
                         <CardTitle>Recent Transactions</CardTitle>
                         <CardDescription>
                             Your latest financial transactions
                         </CardDescription>
                     </div>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" className="hover:bg-muted/50">
                         <Download className="mr-2 h-4 w-4" />
                         Export
                     </Button>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <Table>
                         <TableHeader>
                             <TableRow>

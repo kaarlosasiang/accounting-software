@@ -18,15 +18,18 @@ import {
 } from "@/components/ui/table"
 import {
     Download,
+    TrendingUp,
+    TrendingDown,
 } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 export default function ReportsPage() {
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Financial Reports</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Financial Reports</h1>
+                    <p className="text-muted-foreground mt-2">
                         Comprehensive financial reports and analysis
                     </p>
                 </div>
@@ -72,19 +75,19 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Professional Services</TableCell>
-                                                <TableCell className="text-right text-green-600 font-semibold">$45,000.00</TableCell>
+                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(45000)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Consulting Revenue</TableCell>
-                                                <TableCell className="text-right text-green-600 font-semibold">$28,500.00</TableCell>
+                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(28500)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Recurring Revenue</TableCell>
-                                                <TableCell className="text-right text-green-600 font-semibold">$15,200.00</TableCell>
+                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(15200)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Total Revenue</TableCell>
-                                                <TableCell className="text-right font-bold text-green-600">$88,700.00</TableCell>
+                                                <TableCell className="text-right font-bold text-green-600">{formatCurrency(88700)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -96,27 +99,27 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Office Expenses</TableCell>
-                                                <TableCell className="text-right text-red-600">$3,450.00</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(3450)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Software & Tools</TableCell>
-                                                <TableCell className="text-right text-red-600">$1,299.00</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(1299)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Professional Services</TableCell>
-                                                <TableCell className="text-right text-red-600">$2,800.00</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(2800)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Marketing & Advertising</TableCell>
-                                                <TableCell className="text-right text-red-600">$4,200.00</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(4200)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Travel & Entertainment</TableCell>
-                                                <TableCell className="text-right text-red-600">$1,850.00</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(1850)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Total Expenses</TableCell>
-                                                <TableCell className="text-right font-bold text-red-600">$13,599.00</TableCell>
+                                                <TableCell className="text-right font-bold text-red-600">{formatCurrency(13599)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -127,7 +130,7 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="text-lg font-bold">Net Income</TableCell>
-                                                <TableCell className="text-right text-lg font-bold text-blue-600">$75,101.00</TableCell>
+                                                <TableCell className="text-right text-lg font-bold text-blue-600">{formatCurrency(75101)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -153,35 +156,35 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Current Assets</TableCell>
-                                                <TableCell className="text-right font-semibold">$125,450.00</TableCell>
+                                                <TableCell className="text-right font-semibold">{formatCurrency(125450)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="pl-8">Cash and Cash Equivalents</TableCell>
-                                                <TableCell className="text-right">$85,200.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(85200)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="pl-8">Accounts Receivable</TableCell>
-                                                <TableCell className="text-right">$35,250.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(35250)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="pl-8">Prepaid Expenses</TableCell>
-                                                <TableCell className="text-right">$5,000.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(5000)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium pt-4">Fixed Assets</TableCell>
-                                                <TableCell className="text-right font-semibold pt-4">$45,000.00</TableCell>
+                                                <TableCell className="text-right font-semibold pt-4">{formatCurrency(45000)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="pl-8">Equipment</TableCell>
-                                                <TableCell className="text-right">$25,000.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(25000)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="pl-8">Furniture & Fixtures</TableCell>
-                                                <TableCell className="text-right">$20,000.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(20000)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Total Assets</TableCell>
-                                                <TableCell className="text-right font-bold text-blue-600">$170,450.00</TableCell>
+                                                <TableCell className="text-right font-bold text-blue-600">{formatCurrency(170450)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -193,23 +196,23 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Current Liabilities</TableCell>
-                                                <TableCell className="text-right font-semibold">$28,350.00</TableCell>
+                                                <TableCell className="text-right font-semibold">{formatCurrency(28350)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="pl-8">Accounts Payable</TableCell>
-                                                <TableCell className="text-right">$15,200.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(15200)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="pl-8">Accrued Expenses</TableCell>
-                                                <TableCell className="text-right">$8,150.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(8150)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="pl-8">Short-term Debt</TableCell>
-                                                <TableCell className="text-right">$5,000.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(5000)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Total Liabilities</TableCell>
-                                                <TableCell className="text-right font-bold text-red-600">$28,350.00</TableCell>
+                                                <TableCell className="text-right font-bold text-red-600">{formatCurrency(28350)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -221,15 +224,15 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Owner&apos;s Equity</TableCell>
-                                                <TableCell className="text-right">$67,000.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(67000)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Retained Earnings</TableCell>
-                                                <TableCell className="text-right">$75,100.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(75100)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Total Equity</TableCell>
-                                                <TableCell className="text-right font-bold text-green-600">$142,100.00</TableCell>
+                                                <TableCell className="text-right font-bold text-green-600">{formatCurrency(142100)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -240,7 +243,7 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="text-lg font-bold">Total Liabilities & Equity</TableCell>
-                                                <TableCell className="text-right text-lg font-bold text-blue-600">$170,450.00</TableCell>
+                                                <TableCell className="text-right text-lg font-bold text-blue-600">{formatCurrency(170450)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -266,19 +269,19 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Cash from Customers</TableCell>
-                                                <TableCell className="text-right text-green-600">$82,500.00</TableCell>
+                                                <TableCell className="text-right text-green-600">{formatCurrency(82500)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Cash to Suppliers</TableCell>
-                                                <TableCell className="text-right text-red-600">($10,250.00)</TableCell>
+                                                <TableCell className="text-right text-red-600">({formatCurrency(10250)})</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Cash to Employees</TableCell>
-                                                <TableCell className="text-right text-red-600">($0.00)</TableCell>
+                                                <TableCell className="text-right text-red-600">({formatCurrency(0)})</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t">
                                                 <TableCell className="font-bold">Net Cash from Operations</TableCell>
-                                                <TableCell className="text-right font-bold text-green-600">$72,250.00</TableCell>
+                                                <TableCell className="text-right font-bold text-green-600">{formatCurrency(72250)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -290,11 +293,11 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Purchase of Equipment</TableCell>
-                                                <TableCell className="text-right text-red-600">($5,000.00)</TableCell>
+                                                <TableCell className="text-right text-red-600">({formatCurrency(5000)})</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t">
                                                 <TableCell className="font-bold">Net Cash from Investing</TableCell>
-                                                <TableCell className="text-right font-bold text-red-600">($5,000.00)</TableCell>
+                                                <TableCell className="text-right font-bold text-red-600">({formatCurrency(5000)})</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -306,15 +309,15 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Owner Contributions</TableCell>
-                                                <TableCell className="text-right text-green-600">$0.00</TableCell>
+                                                <TableCell className="text-right text-green-600">{formatCurrency(0)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Owner Draws</TableCell>
-                                                <TableCell className="text-right text-red-600">($10,000.00)</TableCell>
+                                                <TableCell className="text-right text-red-600">({formatCurrency(10000)})</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t">
                                                 <TableCell className="font-bold">Net Cash from Financing</TableCell>
-                                                <TableCell className="text-right font-bold text-red-600">($10,000.00)</TableCell>
+                                                <TableCell className="text-right font-bold text-red-600">({formatCurrency(10000)})</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -325,15 +328,15 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Beginning Cash Balance</TableCell>
-                                                <TableCell className="text-right">$27,950.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(27950)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Net Change in Cash</TableCell>
-                                                <TableCell className="text-right text-green-600">$57,250.00</TableCell>
+                                                <TableCell className="text-right text-green-600">{formatCurrency(57250)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="text-lg font-bold">Ending Cash Balance</TableCell>
-                                                <TableCell className="text-right text-lg font-bold text-blue-600">$85,200.00</TableCell>
+                                                <TableCell className="text-right text-lg font-bold text-blue-600">{formatCurrency(85200)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -359,15 +362,15 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Gross Revenue</TableCell>
-                                                <TableCell className="text-right">$88,700.00</TableCell>
+                                                <TableCell className="text-right">{formatCurrency(88700)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Total Deductible Expenses</TableCell>
-                                                <TableCell className="text-right text-red-600">($13,599.00)</TableCell>
+                                                <TableCell className="text-right text-red-600">({formatCurrency(13599)})</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Net Taxable Income</TableCell>
-                                                <TableCell className="text-right font-bold">$75,101.00</TableCell>
+                                                <TableCell className="text-right font-bold">{formatCurrency(75101)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -379,19 +382,19 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="font-medium">Federal Income Tax (Est. 22%)</TableCell>
-                                                <TableCell className="text-right text-orange-600">$16,522.22</TableCell>
+                                                <TableCell className="text-right text-orange-600">{formatCurrency(16522.22)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">State Income Tax (Est. 5%)</TableCell>
-                                                <TableCell className="text-right text-orange-600">$3,755.05</TableCell>
+                                                <TableCell className="text-right text-orange-600">{formatCurrency(3755.05)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Self-Employment Tax (Est. 15.3%)</TableCell>
-                                                <TableCell className="text-right text-orange-600">$11,490.45</TableCell>
+                                                <TableCell className="text-right text-orange-600">{formatCurrency(11490.45)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Total Estimated Tax</TableCell>
-                                                <TableCell className="text-right font-bold text-orange-600">$31,767.72</TableCell>
+                                                <TableCell className="text-right font-bold text-orange-600">{formatCurrency(31767.72)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>

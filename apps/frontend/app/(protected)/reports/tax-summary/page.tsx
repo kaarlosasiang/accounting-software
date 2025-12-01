@@ -21,14 +21,15 @@ import { Download, Calendar, AlertCircle, FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
+import { formatCurrency } from "@/lib/utils"
 
 export default function TaxSummaryPage() {
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Tax Summary</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Tax Summary</h1>
+                    <p className="text-muted-foreground mt-2">
                         Tax obligations, deductions, and estimated payments for the period
                     </p>
                 </div>
@@ -56,7 +57,7 @@ export default function TaxSummaryPage() {
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Tax Filing Reminder</AlertTitle>
                 <AlertDescription>
-                    Q4 2025 estimated tax payment is due on January 15, 2026. Your estimated payment is $7,941.93.
+                    Q4 2025 estimated tax payment is due on January 15, 2026. Your estimated payment is {formatCurrency(7941.93)}.
                 </AlertDescription>
             </Alert>
 
@@ -67,7 +68,7 @@ export default function TaxSummaryPage() {
                         <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">$88,700</div>
+                        <div className="text-2xl font-bold">{formatCurrency(88700)}</div>
                         <p className="text-xs text-muted-foreground mt-1">Total income for 2025</p>
                     </CardContent>
                 </Card>
@@ -76,7 +77,7 @@ export default function TaxSummaryPage() {
                         <CardTitle className="text-sm font-medium">Deductions</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">$13,599</div>
+                        <div className="text-2xl font-bold text-green-600">{formatCurrency(13599)}</div>
                         <p className="text-xs text-muted-foreground mt-1">Tax-deductible expenses</p>
                     </CardContent>
                 </Card>
@@ -85,7 +86,7 @@ export default function TaxSummaryPage() {
                         <CardTitle className="text-sm font-medium">Taxable Income</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">$75,101</div>
+                        <div className="text-2xl font-bold">{formatCurrency(75101)}</div>
                         <p className="text-xs text-muted-foreground mt-1">After deductions</p>
                     </CardContent>
                 </Card>
@@ -94,7 +95,7 @@ export default function TaxSummaryPage() {
                         <CardTitle className="text-sm font-medium">Est. Tax Liability</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-orange-600">$31,768</div>
+                        <div className="text-2xl font-bold text-orange-600">{formatCurrency(31768)}</div>
                         <p className="text-xs text-muted-foreground mt-1">Total estimated taxes</p>
                     </CardContent>
                 </Card>
@@ -123,22 +124,22 @@ export default function TaxSummaryPage() {
                                 <TableBody>
                                     <TableRow>
                                         <TableCell>Professional Services</TableCell>
-                                        <TableCell className="text-right font-medium">$45,000.00</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(45000)}</TableCell>
                                         <TableCell className="text-right">50.7%</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Consulting Revenue</TableCell>
-                                        <TableCell className="text-right font-medium">$28,500.00</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(28500)}</TableCell>
                                         <TableCell className="text-right">32.1%</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Recurring Revenue</TableCell>
-                                        <TableCell className="text-right font-medium">$15,200.00</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(15200)}</TableCell>
                                         <TableCell className="text-right">17.2%</TableCell>
                                     </TableRow>
                                     <TableRow className="border-t-2 bg-muted/30">
                                         <TableCell className="font-bold">Total Gross Income</TableCell>
-                                        <TableCell className="text-right font-bold">$88,700.00</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(88700)}.00</TableCell>
                                         <TableCell className="text-right font-bold">100%</TableCell>
                                     </TableRow>
                                 </TableBody>
@@ -159,45 +160,45 @@ export default function TaxSummaryPage() {
                                 <TableBody>
                                     <TableRow>
                                         <TableCell>Office Expenses</TableCell>
-                                        <TableCell className="text-right">$3,450.00</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(3450)}</TableCell>
                                         <TableCell className="text-right">100%</TableCell>
-                                        <TableCell className="text-right text-green-600">$3,450.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(3450)}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Software & Tools</TableCell>
-                                        <TableCell className="text-right">$1,299.00</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(1299)}</TableCell>
                                         <TableCell className="text-right">100%</TableCell>
-                                        <TableCell className="text-right text-green-600">$1,299.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(1299)}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Professional Services</TableCell>
-                                        <TableCell className="text-right">$2,800.00</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(2800)}</TableCell>
                                         <TableCell className="text-right">100%</TableCell>
-                                        <TableCell className="text-right text-green-600">$2,800.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(2800)}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Marketing & Advertising</TableCell>
-                                        <TableCell className="text-right">$4,200.00</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(4200)}</TableCell>
                                         <TableCell className="text-right">100%</TableCell>
-                                        <TableCell className="text-right text-green-600">$4,200.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(4200)}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Travel & Entertainment</TableCell>
-                                        <TableCell className="text-right">$2,100.00</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(2100)}</TableCell>
                                         <TableCell className="text-right">50%</TableCell>
-                                        <TableCell className="text-right text-green-600">$1,050.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(1050)}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Home Office</TableCell>
-                                        <TableCell className="text-right">$1,600.00</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(1600)}</TableCell>
                                         <TableCell className="text-right">50%</TableCell>
-                                        <TableCell className="text-right text-green-600">$800.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(800)}</TableCell>
                                     </TableRow>
                                     <TableRow className="border-t-2 bg-green-50 dark:bg-green-950/20">
                                         <TableCell className="font-bold">Total Deductions</TableCell>
-                                        <TableCell className="text-right font-bold">$15,449.00</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(15449)}</TableCell>
                                         <TableCell className="text-right"></TableCell>
-                                        <TableCell className="text-right font-bold text-green-600">$13,599.00</TableCell>
+                                        <TableCell className="text-right font-bold text-green-600">{formatCurrency(13599)}.00</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -208,7 +209,7 @@ export default function TaxSummaryPage() {
                                 <TableBody>
                                     <TableRow className="bg-primary/5">
                                         <TableCell className="text-lg font-bold">Net Taxable Income</TableCell>
-                                        <TableCell className="text-right text-lg font-bold text-primary">$75,101.00</TableCell>
+                                        <TableCell className="text-right text-lg font-bold text-primary">{formatCurrency(75101)}.00</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -235,7 +236,7 @@ export default function TaxSummaryPage() {
                                     <Progress value={52} className="mt-2 w-64" />
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-orange-600">$16,522.22</div>
+                                    <div className="text-2xl font-bold text-orange-600">{formatCurrency(16522.22)}</div>
                                     <Badge variant="outline" className="mt-1">52% of total</Badge>
                                 </div>
                             </div>
@@ -247,7 +248,7 @@ export default function TaxSummaryPage() {
                                     <Progress value={12} className="mt-2 w-64" />
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-orange-600">$3,755.05</div>
+                                    <div className="text-2xl font-bold text-orange-600">{formatCurrency(3755.05)}</div>
                                     <Badge variant="outline" className="mt-1">12% of total</Badge>
                                 </div>
                             </div>
@@ -259,7 +260,7 @@ export default function TaxSummaryPage() {
                                     <Progress value={36} className="mt-2 w-64" />
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-orange-600">$11,490.45</div>
+                                    <div className="text-2xl font-bold text-orange-600">{formatCurrency(11490.45)}</div>
                                     <Badge variant="outline" className="mt-1">36% of total</Badge>
                                 </div>
                             </div>
@@ -271,7 +272,7 @@ export default function TaxSummaryPage() {
                                     <h3 className="text-xl font-bold">Total Estimated Tax Liability</h3>
                                     <p className="text-sm text-muted-foreground mt-1">For tax year 2025</p>
                                 </div>
-                                <div className="text-3xl font-bold text-orange-600">$31,767.72</div>
+                                <div className="text-3xl font-bold text-orange-600">{formatCurrency(31767.72)}</div>
                             </div>
                         </div>
                     </div>
@@ -300,7 +301,7 @@ export default function TaxSummaryPage() {
                             <TableRow>
                                 <TableCell className="font-medium">Q1 2025</TableCell>
                                 <TableCell>April 15, 2025</TableCell>
-                                <TableCell className="text-right">$7,941.93</TableCell>
+                                <TableCell className="text-right">{formatCurrency(7941.93)}</TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="default" className="bg-green-600">Paid</Badge>
                                 </TableCell>
@@ -308,7 +309,7 @@ export default function TaxSummaryPage() {
                             <TableRow>
                                 <TableCell className="font-medium">Q2 2025</TableCell>
                                 <TableCell>June 15, 2025</TableCell>
-                                <TableCell className="text-right">$7,941.93</TableCell>
+                                <TableCell className="text-right">{formatCurrency(7941.93)}</TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="default" className="bg-green-600">Paid</Badge>
                                 </TableCell>
@@ -316,7 +317,7 @@ export default function TaxSummaryPage() {
                             <TableRow>
                                 <TableCell className="font-medium">Q3 2025</TableCell>
                                 <TableCell>September 15, 2025</TableCell>
-                                <TableCell className="text-right">$7,941.93</TableCell>
+                                <TableCell className="text-right">{formatCurrency(7941.93)}</TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="default" className="bg-green-600">Paid</Badge>
                                 </TableCell>
@@ -324,14 +325,14 @@ export default function TaxSummaryPage() {
                             <TableRow>
                                 <TableCell className="font-medium">Q4 2025</TableCell>
                                 <TableCell>January 15, 2026</TableCell>
-                                <TableCell className="text-right">$7,941.93</TableCell>
+                                <TableCell className="text-right">{formatCurrency(7941.93)}</TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="outline" className="text-orange-600">Due Soon</Badge>
                                 </TableCell>
                             </TableRow>
                             <TableRow className="border-t-2 bg-muted/30">
                                 <TableCell colSpan={2} className="font-bold">Total Annual Payment</TableCell>
-                                <TableCell className="text-right font-bold">$31,767.72</TableCell>
+                                <TableCell className="text-right font-bold">{formatCurrency(31767.72)}</TableCell>
                                 <TableCell></TableCell>
                             </TableRow>
                         </TableBody>
