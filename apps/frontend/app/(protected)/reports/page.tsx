@@ -74,20 +74,24 @@ export default function ReportsPage() {
                                     <Table>
                                         <TableBody>
                                             <TableRow>
-                                                <TableCell className="font-medium">Professional Services</TableCell>
-                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(45000)}</TableCell>
+                                                <TableCell className="font-medium">Services Rendered (Salon/Spa)</TableCell>
+                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(38250)}</TableCell>
                                             </TableRow>
                                             <TableRow>
-                                                <TableCell className="font-medium">Consulting Revenue</TableCell>
-                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(28500)}</TableCell>
+                                                <TableCell className="font-medium">Food Sales</TableCell>
+                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(25500)}</TableCell>
                                             </TableRow>
                                             <TableRow>
-                                                <TableCell className="font-medium">Recurring Revenue</TableCell>
-                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(15200)}</TableCell>
+                                                <TableCell className="font-medium">Non-Food Sales</TableCell>
+                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(17000)}</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell className="font-medium">Other Income</TableCell>
+                                                <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(4250)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Total Revenue</TableCell>
-                                                <TableCell className="text-right font-bold text-green-600">{formatCurrency(88700)}</TableCell>
+                                                <TableCell className="text-right font-bold text-green-600">{formatCurrency(85000)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -98,28 +102,32 @@ export default function ReportsPage() {
                                     <Table>
                                         <TableBody>
                                             <TableRow>
-                                                <TableCell className="font-medium">Office Expenses</TableCell>
-                                                <TableCell className="text-right text-red-600">{formatCurrency(3450)}</TableCell>
+                                                <TableCell className="font-medium">Cost of Goods Sold (Food)</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(15300)}</TableCell>
                                             </TableRow>
                                             <TableRow>
-                                                <TableCell className="font-medium">Software & Tools</TableCell>
-                                                <TableCell className="text-right text-red-600">{formatCurrency(1299)}</TableCell>
+                                                <TableCell className="font-medium">Cost of Goods Sold (Non-Food)</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(8500)}</TableCell>
                                             </TableRow>
                                             <TableRow>
-                                                <TableCell className="font-medium">Professional Services</TableCell>
-                                                <TableCell className="text-right text-red-600">{formatCurrency(2800)}</TableCell>
+                                                <TableCell className="font-medium">Salon/Spa Supplies</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(5250)}</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell className="font-medium">Rent & Utilities</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(8000)}</TableCell>
+                                            </TableRow>
+                                            <TableRow>
+                                                <TableCell className="font-medium">Salaries & Wages</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(12000)}</TableCell>
                                             </TableRow>
                                             <TableRow>
                                                 <TableCell className="font-medium">Marketing & Advertising</TableCell>
-                                                <TableCell className="text-right text-red-600">{formatCurrency(4200)}</TableCell>
-                                            </TableRow>
-                                            <TableRow>
-                                                <TableCell className="font-medium">Travel & Entertainment</TableCell>
-                                                <TableCell className="text-right text-red-600">{formatCurrency(1850)}</TableCell>
+                                                <TableCell className="text-right text-red-600">{formatCurrency(2450)}</TableCell>
                                             </TableRow>
                                             <TableRow className="border-t-2">
                                                 <TableCell className="font-bold">Total Expenses</TableCell>
-                                                <TableCell className="text-right font-bold text-red-600">{formatCurrency(13599)}</TableCell>
+                                                <TableCell className="text-right font-bold text-red-600">{formatCurrency(51500)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>
@@ -130,7 +138,7 @@ export default function ReportsPage() {
                                         <TableBody>
                                             <TableRow>
                                                 <TableCell className="text-lg font-bold">Net Income</TableCell>
-                                                <TableCell className="text-right text-lg font-bold text-blue-600">{formatCurrency(75101)}</TableCell>
+                                                <TableCell className="text-right text-lg font-bold text-blue-600">{formatCurrency(33500)}</TableCell>
                                             </TableRow>
                                         </TableBody>
                                     </Table>

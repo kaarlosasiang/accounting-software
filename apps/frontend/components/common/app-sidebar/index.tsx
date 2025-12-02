@@ -115,6 +115,29 @@ const data = {
       ],
     },
     {
+      title: "Inventory",
+      url: "/inventory",
+      icon: "📦",
+      items: [
+        {
+          title: "All Items",
+          url: "/inventory",
+        },
+        {
+          title: "Low Stock",
+          url: "/inventory/low-stock",
+        },
+        {
+          title: "Transactions",
+          url: "/inventory/transactions",
+        },
+        {
+          title: "Add Item",
+          url: "/inventory/add",
+        },
+      ],
+    },
+    {
       title: "Financial Reports",
       url: "/reports",
       icon: "📈",

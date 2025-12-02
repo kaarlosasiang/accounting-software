@@ -53,63 +53,75 @@ interface Invoice {
     amount: number
     status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
     items: number
+    serviceType: "Food" | "Non-Food" | "Services"
+    description: string
 }
 
 const mockInvoices: Invoice[] = [
     {
         id: "INV-001",
         invoiceNumber: "2025-001",
-        client: "ABC Corporation",
-        clientEmail: "billing@abccorp.com",
+        client: "Maria's Salon",
+        clientEmail: "billing@mariasalon.com",
         issueDate: "2025-11-01",
         dueDate: "2025-11-30",
-        amount: 5000.00,
+        amount: 2850.00,
         status: "paid",
-        items: 3
+        items: 3,
+        serviceType: "Services",
+        description: "Hair styling and spa treatment services"
     },
     {
         id: "INV-002",
         invoiceNumber: "2025-002",
-        client: "XYZ Industries",
-        clientEmail: "accounts@xyzind.com",
+        client: "Juan's Grocery",
+        clientEmail: "accounts@juangrocery.com",
         issueDate: "2025-11-10",
         dueDate: "2025-12-10",
-        amount: 3500.00,
+        amount: 12750.00,
         status: "sent",
-        items: 2
+        items: 5,
+        serviceType: "Food",
+        description: "Rice, cooking oil, and canned goods bulk order"
     },
     {
         id: "INV-003",
         invoiceNumber: "2025-003",
-        client: "Tech Solutions Ltd",
+        client: "Tech Solutions Office",
         clientEmail: "finance@techsol.com",
         issueDate: "2025-11-15",
         dueDate: "2025-12-15",
-        amount: 8750.00,
+        amount: 5250.00,
         status: "sent",
-        items: 5
+        items: 4,
+        serviceType: "Non-Food",
+        description: "Cleaning supplies and office supplies package"
     },
     {
         id: "INV-004",
         invoiceNumber: "2025-004",
-        client: "Global Enterprises",
-        clientEmail: "ap@globalent.com",
+        client: "Beauty Bar Manila",
+        clientEmail: "ap@beautybar.ph",
         issueDate: "2025-10-20",
         dueDate: "2025-11-19",
-        amount: 2250.00,
+        amount: 1850.00,
         status: "overdue",
-        items: 2
+        items: 2,
+        serviceType: "Services",
+        description: "Manicure and pedicure services"
     },
     {
         id: "INV-005",
         invoiceNumber: "2025-005",
-        client: "Startup Inc",
-        clientEmail: "billing@startup.io",
+        client: "Pedro's Carinderia",
+        clientEmail: "billing@pedros.ph",
         issueDate: "2025-11-18",
         dueDate: "2025-12-18",
-        amount: 4500.00,
+        amount: 8500.00,
         status: "draft",
-        items: 4
+        items: 6,
+        serviceType: "Food",
+        description: "Weekly food supplies - vegetables and condiments"
     },
 ]
 
@@ -306,6 +318,8 @@ export default function InvoicesPage() {
                                 <TableRow>
                                     <TableHead>Invoice #</TableHead>
                                     <TableHead>Client</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Description</TableHead>
                                     <TableHead>Issue Date</TableHead>
                                     <TableHead>Due Date</TableHead>
                                     <TableHead>Amount</TableHead>
@@ -322,6 +336,18 @@ export default function InvoicesPage() {
                                                 <span className="font-medium">{invoice.client}</span>
                                                 <span className="text-xs text-muted-foreground">{invoice.clientEmail}</span>
                                             </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className={
+                                                invoice.serviceType === "Services" ? "bg-purple-500/10 text-purple-600 border-purple-500/20" :
+                                                invoice.serviceType === "Food" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
+                                                "bg-green-500/10 text-green-600 border-green-500/20"
+                                            }>
+                                                {invoice.serviceType}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm text-muted-foreground">{invoice.description}</span>
                                         </TableCell>
                                         <TableCell>{new Date(invoice.issueDate).toLocaleDateString()}</TableCell>
                                         <TableCell>

@@ -71,10 +71,10 @@ const revenueData = [
 ]
 
 const categoryData = [
-    { name: "Consulting", value: 35, amount: 28500, color: "hsl(271, 91%, 65%)" },
-    { name: "Development", value: 30, amount: 24400, color: "hsl(217, 91%, 60%)" },
-    { name: "Design", value: 20, amount: 16300, color: "hsl(142, 76%, 36%)" },
-    { name: "Marketing", value: 15, amount: 12200, color: "hsl(346, 77%, 50%)" },
+    { name: "Services Rendered", value: 45, amount: 38250, color: "hsl(271, 91%, 65%)" },
+    { name: "Food Sales", value: 30, amount: 25500, color: "hsl(217, 91%, 60%)" },
+    { name: "Non-Food Sales", value: 20, amount: 17000, color: "hsl(142, 76%, 36%)" },
+    { name: "Other Income", value: 5, amount: 4250, color: "hsl(346, 77%, 50%)" },
 ]
 
 const cashFlowData = [
@@ -407,20 +407,20 @@ export default function DashboardPage() {
                             <CardContent>
                                 <ChartContainer
                                     config={{
-                                        consulting: {
-                                            label: "Consulting",
+                                        services: {
+                                            label: "Services Rendered",
                                             color: "hsl(271, 91%, 65%)",
                                         },
-                                        development: {
-                                            label: "Development",
+                                        food: {
+                                            label: "Food Sales",
                                             color: "hsl(217, 91%, 60%)",
                                         },
-                                        design: {
-                                            label: "Design",
+                                        nonfood: {
+                                            label: "Non-Food Sales",
                                             color: "hsl(142, 76%, 36%)",
                                         },
-                                        marketing: {
-                                            label: "Marketing",
+                                        other: {
+                                            label: "Other Income",
                                             color: "hsl(346, 77%, 50%)",
                                         },
                                     }}
@@ -847,8 +847,8 @@ export default function DashboardPage() {
                                 <TableCell className="font-medium">Nov 15, 2025</TableCell>
                                 <TableCell>
                                     <div>
-                                        <p className="font-medium">Website Development</p>
-                                        <p className="text-xs text-muted-foreground">Project milestone payment</p>
+                                        <p className="font-medium">Haircut & Styling Services</p>
+                                        <p className="text-xs text-muted-foreground">Walk-in customer service</p>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -856,9 +856,9 @@ export default function DashboardPage() {
                                         Income
                                     </Badge>
                                 </TableCell>
-                                <TableCell>Acme Corp</TableCell>
+                                <TableCell>Walk-in Client</TableCell>
                                 <TableCell className="text-right">
-                                    <span className="font-semibold text-green-600">+₱5,240.00</span>
+                                    <span className="font-semibold text-green-600">+₱850.00</span>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="outline" className="text-green-600">
@@ -876,8 +876,8 @@ export default function DashboardPage() {
                                 <TableCell className="font-medium">Nov 14, 2025</TableCell>
                                 <TableCell>
                                     <div>
-                                        <p className="font-medium">Office Supplies</p>
-                                        <p className="text-xs text-muted-foreground">Monthly office expenses</p>
+                                        <p className="font-medium">Rice Purchase (50kg sacks)</p>
+                                        <p className="text-xs text-muted-foreground">Inventory restock - Food items</p>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -887,7 +887,7 @@ export default function DashboardPage() {
                                 </TableCell>
                                 <TableCell>-</TableCell>
                                 <TableCell className="text-right">
-                                    <span className="font-semibold text-red-600">-₱450.00</span>
+                                    <span className="font-semibold text-red-600">-₱11,250.00</span>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="outline" className="text-green-600">
@@ -905,8 +905,8 @@ export default function DashboardPage() {
                                 <TableCell className="font-medium">Nov 13, 2025</TableCell>
                                 <TableCell>
                                     <div>
-                                        <p className="font-medium">Consulting Services</p>
-                                        <p className="text-xs text-muted-foreground">Business consultation - Q4</p>
+                                        <p className="font-medium">Spa Treatment Package</p>
+                                        <p className="text-xs text-muted-foreground">Premium spa service</p>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -914,9 +914,9 @@ export default function DashboardPage() {
                                         Income
                                     </Badge>
                                 </TableCell>
-                                <TableCell>Tech Solutions</TableCell>
+                                <TableCell>Maria Santos</TableCell>
                                 <TableCell className="text-right">
-                                    <span className="font-semibold text-green-600">+₱3,890.00</span>
+                                    <span className="font-semibold text-green-600">+₱2,500.00</span>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="outline" className="text-yellow-600">
@@ -934,8 +934,8 @@ export default function DashboardPage() {
                                 <TableCell className="font-medium">Nov 12, 2025</TableCell>
                                 <TableCell>
                                     <div>
-                                        <p className="font-medium">Software Subscription</p>
-                                        <p className="text-xs text-muted-foreground">Adobe Creative Cloud</p>
+                                        <p className="font-medium">Cleaning Supplies</p>
+                                        <p className="text-xs text-muted-foreground">Non-food inventory purchase</p>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -945,7 +945,7 @@ export default function DashboardPage() {
                                 </TableCell>
                                 <TableCell>-</TableCell>
                                 <TableCell className="text-right">
-                                    <span className="font-semibold text-red-600">-₱299.00</span>
+                                    <span className="font-semibold text-red-600">-₱3,500.00</span>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="outline" className="text-green-600">
@@ -963,8 +963,8 @@ export default function DashboardPage() {
                                 <TableCell className="font-medium">Nov 11, 2025</TableCell>
                                 <TableCell>
                                     <div>
-                                        <p className="font-medium">Marketing Campaign</p>
-                                        <p className="text-xs text-muted-foreground">Social media campaign management</p>
+                                        <p className="font-medium">Canned Goods Sales</p>
+                                        <p className="text-xs text-muted-foreground">Food inventory sale - Bulk order</p>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -972,9 +972,9 @@ export default function DashboardPage() {
                                         Income
                                     </Badge>
                                 </TableCell>
-                                <TableCell>Global Enterprises</TableCell>
+                                <TableCell>Juan Dela Cruz</TableCell>
                                 <TableCell className="text-right">
-                                    <span className="font-semibold text-green-600">+₱8,120.00</span>
+                                    <span className="font-semibold text-green-600">+₱3,250.00</span>
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="outline" className="text-green-600">
