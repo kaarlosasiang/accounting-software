@@ -16,14 +16,15 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Download, Calendar } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 export default function BalanceSheetPage() {
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Balance Sheet</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Balance Sheet</h1>
+                    <p className="text-muted-foreground mt-2">
                         Financial position snapshot - Assets, Liabilities, and Equity
                     </p>
                 </div>
@@ -66,11 +67,11 @@ export default function BalanceSheetPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Cash and Cash Equivalents</TableCell>
-                                            <TableCell className="text-right font-medium">$85,200.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(85200)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Accounts Receivable</TableCell>
-                                            <TableCell className="text-right font-medium">$35,250.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(35250)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Prepaid Expenses</TableCell>
@@ -78,11 +79,11 @@ export default function BalanceSheetPage() {
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Inventory</TableCell>
-                                            <TableCell className="text-right font-medium">$12,450.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(12450)}</TableCell>
                                         </TableRow>
                                         <TableRow className="border-t bg-muted/30">
                                             <TableCell className="pl-4 font-semibold">Total Current Assets</TableCell>
-                                            <TableCell className="text-right font-bold">$137,900.00</TableCell>
+                                            <TableCell className="text-right font-bold">{formatCurrency(137900)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -95,15 +96,15 @@ export default function BalanceSheetPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Property and Equipment</TableCell>
-                                            <TableCell className="text-right font-medium">$75,000.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(75000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Less: Accumulated Depreciation</TableCell>
-                                            <TableCell className="text-right font-medium text-red-600">($15,000.00)</TableCell>
+                                            <TableCell className="text-right font-medium text-red-600">({formatCurrency(15000)})</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Furniture and Fixtures</TableCell>
-                                            <TableCell className="text-right font-medium">$20,000.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(20000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Less: Accumulated Depreciation</TableCell>
@@ -111,7 +112,7 @@ export default function BalanceSheetPage() {
                                         </TableRow>
                                         <TableRow className="border-t bg-muted/30">
                                             <TableCell className="pl-4 font-semibold">Total Fixed Assets</TableCell>
-                                            <TableCell className="text-right font-bold">$75,000.00</TableCell>
+                                            <TableCell className="text-right font-bold">{formatCurrency(75000)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -124,15 +125,15 @@ export default function BalanceSheetPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Goodwill</TableCell>
-                                            <TableCell className="text-right font-medium">$25,000.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(25000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Patents and Trademarks</TableCell>
-                                            <TableCell className="text-right font-medium">$10,000.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(10000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="border-t bg-muted/30">
                                             <TableCell className="pl-4 font-semibold">Total Intangible Assets</TableCell>
-                                            <TableCell className="text-right font-bold">$35,000.00</TableCell>
+                                            <TableCell className="text-right font-bold">{formatCurrency(35000)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -142,7 +143,7 @@ export default function BalanceSheetPage() {
                                 <TableBody>
                                     <TableRow className="border-t-2 bg-blue-50 dark:bg-blue-950/20">
                                         <TableCell className="text-lg font-bold">TOTAL ASSETS</TableCell>
-                                        <TableCell className="text-right text-lg font-bold text-blue-600">$247,900.00</TableCell>
+                                        <TableCell className="text-right text-lg font-bold text-blue-600">{formatCurrency(247900)}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -159,11 +160,11 @@ export default function BalanceSheetPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Accounts Payable</TableCell>
-                                            <TableCell className="text-right font-medium">$15,200.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(15200)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Accrued Expenses</TableCell>
-                                            <TableCell className="text-right font-medium">$8,150.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(8150)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Short-term Debt</TableCell>
@@ -171,11 +172,11 @@ export default function BalanceSheetPage() {
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Unearned Revenue</TableCell>
-                                            <TableCell className="text-right font-medium">$7,500.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(7500)}</TableCell>
                                         </TableRow>
                                         <TableRow className="border-t bg-muted/30">
                                             <TableCell className="pl-4 font-semibold">Total Current Liabilities</TableCell>
-                                            <TableCell className="text-right font-bold">$35,850.00</TableCell>
+                                            <TableCell className="text-right font-bold">{formatCurrency(35850)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -188,15 +189,15 @@ export default function BalanceSheetPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Long-term Debt</TableCell>
-                                            <TableCell className="text-right font-medium">$40,000.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(40000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Deferred Tax Liabilities</TableCell>
-                                            <TableCell className="text-right font-medium">$5,950.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(5950)}</TableCell>
                                         </TableRow>
                                         <TableRow className="border-t bg-muted/30">
                                             <TableCell className="pl-4 font-semibold">Total Long-term Liabilities</TableCell>
-                                            <TableCell className="text-right font-bold">$45,950.00</TableCell>
+                                            <TableCell className="text-right font-bold">{formatCurrency(45950)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -206,7 +207,7 @@ export default function BalanceSheetPage() {
                                 <TableBody>
                                     <TableRow className="border-t-2 bg-red-50 dark:bg-red-950/20">
                                         <TableCell className="text-lg font-bold">TOTAL LIABILITIES</TableCell>
-                                        <TableCell className="text-right text-lg font-bold text-red-600">$81,800.00</TableCell>
+                                        <TableCell className="text-right text-lg font-bold text-red-600">{formatCurrency(81800)}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -220,15 +221,15 @@ export default function BalanceSheetPage() {
                                     <TableBody>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Owner&apos;s Equity</TableCell>
-                                            <TableCell className="text-right font-medium">$100,000.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(100000)}</TableCell>
                                         </TableRow>
                                         <TableRow className="hover:bg-muted/50">
                                             <TableCell className="pl-8">Retained Earnings</TableCell>
-                                            <TableCell className="text-right font-medium">$66,100.00</TableCell>
+                                            <TableCell className="text-right font-medium">{formatCurrency(66100)}</TableCell>
                                         </TableRow>
                                         <TableRow className="border-t-2 bg-green-50 dark:bg-green-950/20">
                                             <TableCell className="text-lg font-bold">TOTAL EQUITY</TableCell>
-                                            <TableCell className="text-right text-lg font-bold text-green-600">$166,100.00</TableCell>
+                                            <TableCell className="text-right text-lg font-bold text-green-600">{formatCurrency(166100)}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
@@ -241,7 +242,7 @@ export default function BalanceSheetPage() {
                                 <TableBody>
                                     <TableRow className="bg-primary/5">
                                         <TableCell className="text-xl font-bold">TOTAL LIABILITIES & EQUITY</TableCell>
-                                        <TableCell className="text-right text-xl font-bold text-primary">$247,900.00</TableCell>
+                                        <TableCell className="text-right text-xl font-bold text-primary">{formatCurrency(247900)}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -282,7 +283,7 @@ export default function BalanceSheetPage() {
                         <CardTitle className="text-sm font-medium">Working Capital</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">$102,050</div>
+                        <div className="text-2xl font-bold text-green-600">{formatCurrency(102050)}</div>
                         <p className="text-xs text-muted-foreground mt-1">
                             Current Assets - Current Liabilities
                         </p>

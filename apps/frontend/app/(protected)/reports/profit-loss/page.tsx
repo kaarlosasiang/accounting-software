@@ -16,14 +16,15 @@ import {
     TableRow,
 } from "@/components/ui/table"
 import { Download, FileText } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 export default function ProfitLossPage() {
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Profit & Loss Statement</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Profit & Loss Statement</h1>
+                    <p className="text-muted-foreground mt-2">
                         Income and expenses for the selected period
                     </p>
                 </div>
@@ -61,20 +62,24 @@ export default function ProfitLossPage() {
                             <Table>
                                 <TableBody>
                                     <TableRow>
-                                        <TableCell className="font-medium">Professional Services</TableCell>
-                                        <TableCell className="text-right text-green-600 font-semibold">$45,000.00</TableCell>
+                                        <TableCell className="font-medium">Services Rendered (Salon/Spa)</TableCell>
+                                        <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(38250)}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell className="font-medium">Consulting Revenue</TableCell>
-                                        <TableCell className="text-right text-green-600 font-semibold">$28,500.00</TableCell>
+                                        <TableCell className="font-medium">Food Sales</TableCell>
+                                        <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(25500)}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell className="font-medium">Recurring Revenue</TableCell>
-                                        <TableCell className="text-right text-green-600 font-semibold">$15,200.00</TableCell>
+                                        <TableCell className="font-medium">Non-Food Sales</TableCell>
+                                        <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(17000)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">Other Income</TableCell>
+                                        <TableCell className="text-right text-green-600 font-semibold">{formatCurrency(4250)}</TableCell>
                                     </TableRow>
                                     <TableRow className="border-t-2">
                                         <TableCell className="font-bold">Total Revenue</TableCell>
-                                        <TableCell className="text-right font-bold text-green-600">$88,700.00</TableCell>
+                                        <TableCell className="text-right font-bold text-green-600">{formatCurrency(85000)}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -85,28 +90,32 @@ export default function ProfitLossPage() {
                             <Table>
                                 <TableBody>
                                     <TableRow>
-                                        <TableCell className="font-medium">Office Expenses</TableCell>
-                                        <TableCell className="text-right text-red-600">$3,450.00</TableCell>
+                                        <TableCell className="font-medium">Cost of Goods Sold (Food)</TableCell>
+                                        <TableCell className="text-right text-red-600">{formatCurrency(15300)}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell className="font-medium">Software & Tools</TableCell>
-                                        <TableCell className="text-right text-red-600">$1,299.00</TableCell>
+                                        <TableCell className="font-medium">Cost of Goods Sold (Non-Food)</TableCell>
+                                        <TableCell className="text-right text-red-600">{formatCurrency(8500)}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell className="font-medium">Professional Services</TableCell>
-                                        <TableCell className="text-right text-red-600">$2,800.00</TableCell>
+                                        <TableCell className="font-medium">Salon/Spa Supplies</TableCell>
+                                        <TableCell className="text-right text-red-600">{formatCurrency(5250)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">Rent & Utilities</TableCell>
+                                        <TableCell className="text-right text-red-600">{formatCurrency(8000)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">Salaries & Wages</TableCell>
+                                        <TableCell className="text-right text-red-600">{formatCurrency(12000)}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell className="font-medium">Marketing & Advertising</TableCell>
-                                        <TableCell className="text-right text-red-600">$4,200.00</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell className="font-medium">Travel & Entertainment</TableCell>
-                                        <TableCell className="text-right text-red-600">$1,850.00</TableCell>
+                                        <TableCell className="text-right text-red-600">{formatCurrency(2450)}</TableCell>
                                     </TableRow>
                                     <TableRow className="border-t-2">
                                         <TableCell className="font-bold">Total Expenses</TableCell>
-                                        <TableCell className="text-right font-bold text-red-600">$13,599.00</TableCell>
+                                        <TableCell className="text-right font-bold text-red-600">{formatCurrency(51500)}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -117,7 +126,7 @@ export default function ProfitLossPage() {
                                 <TableBody>
                                     <TableRow>
                                         <TableCell className="text-lg font-bold">Net Income</TableCell>
-                                        <TableCell className="text-right text-lg font-bold text-blue-600">$75,101.00</TableCell>
+                                        <TableCell className="text-right text-lg font-bold text-blue-600">{formatCurrency(33500)}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>

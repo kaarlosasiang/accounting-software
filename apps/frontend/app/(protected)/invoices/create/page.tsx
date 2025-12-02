@@ -15,7 +15,7 @@ export default function CreateInvoicePage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6">
+        <div className="flex flex-col gap-6 pb-8">
             <div className="flex items-center gap-4">
                 <Link href="/invoices">
                     <Button variant="ghost" size="icon">
@@ -23,21 +23,17 @@ export default function CreateInvoicePage() {
                     </Button>
                 </Link>
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Create Invoice</h1>
-                    <p className="text-muted-foreground">
-                        Create a new invoice for your client
-                    </p>
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Create Invoice</h1>
+                    <p className="text-muted-foreground mt-1">Create a new invoice for your client</p>
                 </div>
             </div>
 
-            <Card>
-                <CardHeader>
+            <Card className="border-border/50">
+                <CardHeader className="border-b border-border/50 bg-muted/30">
                     <CardTitle>Invoice Details</CardTitle>
-                    <CardDescription>
-                        Fill in the information below to create a new invoice
-                    </CardDescription>
+                    <CardDescription>Fill in the information below to create a new invoice</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <InvoiceForm onSuccess={handleSuccess} />
                 </CardContent>
             </Card>

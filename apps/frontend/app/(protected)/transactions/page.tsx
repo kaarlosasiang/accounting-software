@@ -46,6 +46,7 @@ import {
     TrendingDown,
 } from "lucide-react"
 import { TransactionForm } from "@/components/forms/transaction-form/form"
+import { formatCurrency } from "@/lib/utils"
 
 interface Transaction {
     id: string
@@ -121,13 +122,18 @@ export default function TransactionsPage() {
     const [filterType, setFilterType] = useState<string>("all")
     const [filterStatus, setFilterStatus] = useState<string>("all")
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [startDate, setStartDate] = useState<string>("")
+    const [endDate, setEndDate] = useState<string>("")
 
     const filteredTransactions = transactions.filter(transaction => {
         const matchesSearch = transaction.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
             transaction.id.toLowerCase().includes(searchQuery.toLowerCase())
         const matchesType = filterType === "all" || transaction.type === filterType
         const matchesStatus = filterStatus === "all" || transaction.status === filterStatus
-        return matchesSearch && matchesType && matchesStatus
+        const txDate = new Date(transaction.date)
+        const withinStart = !startDate || txDate >= new Date(startDate)
+        const withinEnd = !endDate || txDate <= new Date(endDate)
+        return matchesSearch && matchesType && matchesStatus && withinStart && withinEnd
     })
 
     const totalIncome = transactions
@@ -139,21 +145,23 @@ export default function TransactionsPage() {
         .reduce((sum, t) => sum + t.amount, 0)
 
     const netIncome = totalIncome - totalExpenses
+    const pendingIncome = transactions.filter(t => t.type === 'income' && t.status === 'pending').reduce((s,t)=>s+t.amount,0)
+    const incomeCompletionPct = (totalIncome + pendingIncome) > 0 ? (totalIncome / (totalIncome + pendingIncome)) * 100 : 0
+    const expenseSharePct = totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0
+    const netMarginPct = totalIncome > 0 ? (netIncome / totalIncome) * 100 : 0
 
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6 pb-8">
+            {/* Header */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
-                    <p className="text-muted-foreground">
-                        Manage and track all your financial transactions
-                    </p>
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Transactions</h1>
+                    <p className="text-muted-foreground mt-1">Manage and track all your financial transactions</p>
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Transaction
+                        <Button className="shadow-md hover:shadow-lg transition-all">
+                            <Plus className="mr-2 h-4 w-4" /> New Transaction
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -170,72 +178,85 @@ export default function TransactionsPage() {
 
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Income</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-green-600" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Income</CardTitle>
+                        <div className="rounded-full bg-green-500/10 p-2.5 group-hover:bg-green-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <TrendingUp className="h-4 w-4 text-green-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">
-                            ${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            This period
-                        </p>
+                                                <div className="text-2xl font-bold">{formatCurrency(totalIncome)}</div>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <div className="flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full">
+                                                        <TrendingUp className="h-3 w-3" />
+                                                        <span>{incomeCompletionPct.toFixed(1)}%</span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">completion</p>
+                                                </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                        <TrendingDown className="h-4 w-4 text-red-600" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
+                        <div className="rounded-full bg-red-500/10 p-2.5 group-hover:bg-red-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <TrendingDown className="h-4 w-4 text-red-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-600">
-                            ${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            This period
-                        </p>
+                                                <div className="text-2xl font-bold">{formatCurrency(totalExpenses)}</div>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <div className="flex items-center gap-1 text-xs text-red-600 bg-red-500/10 px-2 py-0.5 rounded-full">
+                                                        <TrendingDown className="h-3 w-3" />
+                                                        <span>{expenseSharePct.toFixed(1)}%</span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">of income</p>
+                                                </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Net Income</CardTitle>
-                        <Receipt className="h-4 w-4 text-blue-600" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Net Income</CardTitle>
+                        <div className="rounded-full bg-blue-500/10 p-2.5 group-hover:bg-blue-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Receipt className="h-4 w-4 text-blue-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold ${netIncome >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                            ${netIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Income - Expenses
-                        </p>
+                                                <div className={`text-2xl font-bold ${netIncome >= 0 ? 'text-blue-600' : 'text-red-600'}`}>{formatCurrency(netIncome)}</div>
+                                                <div className="flex items-center gap-2 mt-2">
+                                                    <div className="flex items-center gap-1 text-xs ${netIncome >=0 ? 'text-blue-600' : 'text-red-600'} bg-blue-500/10 px-2 py-0.5 rounded-full">
+                                                        <Receipt className="h-3 w-3" />
+                                                        <span>{netMarginPct.toFixed(1)}%</span>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">margin</p>
+                                                </div>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Filters and Search */}
-            <Card>
-                <CardHeader>
+            <Card className="border-border/50">
+                <CardHeader className="border-b border-border/50 bg-muted/30">
                     <CardTitle>All Transactions</CardTitle>
-                    <CardDescription>
-                        View and manage all your transactions
-                    </CardDescription>
+                    <CardDescription>View and manage all your transactions</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <div className="flex flex-col gap-4 mb-4">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="relative flex-1">
+                        <div className="grid gap-4 md:grid-cols-6">
+                            <div className="relative md:col-span-2">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search transactions..."
+                                    placeholder="Search by ID or description..."
                                     className="pl-8"
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                 />
                             </div>
                             <Select value={filterType} onValueChange={setFilterType}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Type" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -245,7 +266,7 @@ export default function TransactionsPage() {
                                 </SelectContent>
                             </Select>
                             <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -255,9 +276,30 @@ export default function TransactionsPage() {
                                     <SelectItem value="failed">Failed</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline" size="icon">
-                                <Download className="h-4 w-4" />
+                            <Input
+                              type="date"
+                              value={startDate}
+                              onChange={(e)=>setStartDate(e.target.value)}
+                              className="w-full"
+                              placeholder="Start date"
+                            />
+                            <Input
+                              type="date"
+                              value={endDate}
+                              onChange={(e)=>setEndDate(e.target.value)}
+                              className="w-full"
+                              placeholder="End date"
+                            />
+                        </div>
+                        <div className="flex justify-end">
+                            <Button variant="outline" size="sm" className="hover:bg-accent/50">
+                                <Download className="mr-2 h-4 w-4" /> Export CSV
                             </Button>
+                            {(startDate || endDate) && (
+                              <Button variant="ghost" size="sm" className="ml-2" onClick={()=>{setStartDate('');setEndDate('')}}>
+                                Clear Dates
+                              </Button>
+                            )}
                         </div>
                     </div>
 
@@ -295,7 +337,7 @@ export default function TransactionsPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className={transaction.type === "income" ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-                                            {transaction.type === "income" ? "+" : "-"}${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
                                         </TableCell>
                                         <TableCell>
                                             <Badge

@@ -58,98 +58,129 @@ const expenseData = [
 
 export default function AnalyticsPage() {
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6 pb-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+                        Analytics
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
                         Detailed insights and analytics for your business
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <Select defaultValue="2025">
-                        <SelectTrigger className="w-[120px]">
-                            <SelectValue placeholder="Year" />
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Select defaultValue="year">
+                        <SelectTrigger className="w-40 border-border/60 hover:border-border transition-colors">
+                            <SelectValue placeholder="Select period" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="2025">2025</SelectItem>
-                            <SelectItem value="2024">2024</SelectItem>
-                            <SelectItem value="2023">2023</SelectItem>
+                            <SelectItem value="month">This Month</SelectItem>
+                            <SelectItem value="quarter">This Quarter</SelectItem>
+                            <SelectItem value="year">This Year</SelectItem>
+                            <SelectItem value="custom">Custom Range</SelectItem>
                         </SelectContent>
                     </Select>
-                    <Button variant="outline">
+                    <Button variant="outline" size="sm" className="hover:bg-accent/50">
                         <Download className="mr-2 h-4 w-4" />
                         Export Report
+                    </Button>
+                    <Button size="sm" className="shadow-md hover:shadow-lg transition-all">
+                        <TrendingUp className="mr-2 h-4 w-4" />
+                        Generate Report
                     </Button>
                 </div>
             </div>
 
             {/* Key Metrics */}
-            <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Revenue</CardTitle>
+                        <div className="rounded-full bg-green-500/10 p-2.5 group-hover:bg-green-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <DollarSign className="h-4 w-4 text-green-600 dark:text-green-500" />
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
                         <div className="text-2xl font-bold">$697,700</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <TrendingUp className="h-3 w-3 text-green-600" />
-                            <span className="text-green-600">+12.5%</span> from last year
-                        </p>
+                        <div className="flex items-center gap-1 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500 font-medium bg-green-500/10 px-2 py-0.5 rounded-full">
+                                <TrendingUp className="h-3 w-3" />
+                                <span>+12.5%</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">from last year</span>
+                        </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Expenses</CardTitle>
+                        <div className="rounded-full bg-red-500/10 p-2.5 group-hover:bg-red-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <DollarSign className="h-4 w-4 text-red-600 dark:text-red-500" />
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
                         <div className="text-2xl font-bold">$169,550</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <TrendingUp className="h-3 w-3 text-red-600" />
-                            <span className="text-red-600">+8.2%</span> from last year
-                        </p>
+                        <div className="flex items-center gap-1 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-red-600 dark:text-red-500 font-medium bg-red-500/10 px-2 py-0.5 rounded-full">
+                                <TrendingUp className="h-3 w-3" />
+                                <span>+8.2%</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">from last year</span>
+                        </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Net Profit</CardTitle>
+                        <div className="rounded-full bg-blue-500/10 p-2.5 group-hover:bg-blue-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <DollarSign className="h-4 w-4 text-blue-600 dark:text-blue-500" />
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
                         <div className="text-2xl font-bold">$528,150</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <TrendingUp className="h-3 w-3 text-green-600" />
-                            <span className="text-green-600">+14.3%</span> from last year
-                        </p>
+                        <div className="flex items-center gap-1 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500 font-medium bg-green-500/10 px-2 py-0.5 rounded-full">
+                                <TrendingUp className="h-3 w-3" />
+                                <span>+14.3%</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">from last year</span>
+                        </div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Profit Margin</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Profit Margin</CardTitle>
+                        <div className="rounded-full bg-purple-500/10 p-2.5 group-hover:bg-purple-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-500" />
+                        </div>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="relative">
                         <div className="text-2xl font-bold">75.7%</div>
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
-                            <TrendingUp className="h-3 w-3 text-green-600" />
-                            <span className="text-green-600">+1.3%</span> from last year
-                        </p>
+                        <div className="flex items-center gap-1 mt-2">
+                            <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500 font-medium bg-green-500/10 px-2 py-0.5 rounded-full">
+                                <TrendingUp className="h-3 w-3" />
+                                <span>+1.3%</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">from last year</span>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
 
             <Tabs defaultValue="revenue" className="space-y-4">
-                <TabsList>
-                    <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
-                    <TabsTrigger value="income">Income Breakdown</TabsTrigger>
-                    <TabsTrigger value="expenses">Expense Analysis</TabsTrigger>
+                <TabsList className="bg-muted/50">
+                    <TabsTrigger value="revenue" className="data-[state=active]:bg-background">Revenue Analysis</TabsTrigger>
+                    <TabsTrigger value="income" className="data-[state=active]:bg-background">Income Breakdown</TabsTrigger>
+                    <TabsTrigger value="expenses" className="data-[state=active]:bg-background">Expense Analysis</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="revenue" className="space-y-4">
-                    <Card>
-                        <CardHeader>
+                    <Card className="border-border/50">
+                        <CardHeader className="border-b border-border/50 bg-muted/30">
                             <CardTitle>Revenue vs Expenses vs Profit</CardTitle>
                             <CardDescription>
                                 Monthly comparison of revenue, expenses, and profit
@@ -190,8 +221,8 @@ export default function AnalyticsPage() {
                 </TabsContent>
 
                 <TabsContent value="income" className="space-y-4">
-                    <Card>
-                        <CardHeader>
+                    <Card className="border-border/50">
+                        <CardHeader className="border-b border-border/50 bg-muted/30">
                             <CardTitle>Income by Category</CardTitle>
                             <CardDescription>
                                 Revenue breakdown by service category
@@ -222,8 +253,8 @@ export default function AnalyticsPage() {
                 </TabsContent>
 
                 <TabsContent value="expenses" className="space-y-4">
-                    <Card>
-                        <CardHeader>
+                    <Card className="border-border/50">
+                        <CardHeader className="border-b border-border/50 bg-muted/30">
                             <CardTitle>Expense by Category</CardTitle>
                             <CardDescription>
                                 Expense breakdown by category

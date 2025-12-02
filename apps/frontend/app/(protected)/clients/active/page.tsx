@@ -35,8 +35,11 @@ import {
     Mail,
     Phone,
     Plus,
+    TrendingUp,
+    Download,
 } from "lucide-react"
 import { ClientForm } from "@/components/forms/client-form/form"
+import { formatCurrency } from "@/lib/utils"
 
 interface Client {
     id: string
@@ -91,20 +94,39 @@ export default function ActiveClientsPage() {
     const [clients] = useState<Client[]>(activeClients)
     const [searchQuery, setSearchQuery] = useState("")
     const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const [startDate, setStartDate] = useState("")
+    const [endDate, setEndDate] = useState("")
 
-    const filteredClients = clients.filter(client =>
-        client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        client.company.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const handleExportCSV = () => {
+        const csv = [
+            ["Client ID", "Name", "Email", "Phone", "Company", "Total Invoiced", "Outstanding Balance"],
+            ...filteredClients.map(c => [c.id, c.name, c.email, c.phone, c.company, c.totalInvoiced, c.outstandingBalance])
+        ].map(row => row.join(",")).join("\n")
+        const blob = new Blob([csv], { type: "text/csv" })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = "active-clients.csv"
+        a.click()
+    }
+
+    const filteredClients = clients.filter(client => {
+        const matchesSearch = client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            client.company.toLowerCase().includes(searchQuery.toLowerCase())
+        return matchesSearch
+    })
 
     const totalRevenue = clients.reduce((sum, c) => sum + c.totalInvoiced, 0)
+    const totalOutstanding = clients.reduce((sum, c) => sum + c.outstandingBalance, 0)
+    const avgRevenue = clients.length > 0 ? (totalRevenue / clients.length).toFixed(0) : "0"
+    const collectionRate = totalRevenue > 0 ? (((totalRevenue - totalOutstanding) / totalRevenue) * 100).toFixed(1) : "0.0"
 
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Active Clients</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Active Clients</h1>
+                    <p className="text-muted-foreground mt-2">
                         Clients with active projects and engagements
                     </p>
                 </div>
@@ -128,48 +150,80 @@ export default function ActiveClientsPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-                <Card>
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-                        <Users className="h-4 w-4 text-green-600" />
+                        <div className="rounded-full bg-green-500/10 p-2.5 group-hover:bg-green-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Users className="h-4 w-4 text-green-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold text-green-600">{clients.length}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Currently active
-                        </p>
+                        <div className="flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{avgRevenue} avg value</span>
+                        </div>
                     </CardContent>
                 </Card>
-                <Card>
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <Building2 className="h-4 w-4 text-blue-600" />
+                        <div className="rounded-full bg-purple-500/10 p-2.5 group-hover:bg-purple-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Building2 className="h-4 w-4 text-purple-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">
-                            ${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        <div className="text-2xl font-bold text-purple-600">
+                            {formatCurrency(totalRevenue)}
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            From active clients
-                        </p>
+                        <div className="flex items-center gap-1 text-xs text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{collectionRate}% collected</span>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+                        <div className="rounded-full bg-orange-500/10 p-2.5 group-hover:bg-orange-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Building2 className="h-4 w-4 text-orange-600" />
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-orange-600">
+                            {formatCurrency(totalOutstanding)}
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-orange-600 bg-orange-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{((totalOutstanding/totalRevenue)*100).toFixed(1)}% of revenue</span>
+                        </div>
                     </CardContent>
                 </Card>
             </div>
 
-            <Card>
+            <Card className="border border-border/50">
                 <CardHeader>
                     <CardTitle>Active Clients</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col gap-4 mb-4">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search clients..."
-                                className="pl-8"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search clients..."
+                                    className="pl-8"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <Button variant="outline" onClick={handleExportCSV}>
+                                <Download className="mr-2 h-4 w-4" />
+                                Export CSV
+                            </Button>
                         </div>
                     </div>
 
@@ -214,11 +268,11 @@ export default function ActiveClientsPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="font-semibold">
-                                            ${client.totalInvoiced.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            {formatCurrency(client.totalInvoiced)}
                                         </TableCell>
                                         <TableCell>
                                             <span className={client.outstandingBalance > 0 ? "text-orange-600 font-semibold" : "text-muted-foreground"}>
-                                                ${client.outstandingBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                {formatCurrency(client.outstandingBalance)}
                                             </span>
                                         </TableCell>
                                         <TableCell>
