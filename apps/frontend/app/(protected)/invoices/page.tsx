@@ -38,8 +38,10 @@ import {
     Send,
     Eye,
     Edit,
+    TrendingUp,
 } from "lucide-react"
 import Link from "next/link"
+import { formatCurrency } from "@/lib/utils"
 
 interface Invoice {
     id: string
@@ -51,63 +53,75 @@ interface Invoice {
     amount: number
     status: "draft" | "sent" | "paid" | "overdue" | "cancelled"
     items: number
+    serviceType: "Food" | "Non-Food" | "Services"
+    description: string
 }
 
 const mockInvoices: Invoice[] = [
     {
         id: "INV-001",
         invoiceNumber: "2025-001",
-        client: "ABC Corporation",
-        clientEmail: "billing@abccorp.com",
+        client: "Maria's Salon",
+        clientEmail: "billing@mariasalon.com",
         issueDate: "2025-11-01",
         dueDate: "2025-11-30",
-        amount: 5000.00,
+        amount: 2850.00,
         status: "paid",
-        items: 3
+        items: 3,
+        serviceType: "Services",
+        description: "Hair styling and spa treatment services"
     },
     {
         id: "INV-002",
         invoiceNumber: "2025-002",
-        client: "XYZ Industries",
-        clientEmail: "accounts@xyzind.com",
+        client: "Juan's Grocery",
+        clientEmail: "accounts@juangrocery.com",
         issueDate: "2025-11-10",
         dueDate: "2025-12-10",
-        amount: 3500.00,
+        amount: 12750.00,
         status: "sent",
-        items: 2
+        items: 5,
+        serviceType: "Food",
+        description: "Rice, cooking oil, and canned goods bulk order"
     },
     {
         id: "INV-003",
         invoiceNumber: "2025-003",
-        client: "Tech Solutions Ltd",
+        client: "Tech Solutions Office",
         clientEmail: "finance@techsol.com",
         issueDate: "2025-11-15",
         dueDate: "2025-12-15",
-        amount: 8750.00,
+        amount: 5250.00,
         status: "sent",
-        items: 5
+        items: 4,
+        serviceType: "Non-Food",
+        description: "Cleaning supplies and office supplies package"
     },
     {
         id: "INV-004",
         invoiceNumber: "2025-004",
-        client: "Global Enterprises",
-        clientEmail: "ap@globalent.com",
+        client: "Beauty Bar Manila",
+        clientEmail: "ap@beautybar.ph",
         issueDate: "2025-10-20",
         dueDate: "2025-11-19",
-        amount: 2250.00,
+        amount: 1850.00,
         status: "overdue",
-        items: 2
+        items: 2,
+        serviceType: "Services",
+        description: "Manicure and pedicure services"
     },
     {
         id: "INV-005",
         invoiceNumber: "2025-005",
-        client: "Startup Inc",
-        clientEmail: "billing@startup.io",
+        client: "Pedro's Carinderia",
+        clientEmail: "billing@pedros.ph",
         issueDate: "2025-11-18",
         dueDate: "2025-12-18",
-        amount: 4500.00,
+        amount: 8500.00,
         status: "draft",
-        items: 4
+        items: 6,
+        serviceType: "Food",
+        description: "Weekly food supplies - vegetables and condiments"
     },
 ]
 
@@ -115,6 +129,8 @@ export default function InvoicesPage() {
     const [invoices] = useState<Invoice[]>(mockInvoices)
     const [searchQuery, setSearchQuery] = useState("")
     const [filterStatus, setFilterStatus] = useState<string>("all")
+    const [startDate, setStartDate] = useState<string>("")
+    const [endDate, setEndDate] = useState<string>("")
 
     const filteredInvoices = invoices.filter(invoice => {
         const matchesSearch =
@@ -122,7 +138,10 @@ export default function InvoicesPage() {
             invoice.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
             invoice.id.toLowerCase().includes(searchQuery.toLowerCase())
         const matchesStatus = filterStatus === "all" || invoice.status === filterStatus
-        return matchesSearch && matchesStatus
+        const txDate = new Date(invoice.issueDate)
+        const withinStart = !startDate || txDate >= new Date(startDate)
+        const withinEnd = !endDate || txDate <= new Date(endDate)
+        return matchesSearch && matchesStatus && withinStart && withinEnd
     })
 
     const totalAmount = invoices.reduce((sum, inv) => sum + inv.amount, 0)
@@ -135,6 +154,10 @@ export default function InvoicesPage() {
     const overdueAmount = invoices
         .filter(inv => inv.status === "overdue")
         .reduce((sum, inv) => sum + inv.amount, 0)
+    const paidPct = totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0
+    const pendingPct = totalAmount > 0 ? (pendingAmount / totalAmount) * 100 : 0
+    const overduePct = totalAmount > 0 ? (overdueAmount / totalAmount) * 100 : 0
+    const collectionRate = (paidAmount + pendingAmount + overdueAmount) > 0 ? (paidAmount / (paidAmount + pendingAmount + overdueAmount)) * 100 : 0
 
     const getStatusColor = (status: Invoice["status"]) => {
         switch (status) {
@@ -148,94 +171,113 @@ export default function InvoicesPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6 pb-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
-                    <p className="text-muted-foreground">
-                        Create, send, and manage your invoices
-                    </p>
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Invoices</h1>
+                    <p className="text-muted-foreground mt-1">Create, send, and manage your invoices</p>
                 </div>
                 <Link href="/invoices/create">
-                    <Button>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create Invoice
+                    <Button className="shadow-md hover:shadow-lg transition-all">
+                        <Plus className="mr-2 h-4 w-4" /> Create Invoice
                     </Button>
                 </Link>
             </div>
 
             {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Invoiced</CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Total Invoiced</CardTitle>
+                        <div className="rounded-full bg-purple-500/10 p-2.5 group-hover:bg-purple-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <FileText className="h-4 w-4 text-purple-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
-                            ${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        <div className="text-2xl font-bold">{formatCurrency(totalAmount)}</div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1 text-xs text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                            <FileText className="h-3 w-3" />
+                            <span>{collectionRate.toFixed(1)}%</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">collection rate</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            {invoices.length} invoices
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{invoices.length} invoices</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Paid</CardTitle>
-                        <FileText className="h-4 w-4 text-green-600" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Paid</CardTitle>
+                        <div className="rounded-full bg-green-500/10 p-2.5 group-hover:bg-green-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <FileText className="h-4 w-4 text-green-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">
-                            ${paidAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        <div className="text-2xl font-bold">{formatCurrency(paidAmount)}</div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full">
+                            <TrendingUp className="h-3 w-3" />
+                            <span>{paidPct.toFixed(1)}%</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">of total</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            {invoices.filter(i => i.status === "paid").length} invoices
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{invoices.filter(i => i.status === "paid").length} invoices</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Pending</CardTitle>
-                        <FileText className="h-4 w-4 text-blue-600" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+                        <div className="rounded-full bg-blue-500/10 p-2.5 group-hover:bg-blue-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <FileText className="h-4 w-4 text-blue-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">
-                            ${pendingAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        <div className="text-2xl font-bold">{formatCurrency(pendingAmount)}</div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-full">
+                            <FileText className="h-3 w-3" />
+                            <span>{pendingPct.toFixed(1)}%</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">of total</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            {invoices.filter(i => i.status === "sent").length} invoices
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{invoices.filter(i => i.status === "sent").length} invoices</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Overdue</CardTitle>
-                        <FileText className="h-4 w-4 text-red-600" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Overdue</CardTitle>
+                        <div className="rounded-full bg-red-500/10 p-2.5 group-hover:bg-red-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <FileText className="h-4 w-4 text-red-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-600">
-                            ${overdueAmount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                        <div className="text-2xl font-bold">{formatCurrency(overdueAmount)}</div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1 text-xs text-red-600 bg-red-500/10 px-2 py-0.5 rounded-full">
+                            <FileText className="h-3 w-3" />
+                            <span>{overduePct.toFixed(1)}%</span>
+                          </div>
+                          <p className="text-xs text-muted-foreground">of total</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                            {invoices.filter(i => i.status === "overdue").length} invoices
-                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">{invoices.filter(i => i.status === "overdue").length} invoices</p>
                     </CardContent>
                 </Card>
             </div>
 
             {/* Invoices Table */}
-            <Card>
-                <CardHeader>
+            <Card className="border-border/50">
+                <CardHeader className="border-b border-border/50 bg-muted/30">
                     <CardTitle>All Invoices</CardTitle>
-                    <CardDescription>
-                        Manage your invoices and track payments
-                    </CardDescription>
+                    <CardDescription>Manage your invoices and track payments</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <div className="flex flex-col gap-4 mb-4">
-                        <div className="flex flex-col sm:flex-row gap-4">
-                            <div className="relative flex-1">
+                        <div className="grid gap-4 md:grid-cols-6">
+                            <div className="relative md:col-span-2">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     placeholder="Search invoices..."
@@ -245,7 +287,7 @@ export default function InvoicesPage() {
                                 />
                             </div>
                             <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectTrigger className="w-full">
                                     <SelectValue placeholder="Status" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -257,9 +299,16 @@ export default function InvoicesPage() {
                                     <SelectItem value="cancelled">Cancelled</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <Button variant="outline" size="icon">
-                                <Download className="h-4 w-4" />
+                            <Input type="date" value={startDate} onChange={(e)=>setStartDate(e.target.value)} placeholder="Start date" />
+                            <Input type="date" value={endDate} onChange={(e)=>setEndDate(e.target.value)} placeholder="End date" />
+                        </div>
+                        <div className="flex justify-end gap-2">
+                            <Button variant="outline" size="sm" className="hover:bg-accent/50">
+                                <Download className="mr-2 h-4 w-4" /> Export CSV
                             </Button>
+                            {(startDate || endDate) && (
+                              <Button variant="ghost" size="sm" onClick={()=>{setStartDate('');setEndDate('')}}>Clear Dates</Button>
+                            )}
                         </div>
                     </div>
 
@@ -269,6 +318,8 @@ export default function InvoicesPage() {
                                 <TableRow>
                                     <TableHead>Invoice #</TableHead>
                                     <TableHead>Client</TableHead>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Description</TableHead>
                                     <TableHead>Issue Date</TableHead>
                                     <TableHead>Due Date</TableHead>
                                     <TableHead>Amount</TableHead>
@@ -286,6 +337,18 @@ export default function InvoicesPage() {
                                                 <span className="text-xs text-muted-foreground">{invoice.clientEmail}</span>
                                             </div>
                                         </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className={
+                                                invoice.serviceType === "Services" ? "bg-purple-500/10 text-purple-600 border-purple-500/20" :
+                                                invoice.serviceType === "Food" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
+                                                "bg-green-500/10 text-green-600 border-green-500/20"
+                                            }>
+                                                {invoice.serviceType}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <span className="text-sm text-muted-foreground">{invoice.description}</span>
+                                        </TableCell>
                                         <TableCell>{new Date(invoice.issueDate).toLocaleDateString()}</TableCell>
                                         <TableCell>
                                             <span className={invoice.status === "overdue" ? "text-red-600 font-medium" : ""}>
@@ -293,7 +356,7 @@ export default function InvoicesPage() {
                                             </span>
                                         </TableCell>
                                         <TableCell className="font-semibold">
-                                            ${invoice.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            {formatCurrency(invoice.amount)}
                                         </TableCell>
                                         <TableCell>
                                             <Badge variant={getStatusColor(invoice.status)}>

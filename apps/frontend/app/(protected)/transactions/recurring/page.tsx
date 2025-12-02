@@ -35,6 +35,7 @@ import {
     Pause,
     Play,
 } from "lucide-react"
+import { formatCurrency } from "@/lib/utils"
 
 interface RecurringTransaction {
     id: string
@@ -106,10 +107,16 @@ const recurringTransactions: RecurringTransaction[] = [
 export default function RecurringTransactionsPage() {
     const [transactions] = useState<RecurringTransaction[]>(recurringTransactions)
     const [searchQuery, setSearchQuery] = useState("")
+    const [startDate, setStartDate] = useState<string>("")
+    const [endDate, setEndDate] = useState<string>("")
 
-    const filteredTransactions = transactions.filter(transaction =>
-        transaction.description.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    const filteredTransactions = transactions.filter(transaction => {
+        const matchesSearch = transaction.description.toLowerCase().includes(searchQuery.toLowerCase())
+        const txDate = new Date(transaction.nextDate)
+        const withinStart = !startDate || txDate >= new Date(startDate)
+        const withinEnd = !endDate || txDate <= new Date(endDate)
+        return matchesSearch && withinStart && withinEnd
+    })
 
     const activeIncome = transactions
         .filter(t => t.type === "income" && t.status === "active")
@@ -118,100 +125,105 @@ export default function RecurringTransactionsPage() {
     const activeExpenses = transactions
         .filter(t => t.type === "expense" && t.status === "active")
         .reduce((sum, t) => sum + t.amount, 0)
+    const activeCount = transactions.filter(t=>t.status==='active').length
+    const totalCount = transactions.length
+    const activePct = totalCount > 0 ? (activeCount / totalCount) * 100 : 0
+    const netRecurring = activeIncome - activeExpenses
+    const recurringMarginPct = activeIncome > 0 ? (netRecurring / activeIncome) * 100 : 0
 
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6 pb-8">
+            {/* Header */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Recurring Transactions</h1>
-                    <p className="text-muted-foreground">
-                        Manage automated and recurring transactions
-                    </p>
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Recurring Transactions</h1>
+                    <p className="text-muted-foreground mt-1">Manage automated and recurring transactions</p>
                 </div>
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Recurring Transaction
+                        <Button className="shadow-md hover:shadow-lg transition-all">
+                            <Plus className="mr-2 h-4 w-4" /> Add Recurring Transaction
                         </Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
                             <DialogTitle>Add Recurring Transaction</DialogTitle>
-                            <DialogDescription>
-                                Set up a new recurring transaction
-                            </DialogDescription>
+                            <DialogDescription>Set up a new recurring transaction</DialogDescription>
                         </DialogHeader>
-                        <div className="text-center py-8 text-muted-foreground">
-                            Recurring transaction form coming soon
-                        </div>
+                        <div className="text-center py-8 text-muted-foreground">Recurring transaction form coming soon</div>
                     </DialogContent>
                 </Dialog>
             </div>
 
+            {/* Summary Cards */}
             <div className="grid gap-4 md:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Monthly Income</CardTitle>
-                        <Repeat className="h-4 w-4 text-green-600" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Income</CardTitle>
+                        <div className="rounded-full bg-green-500/10 p-2.5 group-hover:bg-green-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Repeat className="h-4 w-4 text-green-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">
-                            ${activeIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Active recurring income
-                        </p>
+                        <div className="text-2xl font-bold">${activeIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                        <p className="text-xs text-muted-foreground mt-2">Active recurring income</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Monthly Expenses</CardTitle>
-                        <Repeat className="h-4 w-4 text-red-600" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Monthly Expenses</CardTitle>
+                        <div className="rounded-full bg-red-500/10 p-2.5 group-hover:bg-red-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Repeat className="h-4 w-4 text-red-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-red-600">
-                            ${activeExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            Active recurring expenses
-                        </p>
+                        <div className="text-2xl font-bold">${activeExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}</div>
+                        <p className="text-xs text-muted-foreground mt-2">Active recurring expenses</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Transactions</CardTitle>
-                        <Repeat className="h-4 w-4 text-muted-foreground" />
+                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
+                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">Active Transactions</CardTitle>
+                        <div className="rounded-full bg-blue-500/10 p-2.5 group-hover:bg-blue-500/20 transition-colors duration-300 group-hover:scale-110">
+                            <Repeat className="h-4 w-4 text-blue-600" />
+                        </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">
-                            {transactions.filter(t => t.status === "active").length}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            {transactions.filter(t => t.status === "paused").length} paused
-                        </p>
+                        <div className="text-2xl font-bold">{transactions.filter(t => t.status === 'active').length}</div>
+                        <p className="text-xs text-muted-foreground mt-2">{transactions.filter(t => t.status === 'paused').length} paused</p>
                     </CardContent>
                 </Card>
             </div>
 
-            <Card>
-                <CardHeader>
+            {/* Filters and Search */}
+            <Card className="border-border/50">
+                <CardHeader className="border-b border-border/50 bg-muted/30">
                     <CardTitle>Recurring Transactions</CardTitle>
-                    <CardDescription>
-                        Automated transactions that repeat on a schedule
-                    </CardDescription>
+                    <CardDescription>Automated transactions that repeat on a schedule</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                     <div className="flex flex-col gap-4 mb-4">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search recurring transactions..."
-                                className="pl-8"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                        <div className="grid gap-4 md:grid-cols-4">
+                            <div className="relative md:col-span-2">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search recurring transactions..."
+                                    className="pl-8"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+                            <Input type="date" value={startDate} onChange={(e)=>setStartDate(e.target.value)} />
+                            <Input type="date" value={endDate} onChange={(e)=>setEndDate(e.target.value)} />
                         </div>
+                        {(startDate || endDate) && (
+                          <div className="flex justify-end">
+                            <Button variant="ghost" size="sm" onClick={()=>{setStartDate('');setEndDate('')}}>Clear Dates</Button>
+                          </div>
+                        )}
                     </div>
 
                     <div className="rounded-md border">
@@ -246,7 +258,7 @@ export default function RecurringTransactionsPage() {
                                         </TableCell>
                                         <TableCell>{transaction.category}</TableCell>
                                         <TableCell className={transaction.type === "income" ? "text-green-600 font-semibold" : "text-red-600 font-semibold"}>
-                                            {transaction.type === "income" ? "+" : "-"}${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                            {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
                                         </TableCell>
                                         <TableCell className="capitalize">{transaction.frequency}</TableCell>
                                         <TableCell>{new Date(transaction.nextDate).toLocaleDateString()}</TableCell>

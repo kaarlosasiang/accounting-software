@@ -21,14 +21,15 @@ import { Download, Calendar, AlertCircle, FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
+import { formatCurrency } from "@/lib/utils"
 
 export default function TaxSummaryPage() {
     return (
-        <div className="flex flex-col gap-6 p-6">
-            <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Tax Summary</h1>
-                    <p className="text-muted-foreground">
+                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Tax Summary</h1>
+                    <p className="text-muted-foreground mt-2">
                         Tax obligations, deductions, and estimated payments for the period
                     </p>
                 </div>
@@ -54,9 +55,9 @@ export default function TaxSummaryPage() {
             {/* Alert Banner */}
             <Alert>
                 <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Tax Filing Reminder</AlertTitle>
+                <AlertTitle>BIR Tax Filing Reminder</AlertTitle>
                 <AlertDescription>
-                    Q4 2025 estimated tax payment is due on January 15, 2026. Your estimated payment is $7,941.93.
+                    Q4 2025 quarterly tax return is due on January 25, 2026. Your estimated payment is {formatCurrency(2094)}.
                 </AlertDescription>
             </Alert>
 
@@ -67,7 +68,7 @@ export default function TaxSummaryPage() {
                         <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">$88,700</div>
+                        <div className="text-2xl font-bold">{formatCurrency(85000)}</div>
                         <p className="text-xs text-muted-foreground mt-1">Total income for 2025</p>
                     </CardContent>
                 </Card>
@@ -76,7 +77,7 @@ export default function TaxSummaryPage() {
                         <CardTitle className="text-sm font-medium">Deductions</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-green-600">$13,599</div>
+                        <div className="text-2xl font-bold text-green-600">{formatCurrency(51500)}</div>
                         <p className="text-xs text-muted-foreground mt-1">Tax-deductible expenses</p>
                     </CardContent>
                 </Card>
@@ -85,7 +86,7 @@ export default function TaxSummaryPage() {
                         <CardTitle className="text-sm font-medium">Taxable Income</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">$75,101</div>
+                        <div className="text-2xl font-bold">{formatCurrency(33500)}</div>
                         <p className="text-xs text-muted-foreground mt-1">After deductions</p>
                     </CardContent>
                 </Card>
@@ -94,8 +95,8 @@ export default function TaxSummaryPage() {
                         <CardTitle className="text-sm font-medium">Est. Tax Liability</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold text-orange-600">$31,768</div>
-                        <p className="text-xs text-muted-foreground mt-1">Total estimated taxes</p>
+                        <div className="text-2xl font-bold text-orange-600">{formatCurrency(8375)}</div>
+                        <p className="text-xs text-muted-foreground mt-1">BIR graduated income tax (≈25%)</p>
                     </CardContent>
                 </Card>
             </div>
@@ -122,23 +123,28 @@ export default function TaxSummaryPage() {
                                 </TableHeader>
                                 <TableBody>
                                     <TableRow>
-                                        <TableCell>Professional Services</TableCell>
-                                        <TableCell className="text-right font-medium">$45,000.00</TableCell>
-                                        <TableCell className="text-right">50.7%</TableCell>
+                                        <TableCell>Services Rendered (Salon/Spa)</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(38250)}</TableCell>
+                                        <TableCell className="text-right">45.0%</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell>Consulting Revenue</TableCell>
-                                        <TableCell className="text-right font-medium">$28,500.00</TableCell>
-                                        <TableCell className="text-right">32.1%</TableCell>
+                                        <TableCell>Food Sales</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(25500)}</TableCell>
+                                        <TableCell className="text-right">30.0%</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell>Recurring Revenue</TableCell>
-                                        <TableCell className="text-right font-medium">$15,200.00</TableCell>
-                                        <TableCell className="text-right">17.2%</TableCell>
+                                        <TableCell>Non-Food Sales</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(17000)}</TableCell>
+                                        <TableCell className="text-right">20.0%</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>Other Income</TableCell>
+                                        <TableCell className="text-right font-medium">{formatCurrency(4250)}</TableCell>
+                                        <TableCell className="text-right">5.0%</TableCell>
                                     </TableRow>
                                     <TableRow className="border-t-2 bg-muted/30">
                                         <TableCell className="font-bold">Total Gross Income</TableCell>
-                                        <TableCell className="text-right font-bold">$88,700.00</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(85000)}</TableCell>
                                         <TableCell className="text-right font-bold">100%</TableCell>
                                     </TableRow>
                                 </TableBody>
@@ -158,46 +164,46 @@ export default function TaxSummaryPage() {
                                 </TableHeader>
                                 <TableBody>
                                     <TableRow>
-                                        <TableCell>Office Expenses</TableCell>
-                                        <TableCell className="text-right">$3,450.00</TableCell>
+                                        <TableCell>Cost of Goods Sold (Food)</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(15300)}</TableCell>
                                         <TableCell className="text-right">100%</TableCell>
-                                        <TableCell className="text-right text-green-600">$3,450.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(15300)}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell>Software & Tools</TableCell>
-                                        <TableCell className="text-right">$1,299.00</TableCell>
+                                        <TableCell>Cost of Goods Sold (Non-Food)</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(8500)}</TableCell>
                                         <TableCell className="text-right">100%</TableCell>
-                                        <TableCell className="text-right text-green-600">$1,299.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(8500)}</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell>Professional Services</TableCell>
-                                        <TableCell className="text-right">$2,800.00</TableCell>
+                                        <TableCell>Salon/Spa Supplies</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(5250)}</TableCell>
                                         <TableCell className="text-right">100%</TableCell>
-                                        <TableCell className="text-right text-green-600">$2,800.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(5250)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>Rent & Utilities</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(8000)}</TableCell>
+                                        <TableCell className="text-right">100%</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(8000)}</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell>Salaries & Wages</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(12000)}</TableCell>
+                                        <TableCell className="text-right">100%</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(12000)}</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Marketing & Advertising</TableCell>
-                                        <TableCell className="text-right">$4,200.00</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(2450)}</TableCell>
                                         <TableCell className="text-right">100%</TableCell>
-                                        <TableCell className="text-right text-green-600">$4,200.00</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Travel & Entertainment</TableCell>
-                                        <TableCell className="text-right">$2,100.00</TableCell>
-                                        <TableCell className="text-right">50%</TableCell>
-                                        <TableCell className="text-right text-green-600">$1,050.00</TableCell>
-                                    </TableRow>
-                                    <TableRow>
-                                        <TableCell>Home Office</TableCell>
-                                        <TableCell className="text-right">$1,600.00</TableCell>
-                                        <TableCell className="text-right">50%</TableCell>
-                                        <TableCell className="text-right text-green-600">$800.00</TableCell>
+                                        <TableCell className="text-right text-green-600">{formatCurrency(2450)}</TableCell>
                                     </TableRow>
                                     <TableRow className="border-t-2 bg-green-50 dark:bg-green-950/20">
                                         <TableCell className="font-bold">Total Deductions</TableCell>
-                                        <TableCell className="text-right font-bold">$15,449.00</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(51500)}</TableCell>
                                         <TableCell className="text-right"></TableCell>
-                                        <TableCell className="text-right font-bold text-green-600">$13,599.00</TableCell>
+                                        <TableCell className="text-right font-bold text-green-600">{formatCurrency(51500)}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -208,7 +214,7 @@ export default function TaxSummaryPage() {
                                 <TableBody>
                                     <TableRow className="bg-primary/5">
                                         <TableCell className="text-lg font-bold">Net Taxable Income</TableCell>
-                                        <TableCell className="text-right text-lg font-bold text-primary">$75,101.00</TableCell>
+                                        <TableCell className="text-right text-lg font-bold text-primary">{formatCurrency(33500)}</TableCell>
                                     </TableRow>
                                 </TableBody>
                             </Table>
@@ -220,9 +226,9 @@ export default function TaxSummaryPage() {
             {/* Tax Calculations */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Estimated Tax Liability</CardTitle>
+                    <CardTitle>Estimated Tax Liability (BIR)</CardTitle>
                     <CardDescription>
-                        Breakdown of federal, state, and self-employment taxes
+                        Breakdown of income tax and business tax obligations
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -230,37 +236,37 @@ export default function TaxSummaryPage() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div className="space-y-1">
-                                    <h4 className="font-semibold">Federal Income Tax</h4>
-                                    <p className="text-sm text-muted-foreground">Estimated at 22% marginal rate</p>
-                                    <Progress value={52} className="mt-2 w-64" />
+                                    <h4 className="font-semibold">Income Tax (Graduated Rates)</h4>
+                                    <p className="text-sm text-muted-foreground">Estimated at 25% effective rate per BIR tax table</p>
+                                    <Progress value={80} className="mt-2 w-64" />
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-orange-600">$16,522.22</div>
-                                    <Badge variant="outline" className="mt-1">52% of total</Badge>
+                                    <div className="text-2xl font-bold text-orange-600">{formatCurrency(6700)}</div>
+                                    <Badge variant="outline" className="mt-1">80% of total</Badge>
                                 </div>
                             </div>
 
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div className="space-y-1">
-                                    <h4 className="font-semibold">State Income Tax</h4>
-                                    <p className="text-sm text-muted-foreground">Estimated at 5% state rate</p>
-                                    <Progress value={12} className="mt-2 w-64" />
+                                    <h4 className="font-semibold">Percentage Tax (Non-VAT)</h4>
+                                    <p className="text-sm text-muted-foreground">3% of gross sales/receipts (if applicable)</p>
+                                    <Progress value={15} className="mt-2 w-64" />
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-orange-600">$3,755.05</div>
-                                    <Badge variant="outline" className="mt-1">12% of total</Badge>
+                                    <div className="text-2xl font-bold text-orange-600">{formatCurrency(1275)}</div>
+                                    <Badge variant="outline" className="mt-1">15% of total</Badge>
                                 </div>
                             </div>
 
                             <div className="flex items-center justify-between p-4 border rounded-lg">
                                 <div className="space-y-1">
-                                    <h4 className="font-semibold">Self-Employment Tax</h4>
-                                    <p className="text-sm text-muted-foreground">15.3% (Social Security + Medicare)</p>
-                                    <Progress value={36} className="mt-2 w-64" />
+                                    <h4 className="font-semibold">Withholding Tax Credits</h4>
+                                    <p className="text-sm text-muted-foreground">Creditable withholding tax from clients</p>
+                                    <Progress value={5} className="mt-2 w-64" />
                                 </div>
                                 <div className="text-right">
-                                    <div className="text-2xl font-bold text-orange-600">$11,490.45</div>
-                                    <Badge variant="outline" className="mt-1">36% of total</Badge>
+                                    <div className="text-2xl font-bold text-green-600">({formatCurrency(400)})</div>
+                                    <Badge variant="outline" className="mt-1">Tax credit</Badge>
                                 </div>
                             </div>
                         </div>
@@ -271,7 +277,7 @@ export default function TaxSummaryPage() {
                                     <h3 className="text-xl font-bold">Total Estimated Tax Liability</h3>
                                     <p className="text-sm text-muted-foreground mt-1">For tax year 2025</p>
                                 </div>
-                                <div className="text-3xl font-bold text-orange-600">$31,767.72</div>
+                                <div className="text-3xl font-bold text-orange-600">{formatCurrency(8375)}</div>
                             </div>
                         </div>
                     </div>
@@ -281,9 +287,9 @@ export default function TaxSummaryPage() {
             {/* Quarterly Payments */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Quarterly Estimated Tax Payments</CardTitle>
+                    <CardTitle>Quarterly Income Tax Returns (BIR Form 1701Q)</CardTitle>
                     <CardDescription>
-                        Schedule and track your quarterly tax payments
+                        Schedule and track your quarterly tax filings with BIR
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -299,39 +305,39 @@ export default function TaxSummaryPage() {
                         <TableBody>
                             <TableRow>
                                 <TableCell className="font-medium">Q1 2025</TableCell>
-                                <TableCell>April 15, 2025</TableCell>
-                                <TableCell className="text-right">$7,941.93</TableCell>
+                                <TableCell>May 15, 2025</TableCell>
+                                <TableCell className="text-right">{formatCurrency(2094)}</TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="default" className="bg-green-600">Paid</Badge>
                                 </TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell className="font-medium">Q2 2025</TableCell>
-                                <TableCell>June 15, 2025</TableCell>
-                                <TableCell className="text-right">$7,941.93</TableCell>
+                                <TableCell>August 15, 2025</TableCell>
+                                <TableCell className="text-right">{formatCurrency(2094)}</TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="default" className="bg-green-600">Paid</Badge>
                                 </TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell className="font-medium">Q3 2025</TableCell>
-                                <TableCell>September 15, 2025</TableCell>
-                                <TableCell className="text-right">$7,941.93</TableCell>
+                                <TableCell>November 15, 2025</TableCell>
+                                <TableCell className="text-right">{formatCurrency(2094)}</TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="default" className="bg-green-600">Paid</Badge>
                                 </TableCell>
                             </TableRow>
                             <TableRow>
                                 <TableCell className="font-medium">Q4 2025</TableCell>
-                                <TableCell>January 15, 2026</TableCell>
-                                <TableCell className="text-right">$7,941.93</TableCell>
+                                <TableCell>January 25, 2026</TableCell>
+                                <TableCell className="text-right">{formatCurrency(2094)}</TableCell>
                                 <TableCell className="text-right">
                                     <Badge variant="outline" className="text-orange-600">Due Soon</Badge>
                                 </TableCell>
                             </TableRow>
                             <TableRow className="border-t-2 bg-muted/30">
                                 <TableCell colSpan={2} className="font-bold">Total Annual Payment</TableCell>
-                                <TableCell className="text-right font-bold">$31,767.72</TableCell>
+                                <TableCell className="text-right font-bold">{formatCurrency(8375)}</TableCell>
                                 <TableCell></TableCell>
                             </TableRow>
                         </TableBody>
@@ -342,18 +348,18 @@ export default function TaxSummaryPage() {
             {/* Tax Documents */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Tax Documents & Forms</CardTitle>
+                    <CardTitle>BIR Tax Documents & Forms</CardTitle>
                     <CardDescription>
-                        Download and manage your tax-related documents
+                        Download and manage your BIR tax-related documents
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-3">
                         {[
-                            { name: "Schedule C - Profit or Loss from Business", form: "Schedule C", status: "Draft" },
-                            { name: "Form 1040-ES - Estimated Tax Worksheet", form: "1040-ES", status: "Ready" },
-                            { name: "Form W-9 - Request for Taxpayer ID", form: "W-9", status: "Completed" },
-                            { name: "Income & Expense Report 2025", form: "Report", status: "Ready" },
+                            { name: "BIR Form 1701Q - Quarterly Income Tax Return", form: "1701Q", status: "Draft" },
+                            { name: "BIR Form 2551Q - Quarterly Percentage Tax", form: "2551Q", status: "Ready" },
+                            { name: "BIR Form 0605 - Payment Form", form: "0605", status: "Completed" },
+                            { name: "Annual Income Tax Return (1701)", form: "1701", status: "Pending" },
                         ].map((doc, i) => (
                             <div key={i} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50">
                                 <div className="flex items-center gap-3">
