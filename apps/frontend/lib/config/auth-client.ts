@@ -1,5 +1,10 @@
 import { createAuthClient } from "better-auth/react";
-import { oneTapClient, emailOTPClient } from "better-auth/client/plugins";
+import {
+  adminClient,
+  oneTapClient,
+  emailOTPClient,
+  organizationClient,
+} from "better-auth/client/plugins";
 
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
@@ -11,6 +16,8 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 export const authClient = createAuthClient({
   baseURL: AUTH_BASE_URL,
   plugins: [
+    organizationClient(),
+    adminClient(),
     emailOTPClient(),
     ...(GOOGLE_CLIENT_ID
       ? [
@@ -31,6 +38,6 @@ export const {
   signIn,
   signUp,
   signOut,
-  // useActiveOrganization,
+  useActiveOrganization,
 } = authClient;
 

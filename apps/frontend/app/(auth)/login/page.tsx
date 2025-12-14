@@ -8,7 +8,7 @@ export default function LoginPage() {
         <div className="bg-background flex h-svh flex-col">
             <AuthNavbar/>
             <div className="w-full h-full px-6 md:px-10 flex items-center justify-center">
-                <LoginForm/>
+                <LoginForm className="max-w-sm"/>
             </div>
         </div>
     )

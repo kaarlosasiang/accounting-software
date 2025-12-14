@@ -1,3 +1,5 @@
+"use client";
+
 import { AppSidebar } from "@/components/common/app-sidebar";
 import { EmailVerificationBanner } from "@/components/common/auth/email-verification-banner";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
@@ -15,12 +17,9 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { withAuth } from "@/lib/auth/protected-route";
 
-export default function ProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <AppSidebar />
@@ -56,3 +55,5 @@ export default function ProtectedLayout({
     </SidebarProvider>
   );
 }
+
+export default withAuth(ProtectedLayout);
