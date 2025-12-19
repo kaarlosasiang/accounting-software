@@ -32,8 +32,6 @@ const defaultValues: FormValues = {
   email: "",
   username: "",
   phoneNumber: "",
-  companyId: "",
-  role: "",
   password: "",
   confirmPassword: "",
   rememberMe: true,
@@ -210,36 +208,6 @@ export function SignupForm({
               </p>
             )}
           </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="companyId">Company ID</FieldLabel>
-              <Input
-                id="companyId"
-                placeholder="acme-001"
-                aria-invalid={!!errors.companyId}
-                {...register("companyId")}
-              />
-              {errors.companyId && (
-                <p className="text-sm text-destructive">
-                  {errors.companyId.message}
-                </p>
-              )}
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="role">Role</FieldLabel>
-              <Input
-                id="role"
-                placeholder="admin"
-                aria-invalid={!!errors.role}
-                {...register("role")}
-              />
-              {errors.role && (
-                <p className="text-sm text-destructive">
-                  {errors.role.message}
-                </p>
-              )}
-            </Field>
-          </div>
           <Field>
             <FieldLabel htmlFor="password">Password</FieldLabel>
             <Input

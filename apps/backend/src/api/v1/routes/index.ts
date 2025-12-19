@@ -1,6 +1,8 @@
 import { Application } from "express";
 
 import authRoutes from "./auth.routes";
+import companyRoutes from "./company.routes";
+import subscriptionRoutes from "./subscription.routes";
 import userRoutes from "./user.routes";
 
 /**
@@ -17,8 +19,13 @@ export default (app: Application): void => {
   // User routes (API key middleware applied in app.ts)
   app.use(`${API_PREFIX}/users`, userRoutes);
 
+  // Subscription routes (mock endpoints)
+  app.use(`${API_PREFIX}/subscriptions`, subscriptionRoutes);
+
+  // Company routes
+  app.use(`${API_PREFIX}/companies`, companyRoutes);
+
   // Add more routes here as needed
-  // app.use(`${API_PREFIX}/companies`, companyRoutes);
   // app.use(`${API_PREFIX}/clients`, clientRoutes);
   // app.use(`${API_PREFIX}/invoices`, invoiceRoutes);
   // app.use(`${API_PREFIX}/transactions`, transactionRoutes);

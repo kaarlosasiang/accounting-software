@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 import type { Session, User } from "@/lib/types/auth";
-import type { LoginPayload, SignupPayload } from "@/lib/services/AuthService";
+import type { LoginPayload, SignupPayload } from "@/lib/services/auth.service";
 
 export interface AuthContextValue {
   // Session state

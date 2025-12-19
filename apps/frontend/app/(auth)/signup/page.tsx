@@ -1,3 +1,5 @@
+"use client";
+
 import { AuthNavbar } from "@/components/common/auth-navbar";
 import { SignupWithVerification } from "@/components/forms/register-form";
 import { useGuestRoute } from "@/lib/auth/protected-route";

@@ -318,7 +318,7 @@ export default function LandingPage() {
       : "";
 
     return (
-      <li className="flex items-start gap-2 text-sm">
+      <li className="flex items-start gap-2 text-xs">
         {Icon ? (
           <Icon className={`h-4 w-4 mt-0.5 flex-shrink-0 ${iconColor}`} />
         ) : (
@@ -580,117 +580,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Testimonials Section */}
-        {/* <section id="testimonials" className="w-full py-20 md:py-32">
-          <div className="container mx-auto px-4 md:px-6">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="flex flex-col items-center justify-center space-y-4 text-center mb-12"
-            >
-              <Badge
-                className="rounded-full px-4 py-1.5 text-sm font-medium"
-                variant="secondary"
-              >
-                Testimonials
-              </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                Loved by Teams Worldwide
-              </h2>
-              <p className="max-w-[800px] text-muted-foreground md:text-lg">
-                Don't just take our word for it. See what our customers have to
-                say about their experience.
-              </p>
-            </motion.div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {[
-                {
-                  quote:
-                    "CSV imports and simple categorization cut our month‑end close from 10 days to 3.",
-                  author: "Sarah Johnson",
-                  role: "Controller, TechCorp",
-                  rating: 5,
-                },
-                {
-                  quote:
-                    "Clear exports and steady progress helped us plan inventory and hiring with confidence.",
-                  author: "Michael Chen",
-                  role: "CFO, GrowthLabs",
-                  rating: 5,
-                },
-                {
-                  quote:
-                    "Migration was painless and the team is responsive and helpful.",
-                  author: "Emily Rodriguez",
-                  role: "Founder, StartupX",
-                  rating: 5,
-                },
-                {
-                  quote:
-                    "Receipts and statements in one place made our audits smoother and faster.",
-                  author: "David Kim",
-                  role: "Finance Lead, InnovateNow",
-                  rating: 5,
-                },
-                {
-                  quote:
-                    "The roadmap aligns with what we need, and it already saves our team hours each week.",
-                  author: "Lisa Patel",
-                  role: "Accounting Manager, RemoteFirst",
-                  rating: 5,
-                },
-                {
-                  quote:
-                    "Best value we've found. The focus on fundamentals gives us time back.",
-                  author: "James Wilson",
-                  role: "COO, ScaleUp Inc",
-                  rating: 5,
-                },
-              ].map((testimonial, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: i * 0.05 }}
-                >
-                  <Card className="h-full overflow-hidden border-border/40 bg-gradient-to-b from-background to-muted/10 backdrop-blur transition-all hover:shadow-md">
-                    <CardContent className="p-6 flex flex-col h-full">
-                      <div className="flex mb-4">
-                        {Array(testimonial.rating)
-                          .fill(0)
-                          .map((_, j) => (
-                            <Star
-                              key={j}
-                              className="size-4 text-yellow-500 fill-yellow-500"
-                            />
-                          ))}
-                      </div>
-                      <p className="text-lg mb-6 flex-grow">
-                        {testimonial.quote}
-                      </p>
-                      <div className="flex items-center gap-4 mt-auto pt-4 border-t border-border/40">
-                        <div className="size-10 rounded-full bg-muted flex items-center justify-center text-foreground font-medium">
-                          {testimonial.author.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium">{testimonial.author}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {testimonial.role}
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section> */}
-
         {/* Pricing Section */}
         <section
           id="pricing"
@@ -752,9 +641,9 @@ export default function LandingPage() {
                     </CardHeader>
 
                     <CardContent className="flex-1">
-                      <ul className="space-y-3">
+                      <ul className="grid grid-cols-2 gap-x-6 gap-y-3">
                         {/* Usage Limits */}
-                        <li className="font-semibold text-sm text-primary mt-4 mb-2">
+                        <li className="col-span-2 font-semibold text-sm text-primary mt-4 mb-2">
                           📊 Usage Limits
                         </li>
                         <PricingFeature
@@ -779,7 +668,7 @@ export default function LandingPage() {
                         />
 
                         {/* Core Modules */}
-                        <li className="font-semibold text-sm text-primary mt-4 mb-2">
+                        <li className="col-span-2 font-semibold text-sm text-primary mt-4 mb-2">
                           🧾 Core Accounting
                         </li>
                         <PricingFeature
@@ -804,7 +693,7 @@ export default function LandingPage() {
                         />
 
                         {/* Advanced Features */}
-                        <li className="font-semibold text-sm text-primary mt-4 mb-2">
+                        <li className="col-span-2 font-semibold text-sm text-primary mt-4 mb-2">
                           ⚡ Advanced Features
                         </li>
                         <PricingFeature
@@ -849,7 +738,7 @@ export default function LandingPage() {
                         />
 
                         {/* Branding */}
-                        <li className="font-semibold text-sm text-primary mt-4 mb-2">
+                        <li className="col-span-2 font-semibold text-sm text-primary mt-4 mb-2">
                           🎨 Customization
                         </li>
                         <PricingFeature

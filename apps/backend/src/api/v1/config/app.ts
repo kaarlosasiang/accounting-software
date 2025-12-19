@@ -88,14 +88,13 @@ export default (app: Application): Application => {
     });
   });
 
-  // Register Better Auth routes FIRST (before express.json())
-  const registerRoutes = require("../routes").default;
-  registerRoutes(app);
-
-  // Body parsing middleware - AFTER Better Auth routes
-  // Better Auth handles its own body parsing
+  // Body parsing middleware - needed for most routes except Better Auth
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Register all routes (Better Auth handles its own body parsing)
+  const registerRoutes = require("../routes").default;
+  registerRoutes(app);
 
   // API Key middleware (applied to non-auth routes only)
   // Auth routes are already registered and handle their own authentication

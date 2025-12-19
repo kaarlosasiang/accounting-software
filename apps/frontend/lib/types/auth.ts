@@ -14,6 +14,11 @@ export interface User extends BetterAuthUser {
   phone_number?: string;
   username?: string;
 
+  // Subscription fields
+  hasActiveSubscription?: boolean;
+  subscriptionPlan?: string;
+  subscriptionStatus?: string;
+
   // Admin plugin fields
   banned?: boolean;
   banReason?: string;

@@ -40,6 +40,10 @@ export const authServer = betterAuth({
       last_name: { type: "string", required: false },
       phone_number: { type: "string", required: false },
       username: { type: "string", required: false },
+      // Subscription fields
+      hasActiveSubscription: { type: "boolean", required: false, defaultValue: false },
+      subscriptionPlan: { type: "string", required: false },
+      subscriptionStatus: { type: "string", required: false },
     },
   },
   session: {

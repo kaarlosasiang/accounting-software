@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { AuthContext, type AuthContextValue } from "@/lib/contexts/auth-context";
 import { authClient, useSession } from "@/lib/config/auth-client";
-import { signIn as signInService, signUp as signUpService } from "@/lib/services/AuthService";
+import { signIn as signInService, signUp as signUpService } from "@/lib/services/auth.service";
 import type { Session, User } from "@/lib/types/auth";
-import type { LoginPayload, SignupPayload } from "@/lib/services/AuthService";
+import type { LoginPayload, SignupPayload } from "@/lib/services/auth.service";
 
 export default function AuthProvider({
   children,

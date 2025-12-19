@@ -23,8 +23,6 @@ export const userRegistrationSchema = z
     phoneNumber: z
       .string()
       .min(7, "Phone number must be at least 7 characters"),
-    companyId: z.string().min(1, "Company ID is required"),
-    role: z.string().min(2, "Role is required"),
     password: z.string().min(8, "Password must be at least 8 characters long"),
     confirmPassword: z
       .string()
