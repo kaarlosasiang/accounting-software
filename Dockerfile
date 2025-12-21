@@ -1,15 +1,12 @@
 # syntax=docker/dockerfile:1
 
-# Multi-stage Dockerfile for the backend (api) in a pnpm monorepo
-# - Installs only the necessary workspace deps (api + validators)
-# - Builds TypeScript to dist
-# - Runs with production-only dependencies
+# Monorepo Dockerfile to build and run the backend (apps/backend)
+# Uses pnpm workspaces to install only necessary deps (api + validators)
 
-FROM node:20-alpine AS base
+FROM node:20.14-alpine AS base
 WORKDIR /workspace
 RUN apk add --no-cache libc6-compat \
-	&& corepack enable \
-	&& corepack prepare pnpm@10.8.0 --activate
+	&& npm i -g pnpm@10.8.0
 
 # Install deps for just the api and validators workspaces
 FROM base AS deps
@@ -34,7 +31,7 @@ RUN pnpm install --no-frozen-lockfile --ignore-scripts -r --filter @rrd10-sas/va
 RUN pnpm -r --filter @rrd10-sas/validators --filter api build
 
 # Production runtime with only necessary files
-FROM node:20-alpine AS runner
+FROM node:20.14-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 RUN apk add --no-cache libc6-compat
@@ -46,7 +43,7 @@ COPY packages/validators/package.json packages/validators/package.json
 COPY packages/config-eslint/package.json packages/config-eslint/package.json
 
 # Install production deps scoped to the required workspaces
-RUN corepack enable && corepack prepare pnpm@10.8.0 --activate \
+RUN npm i -g pnpm@10.8.0 \
 	&& pnpm install --prod --no-frozen-lockfile --ignore-scripts -r --filter @rrd10-sas/validators --filter api
 
 # Copy built artifacts
@@ -60,4 +57,3 @@ EXPOSE 4000
 RUN mkdir -p /app/logs && chown -R node:node /app/logs
 USER node
 CMD ["node", "apps/backend/dist/index.js"]
-
