@@ -18,9 +18,10 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"],
-      "@ui/*": ["ui/components/ui/*"]
+      "ui/*": ["../../packages/ui/*"],
       "@ui/*": ["../../packages/ui/components/ui/*"]
     }
   },

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import type { Organization } from "@/lib/types/auth";
+import { useActiveOrganization, authClient } from "@/lib/config/auth-client";
 
 export type OrganizationClient = {
   list: () => Promise<{ data?: Organization[]; error?: unknown } | undefined>;
@@ -10,6 +11,7 @@ export type OrganizationClient = {
   removeMember: (memberId: string, organizationId?: string) => Promise<void>;
   updateMemberRole: (params: { memberId: string; role: string | string[]; organizationId?: string }) => Promise<void>;
   setActive: (organizationId: string) => Promise<void>;
+  create?: (params: { name: string; slug: string; logo?: string }) => Promise<{ data?: Organization; error?: { message?: string } } | undefined>;
 } | null;
 
 export type UseOrganizationReturn = {
@@ -26,28 +28,19 @@ export type UseOrganizationReturn = {
  * @returns Organization utilities and active organization data
  */
 export function useOrganization(): UseOrganizationReturn {
-  const activeOrganization: Organization | null = null;
-  const organization: OrganizationClient = null;
+  const { data } = useActiveOrganization();
 
-  // Check if user has an active organization
-  const hasActiveOrganization = useMemo(() => {
-    return !!activeOrganization;
-  }, [activeOrganization]);
+  // useActiveOrganization returns the active org data directly, not wrapped under a property
+  const activeOrganization = (data ?? null) as Organization | null;
+  const organization: OrganizationClient = (authClient as any)?.organization ?? null;
 
-  // Get organization ID
-  const organizationId = useMemo(() => {
-    return activeOrganization?.id;
-  }, [activeOrganization?.id]);
+  const hasActiveOrganization = useMemo(() => !!activeOrganization, [activeOrganization]);
 
-  // Get organization name
-  const organizationName = useMemo(() => {
-    return activeOrganization?.name;
-  }, [activeOrganization?.name]);
+  const organizationId = useMemo(() => activeOrganization?.id, [activeOrganization]);
 
-  // Get organization slug
-  const organizationSlug = useMemo(() => {
-    return activeOrganization?.slug;
-  }, [activeOrganization?.slug]);
+  const organizationName = useMemo(() => activeOrganization?.name, [activeOrganization]);
+
+  const organizationSlug = useMemo(() => activeOrganization?.slug, [activeOrganization]);
 
   return {
     activeOrganization,

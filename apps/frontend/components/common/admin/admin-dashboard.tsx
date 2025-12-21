@@ -32,16 +32,18 @@ export function AdminDashboard() {
     try {
       setLoading(true);
       setError(null);
-      const result: any = await admin.listUsers({
-        limit: 10,
-        offset: 0,
-        sortBy: "createdAt",
-        sortDirection: "desc",
+      const result = await admin.listUsers({
+        query: {
+          limit: 10,
+          offset: 0,
+          sortBy: "createdAt",
+          sortDirection: "desc",
+        },
       });
-      
-      if (result?.data) {
-        setUsers(result.data.users || []);
-        setTotal(result.data.total || 0);
+
+      if ((result as any)?.data) {
+        setUsers((result as any).data.users || []);
+        setTotal((result as any).data.total || 0);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load users");
@@ -67,14 +69,14 @@ export function AdminDashboard() {
   const handleUnbanUser = async (userId: string) => {
     try {
       setError(null);
-      await admin.unbanUser(userId);
+      await admin.unbanUser({ userId });
       await loadUsers();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to unban user");
     }
   };
 
-  const handleSetRole = async (userId: string, role: string) => {
+  const handleSetRole = async (userId: string, role: "admin" | "user") => {
     try {
       setError(null);
       await admin.setRole({ userId, role });
@@ -245,7 +247,7 @@ export function AdminDashboard() {
                       variant="outline"
                       size="sm"
                       onClick={async () => {
-                        await admin.impersonateUser(user.id);
+                        await admin.impersonateUser({ userId: user.id });
                         window.location.reload();
                       }}
                     >

@@ -2,13 +2,14 @@
 
 import { useMemo } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { authClient } from "@/lib/config/auth-client";
 
 /**
  * Hook for admin functionality and permission checking
  * @returns Admin utilities and permission checks
  */
 export function useAdmin() {
-  const { user, admin, session } = useAuth();
+  const { user, session } = useAuth();
 
   // Check if user is an admin
   const isAdmin = useMemo(() => {
@@ -37,6 +38,6 @@ export function useAdmin() {
     isImpersonated,
     isBanned,
     impersonatorId,
-    admin,
+    admin: authClient.admin,
   };
 }

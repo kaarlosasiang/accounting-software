@@ -24,7 +24,10 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { userRegistrationSchema } from "@rrd10-sas/validators";
 
-type FormValues = z.infer<typeof userRegistrationSchema>;
+type FormValues = z.infer<typeof userRegistrationSchema> & {
+  companyId?: string;
+  role?: string;
+};
 const defaultValues: FormValues = {
   firstName: "",
   middleName: "",
@@ -64,7 +67,11 @@ export function SignupForm({
   }: FormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
-      await signUp.email(values);
+      await signUp.email({
+        ...values,
+        companyId: values.companyId ?? "",
+        role: values.role ?? "user",
+      });
       toast.success("Account created! Please verify your email.");
       reset(defaultValues);
 

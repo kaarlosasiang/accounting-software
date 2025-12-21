@@ -87,7 +87,7 @@ export function CreateOrganizationForm({
       setIsSubmitting(true);
       setError(null);
 
-      const result: any = await organization.create({
+      const result: any = await organization.create?.({
         name: data.name,
         slug: data.slug,
         logo: data.logo || undefined,
