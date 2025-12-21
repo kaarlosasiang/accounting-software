@@ -1,5 +1,5 @@
 // eslint-disable-next-line
-import "./api/v1/config/env";
+import "./api/v1/config/env.js";
 
 import express from "express";
 
