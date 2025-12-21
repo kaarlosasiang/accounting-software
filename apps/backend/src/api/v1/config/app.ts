@@ -4,21 +4,21 @@ import express, { Application } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
-import apiKeyMiddleware from '../shared/middleware/apiKey.middleware.js';
+import apiKeyMiddleware from "../shared/middleware/apiKey.middleware.js";
 import {
   errorLogger,
   requestLogger,
-} from '../shared/middleware/logger.middleware.js';
+} from "../shared/middleware/logger.middleware.js";
 
-import logger from './logger.js';
 import { constants } from "./index.js";
+import logger from "./logger.js";
 
 export default (app: Application): Application => {
   // Security middleware - disable CSP for Better Auth
   app.use(
     helmet({
       contentSecurityPolicy: false,
-    }),
+    })
   );
 
   // CORS configuration
@@ -29,7 +29,7 @@ export default (app: Application): Application => {
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       optionsSuccessStatus: 200,
-    }),
+    })
   );
 
   // Cookie parsing - Better Auth needs this early
@@ -47,7 +47,7 @@ export default (app: Application): Application => {
             logger.info(message.trim());
           },
         },
-      }),
+      })
     );
   }
 

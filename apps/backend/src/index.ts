@@ -3,9 +3,9 @@ import "./api/v1/config/env.js";
 
 import express from "express";
 
-import configureApp from './api/v1/config/app.js';
-import logger from './api/v1/config/logger.js';
-import { constants, dbConnection } from './api/v1/config/index.js';
+import configureApp from "./api/v1/config/app.js";
+import logger from "./api/v1/config/logger.js";
+import { constants, dbConnection } from "./api/v1/config/index.js";
 
 const app = express();
 

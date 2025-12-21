@@ -1,6 +1,6 @@
 import dbConnection from './db.js';
 
-import "./env";
+import "./env.js";
 
 const constants = {
   // Server
