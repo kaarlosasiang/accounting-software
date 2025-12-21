@@ -11,7 +11,9 @@ import {
 } from "../shared/middleware/logger.middleware.js";
 
 import { constants } from "./index.js";
-import logger from "./logger.js";
+import dbConnection from './db.js';
+import logger from './logger.js';
+import registerRoutes from '../routes/index.js';
 
 export default (app: Application): Application => {
   // Security middleware - disable CSP for Better Auth
@@ -65,7 +67,6 @@ export default (app: Application): Application => {
 
   // Health check endpoint
   app.get("/health", (req, res) => {
-    const dbConnection = require("./db").default;
     const dbStatus =
       dbConnection.mongoose?.connection?.readyState === 1
         ? "connected"
@@ -93,7 +94,6 @@ export default (app: Application): Application => {
   app.use(express.urlencoded({ extended: true }));
 
   // Register all routes (Better Auth handles its own body parsing)
-  const registerRoutes = require("../routes").default;
   registerRoutes(app);
 
   // API Key middleware (applied to non-auth routes only)
