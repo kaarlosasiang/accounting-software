@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 import { cn } from "@/lib/utils";
-import { signUp } from "@/lib/services/AuthService";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { GoogleSignInButton } from "@/components/common/auth/google-signin-button";
 import { AuthDivider } from "@/components/common/auth/auth-divider";
@@ -24,7 +24,10 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { userRegistrationSchema } from "@rrd10-sas/validators";
 
-type FormValues = z.infer<typeof userRegistrationSchema>;
+type FormValues = z.infer<typeof userRegistrationSchema> & {
+  companyId?: string;
+  role?: string;
+};
 const defaultValues: FormValues = {
   firstName: "",
   middleName: "",
@@ -32,8 +35,6 @@ const defaultValues: FormValues = {
   email: "",
   username: "",
   phoneNumber: "",
-  companyId: "",
-  role: "",
   password: "",
   confirmPassword: "",
   rememberMe: true,
@@ -47,6 +48,7 @@ export function SignupForm({
   onRegistrationSuccess?: (email: string) => void;
 }) {
   const router = useRouter();
+  const { signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
     register,
@@ -65,7 +67,11 @@ export function SignupForm({
   }: FormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
-      await signUp(values);
+      await signUp.email({
+        ...values,
+        companyId: values.companyId ?? "",
+        role: values.role ?? "user",
+      });
       toast.success("Account created! Please verify your email.");
       reset(defaultValues);
 
@@ -209,36 +215,6 @@ export function SignupForm({
               </p>
             )}
           </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field>
-              <FieldLabel htmlFor="companyId">Company ID</FieldLabel>
-              <Input
-                id="companyId"
-                placeholder="acme-001"
-                aria-invalid={!!errors.companyId}
-                {...register("companyId")}
-              />
-              {errors.companyId && (
-                <p className="text-sm text-destructive">
-                  {errors.companyId.message}
-                </p>
-              )}
-            </Field>
-            <Field>
-              <FieldLabel htmlFor="role">Role</FieldLabel>
-              <Input
-                id="role"
-                placeholder="admin"
-                aria-invalid={!!errors.role}
-                {...register("role")}
-              />
-              {errors.role && (
-                <p className="text-sm text-destructive">
-                  {errors.role.message}
-                </p>
-              )}
-            </Field>
-          </div>
           <Field>
             <FieldLabel htmlFor="password">Password</FieldLabel>
             <Input

@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
-import { emailOTP, oneTap } from "better-auth/plugins";
+import { admin, emailOTP, oneTap, organization } from "better-auth/plugins";
 import { MongoClient } from "mongodb";
 
 import { constants } from "../../config";
@@ -40,6 +40,10 @@ export const authServer = betterAuth({
       last_name: { type: "string", required: false },
       phone_number: { type: "string", required: false },
       username: { type: "string", required: false },
+      // Subscription fields
+      hasActiveSubscription: { type: "boolean", required: false, defaultValue: false },
+      subscriptionPlan: { type: "string", required: false },
+      subscriptionStatus: { type: "string", required: false },
     },
   },
   session: {
@@ -59,6 +63,39 @@ export const authServer = betterAuth({
   },
   database: mongodbAdapter(db, { client: mongoClient }),
   plugins: [
+    organization({
+      async sendInvitationEmail(data) {
+        // Send organization invitation email
+        const inviteLink = `${constants.frontEndUrl}/accept-invitation/${data.id}`;
+        EmailService.sendOrganizationInvitation({
+          email: data.email,
+          invitedByUsername: data.inviter.user.name,
+          invitedByEmail: data.inviter.user.email,
+          organizationName: data.organization.name,
+          inviteLink,
+        }).catch((error) => {
+          logger.error("Failed to send organization invitation", {
+            error,
+            email: data.email,
+          });
+        });
+      },
+      allowUserToCreateOrganization: true,
+      organizationLimit: 5, // Max 5 organizations per user
+      creatorRole: "owner",
+      membershipLimit: 100, // Max 100 members per organization
+      invitationExpiresIn: 60 * 60 * 24 * 7, // 7 days
+      requireEmailVerificationOnInvitation: false,
+    }),
+    admin({
+      defaultRole: "user",
+      adminRoles: ["admin", "super_admin"],
+      impersonationSessionDuration: 60 * 60, // 1 hour
+      defaultBanReason: "Violated terms of service",
+      bannedUserMessage:
+        "Your account has been suspended. Please contact support if you believe this is an error.",
+      allowImpersonatingAdmins: false,
+    }),
     oneTap({
       disableSignup: false,
     }),
@@ -68,7 +105,7 @@ export const authServer = betterAuth({
         EmailService.sendVerificationOTP({ email, otp, type }).catch(
           (error) => {
             logger.error("Failed to send OTP email", { error, email, type });
-          },
+          }
         );
       },
       otpLength: 6, // 6-digit OTP

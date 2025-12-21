@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  transpilePackages: ["ui"],
 };
 
 export default nextConfig;

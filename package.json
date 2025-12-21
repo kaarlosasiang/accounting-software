@@ -8,12 +8,14 @@
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "dev:api": "pnpm --filter api dev",
     "dev:frontend": "pnpm --filter frontend dev",
+    "storybook": "pnpm --filter ui storybook",
     "build": "pnpm --recursive build",
     "build:api": "pnpm --filter api build",
     "build:frontend": "pnpm --filter frontend build",
     "build:validators": "pnpm --filter @rrd10-sas/validators build",
     "start:api": "pnpm --filter api start",
     "start:frontend": "pnpm --filter frontend start",
+    "docker:build:api": "docker build -f apps/backend/Dockerfile -t rrd10-sas-api:local .",
     "lint": "pnpm --recursive exec eslint",
     "clean": "pnpm --recursive exec rm -rf dist node_modules",
     "install:all": "pnpm install",
@@ -24,6 +26,7 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
-  "devDependencies": {}
+  "devDependencies": {
+    "baseline-browser-mapping": "^2.9.11"
+  }
 }
-

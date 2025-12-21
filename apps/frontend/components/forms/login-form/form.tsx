@@ -12,7 +12,7 @@ import z from "zod";
 import { userLoginSchema } from "@rrd10-sas/validators";
 
 import { cn } from "@/lib/utils";
-import { signIn } from "@/lib/services/AuthService";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { Button } from "@/components/ui/button";
 import { GoogleSignInButton } from "@/components/common/auth/google-signin-button";
 import { AuthDivider } from "@/components/common/auth/auth-divider";
@@ -23,7 +23,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { authClient } from "@/lib/config/auth-client";
 
 type FormValues = z.infer<typeof userLoginSchema>;
 
@@ -32,6 +31,7 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter();
+  const { signIn } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -46,7 +46,7 @@ export function LoginForm({
   const onSubmit = async (values: FormValues) => {
     setIsSubmitting(true);
     try {
-      await signIn(values);
+      await signIn.email(values);
       toast.success("Welcome back! You are now signed in.");
       router.push("/dashboard");
     } catch (error) {

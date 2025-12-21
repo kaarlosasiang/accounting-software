@@ -116,4 +116,51 @@ export class EmailService {
 ╚════════════════════════════════════════╝
     `);
   }
+
+  /**
+   * Send organization invitation email
+   */
+  static async sendOrganizationInvitation(params: {
+    email: string;
+    invitedByUsername: string;
+    invitedByEmail: string;
+    organizationName: string;
+    inviteLink: string;
+  }): Promise<void> {
+    const { email, invitedByUsername, organizationName, inviteLink } = params;
+
+    logger.info(`[Email Service] Sending organization invitation to ${email}`);
+
+    try {
+      // TODO: Replace with actual email sending
+      console.log(`
+╔════════════════════════════════════════╗
+║    ORGANIZATION INVITATION             ║
+╠════════════════════════════════════════╣
+║ To: ${email.padEnd(38)}║
+║                                        ║
+║ ${invitedByUsername.substring(0, 38).padEnd(38)}║
+║ invited you to join:                   ║
+║                                        ║
+║ ${organizationName.substring(0, 38).padEnd(38)}║
+║                                        ║
+║ Accept Invitation:                     ║
+║ ${inviteLink.substring(0, 38).padEnd(38)}║
+║                                        ║
+║ This invitation expires in 7 days.    ║
+╚════════════════════════════════════════╝
+      `);
+
+      logger.info(
+        `[Email Service] Organization invitation sent to ${email}`,
+      );
+    } catch (error) {
+      logger.error(
+        `[Email Service] Failed to send organization invitation to ${email}`,
+        {
+          error: error instanceof Error ? error.message : String(error),
+        },
+      );
+    }
+  }
 }

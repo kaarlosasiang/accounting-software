@@ -20,14 +20,10 @@ import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown } from "lucide-react";
+import { useAuth } from "@/lib/contexts/auth-context";
 
-// This is sample data.
+// This is sample data (nav only).
 const data = {
-  user: {
-    name: "John Accountant",
-    email: "john@rrd10.com",
-    avatar: "/avatars/user.jpg",
-  },
   navMain: [
     {
       title: "Dashboard",
@@ -241,6 +237,21 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user: authUser } = useAuth();
+  const displayName =
+    (authUser?.first_name && authUser?.last_name
+      ? `${authUser.first_name} ${authUser.last_name}`
+      : authUser?.name) ||
+    (authUser?.email ? authUser.email.split("@")[0] : "User");
+  const displayEmail = authUser?.email ?? "";
+  const displayAvatar = (authUser as any)?.image ?? "/avatars/user.jpg";
+
+  const sidebarUser = {
+    name: displayName,
+    email: displayEmail,
+    avatar: displayAvatar,
+  };
+
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
@@ -315,7 +326,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </Button>
           </div>
         </Card>
-        <NavUser user={data.user} />
+        <NavUser user={sidebarUser} />
       </SidebarFooter>
       {/* <SidebarRail/> */}
     </Sidebar>

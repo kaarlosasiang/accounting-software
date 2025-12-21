@@ -21,14 +21,20 @@ export type SignupPayload = {
   rememberMe?: boolean;
 };
 
-type ExtractData<T extends (...args: any) => Promise<any>> =
-  Awaited<ReturnType<T>> extends { data: infer D } ? D : never;
+type ExtractData<T extends (...args: any) => Promise<any>> = Awaited<
+  ReturnType<T>
+> extends { data: infer D }
+  ? D
+  : never;
 
 type SignInResponse = ExtractData<typeof authClient.signIn.email>;
 type SignUpResponse = ExtractData<typeof authClient.signUp.email>;
 
-const getFullName = (firstName: string, middleName: string | undefined, lastName: string) =>
-  [firstName, middleName, lastName].filter(Boolean).join(" ");
+const getFullName = (
+  firstName: string,
+  middleName: string | undefined,
+  lastName: string
+) => [firstName, middleName, lastName].filter(Boolean).join(" ");
 
 export async function signIn(payload: LoginPayload): Promise<SignInResponse> {
   const { data, error } = await authClient.signIn.email({
@@ -77,7 +83,7 @@ export async function signUp(payload: SignupPayload): Promise<SignUpResponse> {
         username,
       }),
       credentials: "include",
-    },
+    }
   );
 
   const result = await response.json();
@@ -88,4 +94,3 @@ export async function signUp(payload: SignupPayload): Promise<SignUpResponse> {
 
   return result.data;
 }
-
