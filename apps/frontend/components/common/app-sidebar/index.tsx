@@ -168,10 +168,6 @@ const data = {
           title: "Transactions",
           url: "/inventory/transactions",
         },
-        {
-          title: "Add Item",
-          url: "/inventory/add",
-        },
       ],
     },
     {

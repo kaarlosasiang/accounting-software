@@ -1,8 +1,9 @@
 import { Application } from "express";
 
-import authRoutes from "./auth.routes.js";
+import authRoutes from "../modules/auth/authRoutes.js";
+import subscriptionRoutes from "../modules/subscription/subscriptionRoutes.js";
+
 import companyRoutes from "./company.routes.js";
-import subscriptionRoutes from "./subscription.routes.js";
 import userRoutes from "./user.routes.js";
 
 /**

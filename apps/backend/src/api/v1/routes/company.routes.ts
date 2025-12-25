@@ -1,7 +1,7 @@
 import express from "express";
 import { MongoClient, ObjectId } from "mongodb";
 
-import { constants } from '../config/index.js';
+import { constants } from "../config/index.js";
 
 const router = express.Router();
 

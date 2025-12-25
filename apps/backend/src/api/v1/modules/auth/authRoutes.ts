@@ -1,7 +1,7 @@
 import { toNodeHandler } from "better-auth/node";
 import { Router } from "express";
 
-import { authServer } from "../modules/auth/betterAuth.js";
+import { authServer } from "./betterAuth.js";
 
 const router = Router();
 

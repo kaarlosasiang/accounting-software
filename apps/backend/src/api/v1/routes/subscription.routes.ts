@@ -1,7 +1,7 @@
 import express from "express";
 import { MongoClient, ObjectId } from "mongodb";
 
-import { constants } from '../config/index.js';
+import { constants } from "../config/index.js";
 
 const router = express.Router();
 
@@ -35,7 +35,7 @@ router.post("/activate", async (req, res) => {
           subscriptionStatus: "active",
           subscriptionActivatedAt: new Date(),
         },
-      },
+      }
     );
 
     if (result.matchedCount === 0) {
@@ -122,7 +122,7 @@ router.post("/update-user-role", async (req, res) => {
           companyId,
           companySetupCompletedAt: new Date(),
         },
-      },
+      }
     );
 
     if (result.matchedCount === 0) {
@@ -166,7 +166,7 @@ router.delete("/:userId", async (req, res) => {
           subscriptionStatus: "cancelled",
           subscriptionCancelledAt: new Date(),
         },
-      },
+      }
     );
 
     if (result.matchedCount === 0) {

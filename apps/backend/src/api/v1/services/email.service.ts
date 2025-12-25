@@ -1,4 +1,4 @@
-import logger from '../config/logger.js';
+import logger from "../config/logger.js";
 
 interface SendOTPEmailParams {
   email: string;
@@ -55,7 +55,7 @@ export class EmailService {
 
   private static async sendSignInOTP(
     email: string,
-    otp: string,
+    otp: string
   ): Promise<void> {
     // TODO: Replace with actual email sending
     console.log(`
@@ -75,7 +75,7 @@ export class EmailService {
 
   private static async sendEmailVerificationOTP(
     email: string,
-    otp: string,
+    otp: string
   ): Promise<void> {
     // TODO: Replace with actual email sending
     console.log(`
@@ -96,7 +96,7 @@ export class EmailService {
 
   private static async sendPasswordResetOTP(
     email: string,
-    otp: string,
+    otp: string
   ): Promise<void> {
     // TODO: Replace with actual email sending
     console.log(`
@@ -151,15 +151,13 @@ export class EmailService {
 ╚════════════════════════════════════════╝
       `);
 
-      logger.info(
-        `[Email Service] Organization invitation sent to ${email}`,
-      );
+      logger.info(`[Email Service] Organization invitation sent to ${email}`);
     } catch (error) {
       logger.error(
         `[Email Service] Failed to send organization invitation to ${email}`,
         {
           error: error instanceof Error ? error.message : String(error),
-        },
+        }
       );
     }
   }

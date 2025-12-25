@@ -1,4 +1,7 @@
-import type { User as BetterAuthUser, Session as BetterAuthSession } from "better-auth/types";
+import type {
+  User as BetterAuthUser,
+  Session as BetterAuthSession,
+} from "better-auth/types";
 
 /**
  * Extended User type with additional fields from Better Auth configuration.
@@ -157,7 +160,16 @@ export interface ListMembersQuery {
   sortBy?: string;
   sortDirection?: "asc" | "desc";
   filterField?: string;
-  filterOperator?: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "in" | "nin" | "contains";
+  filterOperator?:
+    | "eq"
+    | "ne"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "in"
+    | "nin"
+    | "contains";
   filterValue?: string;
 }
 
