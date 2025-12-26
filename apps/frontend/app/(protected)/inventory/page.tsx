@@ -10,10 +10,10 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 // Replaced native table with DiceUI DataTable
-import { DataTable } from "@/components/data-table/data-table";
-import { DataTableAdvancedToolbar } from "@/components/data-table/data-table-advanced-toolbar";
-import { DataTableFilterMenu } from "@/components/data-table/data-table-filter-menu";
-import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
+import { DataTable } from "@/components/common/data-table/data-table";
+import { DataTableAdvancedToolbar } from "@/components/common/data-table/data-table-advanced-toolbar";
+import { DataTableFilterMenu } from "@/components/common/data-table/data-table-filter-menu";
+import { DataTableSortList } from "@/components/common/data-table/data-table-sort-list";
 import { useDataTable } from "@/hooks/use-data-table";
 import { columns } from "./columns";
 import { Input } from "@/components/ui/input";

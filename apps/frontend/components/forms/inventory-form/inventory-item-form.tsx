@@ -40,6 +40,9 @@ export function InventoryItemForm({
     reorderLevel: 0,
     unitCost: 0,
     sellingPrice: 0,
+    inventoryAccountId: "",
+    cogsAccountId: "",
+    incomeAccountId: "",
     isActive: true,
     ...initialData,
   });
@@ -309,6 +312,67 @@ export function InventoryItemForm({
           <p className="text-sm text-muted-foreground">Total Stock Value</p>
           <p className="text-xl font-bold text-primary">{totalValue}</p>
         </div>
+      </div>
+
+      {/* Accounting Accounts */}
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="inventoryAccountId">
+              Inventory Account ID <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="inventoryAccountId"
+              placeholder="24-char ObjectId"
+              value={formData.inventoryAccountId}
+              onChange={(e) =>
+                handleChange("inventoryAccountId", e.target.value)
+              }
+              className={errors.inventoryAccountId ? "border-destructive" : ""}
+            />
+            {errors.inventoryAccountId && (
+              <p className="text-xs text-destructive">
+                {errors.inventoryAccountId}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cogsAccountId">
+              COGS Account ID <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="cogsAccountId"
+              placeholder="24-char ObjectId"
+              value={formData.cogsAccountId}
+              onChange={(e) => handleChange("cogsAccountId", e.target.value)}
+              className={errors.cogsAccountId ? "border-destructive" : ""}
+            />
+            {errors.cogsAccountId && (
+              <p className="text-xs text-destructive">{errors.cogsAccountId}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="incomeAccountId">
+              Income Account ID <span className="text-destructive">*</span>
+            </Label>
+            <Input
+              id="incomeAccountId"
+              placeholder="24-char ObjectId"
+              value={formData.incomeAccountId}
+              onChange={(e) => handleChange("incomeAccountId", e.target.value)}
+              className={errors.incomeAccountId ? "border-destructive" : ""}
+            />
+            {errors.incomeAccountId && (
+              <p className="text-xs text-destructive">
+                {errors.incomeAccountId}
+              </p>
+            )}
+          </div>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Use the accounting account IDs for inventory asset, cost of goods
+          sold, and revenue.
+        </p>
       </div>
 
       {/* Status */}

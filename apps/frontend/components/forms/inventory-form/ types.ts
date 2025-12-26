@@ -8,6 +8,9 @@ export interface InventoryItemForm {
   reorderLevel: number;
   unitCost: number;
   sellingPrice: number;
+  inventoryAccountId: string;
+  cogsAccountId: string;
+  incomeAccountId: string;
   isActive: boolean;
 }
 

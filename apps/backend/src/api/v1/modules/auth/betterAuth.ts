@@ -114,7 +114,7 @@ export const authServer = betterAuth({
         EmailService.sendVerificationOTP({ email, otp, type }).catch(
           (error) => {
             logger.error("Failed to send OTP email", { error, email, type });
-          },
+          }
         );
       },
       otpLength: 6, // 6-digit OTP
