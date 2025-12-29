@@ -22,10 +22,5 @@
   "[javascript]": {
     "editor.formatOnSave": true
   },
-  "workbench.colorCustomizations": {
-    "activityBar.background": "#208049",
-    "titleBar.activeBackground": "#208049",
-    "titleBar.activeForeground": "#FDFCFD"
-  },
   "postman.settings.dotenv-detection-notification-visibility": false
 }

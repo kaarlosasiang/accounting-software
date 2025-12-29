@@ -18,9 +18,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Info, Save } from "lucide-react";
+import { Info, Save, AlertCircle } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { inventoryItemSchema } from "@rrd10-sas/validators";
+import { useAccounts } from "@/hooks/use-accounts";
 import type { InventoryItemForm, InventoryItemFormProps } from "./ types";
 
 export function InventoryItemForm({
@@ -30,6 +31,10 @@ export function InventoryItemForm({
   submitButtonText = "Save Item",
   cancelButtonText = "Cancel",
 }: InventoryItemFormProps) {
+  const { accounts: assetAccounts } = useAccounts("Asset");
+  const { accounts: expenseAccounts } = useAccounts("Expense");
+  const { accounts: revenueAccounts } = useAccounts("Revenue");
+
   const [formData, setFormData] = useState<InventoryItemForm>({
     itemCode: "",
     itemName: "",
@@ -315,21 +320,49 @@ export function InventoryItemForm({
       </div>
 
       {/* Accounting Accounts */}
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+        <div className="flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
+          <div className="text-sm text-blue-700 dark:text-blue-300">
+            <p className="font-medium">Link Accounting Accounts</p>
+            <p className="text-xs mt-1">
+              Select the accounts for inventory asset, cost of goods sold, and
+              revenue.
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3 mt-4">
           <div className="space-y-2">
             <Label htmlFor="inventoryAccountId">
-              Inventory Account ID <span className="text-destructive">*</span>
+              Inventory Account <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="inventoryAccountId"
-              placeholder="24-char ObjectId"
+            <Select
               value={formData.inventoryAccountId}
-              onChange={(e) =>
-                handleChange("inventoryAccountId", e.target.value)
+              onValueChange={(value) =>
+                handleChange("inventoryAccountId", value)
               }
-              className={errors.inventoryAccountId ? "border-destructive" : ""}
-            />
+            >
+              <SelectTrigger
+                className={
+                  errors.inventoryAccountId ? "border-destructive" : ""
+                }
+              >
+                <SelectValue placeholder="Select inventory account" />
+              </SelectTrigger>
+              <SelectContent>
+                {assetAccounts.length > 0 ? (
+                  assetAccounts.map((account) => (
+                    <SelectItem key={account._id} value={account._id}>
+                      {account.accountCode} - {account.accountName}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem disabled value="">
+                    No asset accounts available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
             {errors.inventoryAccountId && (
               <p className="text-xs text-destructive">
                 {errors.inventoryAccountId}
@@ -338,30 +371,62 @@ export function InventoryItemForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="cogsAccountId">
-              COGS Account ID <span className="text-destructive">*</span>
+              COGS Account <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="cogsAccountId"
-              placeholder="24-char ObjectId"
+            <Select
               value={formData.cogsAccountId}
-              onChange={(e) => handleChange("cogsAccountId", e.target.value)}
-              className={errors.cogsAccountId ? "border-destructive" : ""}
-            />
+              onValueChange={(value) => handleChange("cogsAccountId", value)}
+            >
+              <SelectTrigger
+                className={errors.cogsAccountId ? "border-destructive" : ""}
+              >
+                <SelectValue placeholder="Select COGS account" />
+              </SelectTrigger>
+              <SelectContent>
+                {expenseAccounts.length > 0 ? (
+                  expenseAccounts.map((account) => (
+                    <SelectItem key={account._id} value={account._id}>
+                      {account.accountCode} - {account.accountName}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem disabled value="">
+                    No expense accounts available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
             {errors.cogsAccountId && (
               <p className="text-xs text-destructive">{errors.cogsAccountId}</p>
             )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="incomeAccountId">
-              Income Account ID <span className="text-destructive">*</span>
+              Income Account <span className="text-destructive">*</span>
             </Label>
-            <Input
-              id="incomeAccountId"
-              placeholder="24-char ObjectId"
+            <Select
               value={formData.incomeAccountId}
-              onChange={(e) => handleChange("incomeAccountId", e.target.value)}
-              className={errors.incomeAccountId ? "border-destructive" : ""}
-            />
+              onValueChange={(value) => handleChange("incomeAccountId", value)}
+            >
+              <SelectTrigger
+                className={errors.incomeAccountId ? "border-destructive" : ""}
+              >
+                <SelectValue placeholder="Select income account" />
+              </SelectTrigger>
+              <SelectContent>
+                {revenueAccounts.length > 0 ? (
+                  revenueAccounts.map((account) => (
+                    <SelectItem key={account._id} value={account._id}>
+                      {account.accountCode} - {account.accountName}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem disabled value="">
+                    No revenue accounts available
+                  </SelectItem>
+                )}
+              </SelectContent>
+            </Select>
             {errors.incomeAccountId && (
               <p className="text-xs text-destructive">
                 {errors.incomeAccountId}
@@ -369,10 +434,6 @@ export function InventoryItemForm({
             )}
           </div>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Use the accounting account IDs for inventory asset, cost of goods
-          sold, and revenue.
-        </p>
       </div>
 
       {/* Status */}

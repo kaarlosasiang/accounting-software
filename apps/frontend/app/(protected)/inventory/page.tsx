@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-// Replaced native table with DiceUI DataTable
+
 import { DataTable } from "@/components/common/data-table/data-table";
 import { DataTableAdvancedToolbar } from "@/components/common/data-table/data-table-advanced-toolbar";
 import { DataTableFilterMenu } from "@/components/common/data-table/data-table-filter-menu";
