@@ -61,17 +61,62 @@ const plans = [
     discount: 82,
     popular: false,
     features: [
-      { text: "Create up to 5 clients", icon: Users, included: true, badge: undefined },
-      { text: "10 invoices per month", icon: FileText, included: true, badge: undefined },
-      { text: "Basic reporting", icon: BarChart3, included: true, badge: undefined },
+      {
+        text: "Create up to 5 clients",
+        icon: Users,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "10 invoices per month",
+        icon: FileText,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Basic reporting",
+        icon: BarChart3,
+        included: true,
+        badge: undefined,
+      },
       { text: "Email support", icon: Mail, included: true, badge: undefined },
-      { text: "Mobile app access", icon: Smartphone, included: true, badge: undefined },
+      {
+        text: "Mobile app access",
+        icon: Smartphone,
+        included: true,
+        badge: undefined,
+      },
       { text: "1 user account", icon: Users, included: true, badge: undefined },
-      { text: "Weekly auto backups", icon: Shield, included: true, badge: undefined },
-      { text: "Free SSL security", icon: Lock, included: true, badge: undefined },
-      { text: "Custom branding", icon: Palette, included: false, badge: undefined },
-      { text: "Payment reminders", icon: Bell, included: false, badge: undefined },
-      { text: "Priority support", icon: Headphones, included: false, badge: undefined },
+      {
+        text: "Weekly auto backups",
+        icon: Shield,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Free SSL security",
+        icon: Lock,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Custom branding",
+        icon: Palette,
+        included: false,
+        badge: undefined,
+      },
+      {
+        text: "Payment reminders",
+        icon: Bell,
+        included: false,
+        badge: undefined,
+      },
+      {
+        text: "Priority support",
+        icon: Headphones,
+        included: false,
+        badge: undefined,
+      },
     ],
     details: [
       "Perfect for testing the platform",
@@ -97,12 +142,37 @@ const plans = [
         icon: BarChart3,
         included: true,
       },
-      { text: "Priority email support", icon: Mail, included: true, badge: undefined },
-      { text: "Mobile app access", icon: Smartphone, included: true, badge: undefined },
+      {
+        text: "Priority email support",
+        icon: Mail,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Mobile app access",
+        icon: Smartphone,
+        included: true,
+        badge: undefined,
+      },
       { text: "Up to 5 users", icon: Users, included: true, badge: undefined },
-      { text: "Custom branding", icon: Palette, included: true, badge: undefined },
-      { text: "Payment reminders", icon: Bell, included: true, badge: undefined },
-      { text: "Expense tracking", icon: CreditCard, included: true, badge: undefined },
+      {
+        text: "Custom branding",
+        icon: Palette,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Payment reminders",
+        icon: Bell,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Expense tracking",
+        icon: CreditCard,
+        included: true,
+        badge: undefined,
+      },
       { text: "Daily backups", icon: Shield, included: true, badge: undefined },
       {
         text: "Email marketing for 1 year",
@@ -111,7 +181,12 @@ const plans = [
         badge: "FREE",
       },
       { text: "API access", icon: Code, included: false, badge: undefined },
-      { text: "Dedicated account manager", icon: UserCog, included: false, badge: undefined },
+      {
+        text: "Dedicated account manager",
+        icon: UserCog,
+        included: false,
+        badge: undefined,
+      },
     ],
     details: [
       "All benefits of Starter, plus:",
@@ -131,24 +206,79 @@ const plans = [
     popular: false,
     bonusMonths: 3,
     features: [
-      { text: "Unlimited clients", icon: Users, included: true, badge: undefined },
-      { text: "Unlimited invoices", icon: FileText, included: true, badge: undefined },
-      { text: "Advanced inventory management", icon: Package, included: true, badge: undefined },
-      { text: "Multi-location support", icon: MapPin, included: true, badge: undefined },
-      { text: "24/7 phone support", icon: Phone, included: true, badge: undefined },
-      { text: "Unlimited users", icon: Users, included: true, badge: undefined },
-      { text: "Dedicated account manager", icon: UserCog, included: true, badge: undefined },
-      { text: "Custom integrations", icon: Plug, included: true, badge: undefined },
+      {
+        text: "Unlimited clients",
+        icon: Users,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Unlimited invoices",
+        icon: FileText,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Advanced inventory management",
+        icon: Package,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Multi-location support",
+        icon: MapPin,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "24/7 phone support",
+        icon: Phone,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Unlimited users",
+        icon: Users,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Dedicated account manager",
+        icon: UserCog,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Custom integrations",
+        icon: Plug,
+        included: true,
+        badge: undefined,
+      },
       { text: "Full API access", icon: Code, included: true, badge: undefined },
-      { text: "Priority feature requests", icon: Star, included: true, badge: undefined },
-      { text: "Advanced security features", icon: Shield, included: true, badge: undefined },
+      {
+        text: "Priority feature requests",
+        icon: Star,
+        included: true,
+        badge: undefined,
+      },
+      {
+        text: "Advanced security features",
+        icon: Shield,
+        included: true,
+        badge: undefined,
+      },
       {
         text: "Real-time analytics",
         icon: TrendingUp,
         included: true,
         badge: "NEW",
       },
-      { text: "White-label solution", icon: Globe, included: true, badge: undefined },
+      {
+        text: "White-label solution",
+        icon: Globe,
+        included: true,
+        badge: undefined,
+      },
     ],
     details: [
       "Everything in Professional, plus:",
@@ -186,7 +316,7 @@ export default function PlansPage() {
   const [selectedPeriod, setSelectedPeriod] = useState("annually");
   const [processingPlan, setProcessingPlan] = useState<string | null>(null);
   const router = useRouter();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, refetchSession } = useAuth();
 
   const currentPeriod = billingPeriods.find((p) => p.value === selectedPeriod)!;
 
@@ -225,6 +355,9 @@ export default function PlansPage() {
         userId: user.id,
         planId,
       });
+
+      // Force refresh the session to get updated user data
+      await refetchSession();
 
       toast.success("Subscription activated successfully!", {
         id: "subscription",

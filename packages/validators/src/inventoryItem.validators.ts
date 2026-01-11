@@ -21,7 +21,7 @@ const unitEnum = z.enum(
 
 const inventoryItemSchema = z
   .object({
-    itemCode: z.string().min(1, "Item code is required"),
+    sku: z.string().min(1, "SKU is required"),
     itemName: z.string().min(1, "Item name is required"),
     description: z.string().optional(),
     category: categoryEnum,
@@ -29,6 +29,7 @@ const inventoryItemSchema = z
     quantityOnHand: z
       .number({ message: "Quantity on hand must be a number" })
       .min(0, "Quantity on hand cannot be negative"),
+    quantityAsOfDate: z.date({ message: "Quantity as of date is required" }),
     reorderLevel: z
       .number({ message: "Reorder level must be a number" })
       .min(0, "Reorder level cannot be negative"),
@@ -51,11 +52,38 @@ const inventoryItemSchema = z
     incomeAccountId: z
       .string({ message: "Income account is required" })
       .regex(/^[a-fA-F0-9]{24}$/, "Income account ID must be a valid ObjectId"),
+    supplierId: z
+      .string()
+      .regex(/^[a-fA-F0-9]{24}$/, "Supplier ID must be a valid ObjectId")
+      .optional(),
+    salesTaxEnabled: z.boolean(),
+    salesTaxRate: z
+      .number()
+      .min(0, "Sales tax rate cannot be negative")
+      .max(100, "Sales tax rate cannot exceed 100%")
+      .optional(),
+    purchaseTaxRate: z
+      .number()
+      .min(0, "Purchase tax rate cannot be negative")
+      .max(100, "Purchase tax rate cannot exceed 100%")
+      .optional(),
   })
   .refine((data) => data.sellingPrice >= data.unitCost, {
     path: ["sellingPrice"],
     message: "Selling price should be greater than or equal to unit cost",
-  });
+  })
+  .refine(
+    (data) => {
+      if (data.salesTaxEnabled && !data.salesTaxRate) {
+        return false;
+      }
+      return true;
+    },
+    {
+      path: ["salesTaxRate"],
+      message: "Sales tax rate is required when sales tax is enabled",
+    }
+  );
 
 export type InventoryItem = z.infer<typeof inventoryItemSchema>;
 

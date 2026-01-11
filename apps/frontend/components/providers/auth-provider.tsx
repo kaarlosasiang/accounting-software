@@ -1,9 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { AuthContext, type AuthContextValue } from "@/lib/contexts/auth-context";
+import {
+  AuthContext,
+  type AuthContextValue,
+} from "@/lib/contexts/auth-context";
 import { authClient, useSession } from "@/lib/config/auth-client";
-import { signIn as signInService, signUp as signUpService } from "@/lib/services/auth.service";
+import {
+  signIn as signInService,
+  signUp as signUpService,
+} from "@/lib/services/auth.service";
 import type { Session, User } from "@/lib/types/auth";
 import type { LoginPayload, SignupPayload } from "@/lib/services/auth.service";
 
@@ -12,10 +18,19 @@ export default function AuthProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { data: sessionData, isPending, error: sessionError } = useSession();
+  const {
+    data: sessionData,
+    isPending,
+    error: sessionError,
+    refetch,
+  } = useSession();
   const [error, setError] = useState<Error | null>(null);
 
-  console.log("[AuthProvider] useSession state:", { isPending, hasSessionData: !!sessionData, hasUser: !!sessionData?.user });
+  console.log("[AuthProvider] useSession state:", {
+    isPending,
+    hasSessionData: !!sessionData,
+    hasUser: !!sessionData?.user,
+  });
 
   // Update error state
   useEffect(() => {
@@ -29,65 +44,53 @@ export default function AuthProvider({
   const user = (sessionData?.user as User) ?? null;
 
   // Sign in methods
-  const signInEmail = useCallback(
-    async (payload: LoginPayload) => {
-      try {
-        setError(null);
-        const result = await signInService(payload);
-        return result;
-      } catch (err) {
-        setError(err as Error);
-        throw err;
-      }
-    },
-    []
-  );
+  const signInEmail = useCallback(async (payload: LoginPayload) => {
+    try {
+      setError(null);
+      const result = await signInService(payload);
+      return result;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
 
-  const signInSocial = useCallback(
-    async (provider: string, options?: any) => {
-      try {
-        setError(null);
-        const result = await authClient.signIn.social({
-          provider,
-          ...options,
-        });
-        return result;
-      } catch (err) {
-        setError(err as Error);
-        throw err;
-      }
-    },
-    []
-  );
+  const signInSocial = useCallback(async (provider: string, options?: any) => {
+    try {
+      setError(null);
+      const result = await authClient.signIn.social({
+        provider,
+        ...options,
+      });
+      return result;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
 
-  const signInEmailOtp = useCallback(
-    async (email: string, otp: string) => {
-      try {
-        setError(null);
-        const result = await authClient.signIn.emailOtp({ email, otp });
-        return result;
-      } catch (err) {
-        setError(err as Error);
-        throw err;
-      }
-    },
-    []
-  );
+  const signInEmailOtp = useCallback(async (email: string, otp: string) => {
+    try {
+      setError(null);
+      const result = await authClient.signIn.emailOtp({ email, otp });
+      return result;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
 
   // Sign up method
-  const signUpEmail = useCallback(
-    async (data: SignupPayload) => {
-      try {
-        setError(null);
-        const result = await signUpService(data);
-        return result;
-      } catch (err) {
-        setError(err as Error);
-        throw err;
-      }
-    },
-    []
-  );
+  const signUpEmail = useCallback(async (data: SignupPayload) => {
+    try {
+      setError(null);
+      const result = await signUpService(data);
+      return result;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
 
   // Sign out method
   const signOutUser = useCallback(async () => {
@@ -101,51 +104,60 @@ export default function AuthProvider({
   }, []);
 
   // Update user method
-  const updateUserData = useCallback(
-    async (data: Partial<User>) => {
-      try {
-        setError(null);
-        const result = await authClient.updateUser(data);
-        return result;
-      } catch (err) {
-        setError(err as Error);
-        throw err;
-      }
-    },
-    []
-  );
+  const updateUserData = useCallback(async (data: Partial<User>) => {
+    try {
+      setError(null);
+      const result = await authClient.updateUser(data);
+      return result;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
 
   // Email verification methods
-  const sendVerificationOtp = useCallback(
-    async (email: string) => {
-      try {
-        setError(null);
-        const result = await authClient.emailOtp.sendVerificationOtp({
-          email,
-          type: "email-verification",
-        });
-        return result;
-      } catch (err) {
-        setError(err as Error);
-        throw err;
-      }
-    },
-    []
-  );
+  const sendVerificationOtp = useCallback(async (email: string) => {
+    try {
+      setError(null);
+      const result = await authClient.emailOtp.sendVerificationOtp({
+        email,
+        type: "email-verification",
+      });
+      return result;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
 
-  const verifyEmail = useCallback(
-    async (email: string, otp: string) => {
-      try {
-        setError(null);
-        const result = await authClient.emailOtp.verifyEmail({ email, otp });
-        return result;
-      } catch (err) {
-        setError(err as Error);
-        throw err;
-      }
-    },
-    []
-  );
+  const verifyEmail = useCallback(async (email: string, otp: string) => {
+    try {
+      setError(null);
+      const result = await authClient.emailOtp.verifyEmail({ email, otp });
+      return result;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, []);
+
+  // Refetch session with cache bypass
+  const refetchSession = useCallback(async () => {
+    try {
+      // Force refresh session bypassing cookie cache
+      const result = await authClient.getSession({
+        query: {
+          disableCookieCache: true,
+        },
+      });
+      // Trigger the useSession hook to update
+      await refetch();
+      return result;
+    } catch (err) {
+      setError(err as Error);
+      throw err;
+    }
+  }, [refetch]);
 
   const contextValue: AuthContextValue = {
     session,
@@ -162,6 +174,7 @@ export default function AuthProvider({
     },
     signOut: signOutUser,
     updateUser: updateUserData,
+    refetchSession,
     emailVerification: {
       sendOtp: sendVerificationOtp,
       verifyEmail: verifyEmail,

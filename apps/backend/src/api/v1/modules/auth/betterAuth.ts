@@ -13,6 +13,20 @@ const mongoClient = new MongoClient(constants.mongodbUri, {
 
 const db = mongoClient.db(constants.dbName);
 
+// Create a proxy to intercept collection calls and rename "user" to "users"
+const dbProxy = new Proxy(db, {
+  get(target, prop, receiver) {
+    if (prop === "collection") {
+      return function (name: string, options?: any) {
+        // Redirect "user" collection to "users"
+        const collectionName = name === "user" ? "users" : name;
+        return target.collection(collectionName, options);
+      };
+    }
+    return Reflect.get(target, prop, receiver);
+  },
+});
+
 export const authServer = betterAuth({
   appUrl: constants.frontEndUrl, // Frontend URL for redirects
   baseURL: constants.betterAuthUrl, // API auth endpoint
@@ -70,7 +84,7 @@ export const authServer = betterAuth({
       secure: constants.nodeEnv === "production",
     },
   },
-  database: mongodbAdapter(db, { client: mongoClient }),
+  database: mongodbAdapter(dbProxy as any, { client: mongoClient }),
   plugins: [
     organization({
       async sendInvitationEmail(data) {

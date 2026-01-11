@@ -1,6 +1,7 @@
 import { authClient } from "@/lib/config/auth-client";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
 
 export interface ActivateSubscriptionData {
   userId: string;
@@ -40,8 +41,12 @@ class SubscriptionService {
         throw new Error(result.message || "Failed to activate subscription");
       }
 
-      // Refresh the session to get updated user data
-      await authClient.getSession();
+      // Force refresh the session to get updated user data (bypass cookie cache)
+      await authClient.getSession({
+        query: {
+          disableCookieCache: true,
+        },
+      });
 
       return result;
     } catch (error) {
@@ -55,20 +60,19 @@ class SubscriptionService {
    */
   async getSubscriptionStatus(userId: string): Promise<SubscriptionResponse> {
     try {
-      const response = await fetch(
-        `${API_URL}/subscriptions/${userId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/subscriptions/${userId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.message || "Failed to fetch subscription status");
+        throw new Error(
+          result.message || "Failed to fetch subscription status"
+        );
       }
 
       return result;
@@ -83,15 +87,12 @@ class SubscriptionService {
    */
   async cancelSubscription(userId: string): Promise<SubscriptionResponse> {
     try {
-      const response = await fetch(
-        `${API_URL}/subscriptions/${userId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/subscriptions/${userId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
 
       const result = await response.json();
 
@@ -99,8 +100,12 @@ class SubscriptionService {
         throw new Error(result.message || "Failed to cancel subscription");
       }
 
-      // Refresh the session to get updated user data
-      await authClient.getSession();
+      // Force refresh the session to get updated user data (bypass cookie cache)
+      await authClient.getSession({
+        query: {
+          disableCookieCache: true,
+        },
+      });
 
       return result;
     } catch (error) {
