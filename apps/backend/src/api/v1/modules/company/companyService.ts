@@ -1,6 +1,7 @@
 import { MongoClient, ObjectId } from "mongodb";
 import { constants } from "../../config/index.js";
 import logger from "../../config/logger.js";
+import { seedAccountsForCompany } from "../../scripts/seedAccounts.js";
 
 const mongoClient = new MongoClient(constants.mongodbUri);
 const db = mongoClient.db(constants.dbName);
@@ -109,6 +110,18 @@ const companyService = {
         companyId,
         userId,
       });
+
+      // Seed default chart of accounts for the new company
+      try {
+        await seedAccountsForCompany(result.insertedId.toString());
+        logger.info("Default accounts seeded for company", { companyId });
+      } catch (seedError) {
+        // Log but don't fail company creation if seeding fails
+        logger.logError(seedError as Error, {
+          operation: "seed-accounts-on-company-create",
+          companyId,
+        });
+      }
 
       return {
         _id: result.insertedId,

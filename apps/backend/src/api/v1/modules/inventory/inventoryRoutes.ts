@@ -1,7 +1,11 @@
 import express, { Router } from "express";
 import inventoryController from "./inventoryController.js";
+import { requireAuth } from "../../shared/middleware/auth.middleware.js";
 
 const inventoryRoutes: Router = express.Router();
+
+// Apply auth middleware to all routes
+inventoryRoutes.use(requireAuth);
 
 // Get all inventory items
 inventoryRoutes.get("/", inventoryController.getAllItems);
@@ -27,8 +31,8 @@ inventoryRoutes.get(
 // Search inventory items
 inventoryRoutes.get("/search", inventoryController.searchItems);
 
-// Get inventory item by code
-inventoryRoutes.get("/code/:itemCode", inventoryController.getItemByCode);
+// Get inventory item by SKU
+inventoryRoutes.get("/sku/:sku", inventoryController.getItemBySku);
 
 // Get inventory items by category
 inventoryRoutes.get(

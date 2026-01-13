@@ -109,6 +109,48 @@ export const authServer = betterAuth({
       membershipLimit: 100, // Max 100 members per organization
       invitationExpiresIn: 60 * 60 * 24 * 7, // 7 days
       requireEmailVerificationOnInvitation: false,
+      // Map organization to Company entity with additional fields
+      schema: {
+        organization: {
+          modelName: "organization", // Keep as organization for better-auth compatibility
+          additionalFields: {
+            // Simple scalar fields as additionalFields for direct querying
+            businessType: {
+              type: "string",
+              required: false,
+              input: true,
+            },
+            taxId: {
+              type: "string",
+              required: false,
+              input: true,
+            },
+            // Note: address, contact, industry, companySize go in metadata (built-in field)
+            fiscalYearStart: {
+              type: "string", // ISO date string
+              required: false,
+              input: true,
+            },
+            currency: {
+              type: "string",
+              required: false,
+              defaultValue: "PESO",
+              input: true,
+            },
+            headerText: {
+              type: "string",
+              required: false,
+              input: true,
+            },
+            isActive: {
+              type: "boolean",
+              required: false,
+              defaultValue: true,
+              input: true,
+            },
+          },
+        },
+      },
     }),
     admin({
       defaultRole: "user",

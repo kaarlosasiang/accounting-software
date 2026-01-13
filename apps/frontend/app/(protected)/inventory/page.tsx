@@ -181,7 +181,7 @@ export default function InventoryPage() {
               Add Item
             </Button>
           </SheetTrigger>
-          <SheetContent>
+          <SheetContent className="min-w-1/3">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
                 <span>📦</span>{" "}

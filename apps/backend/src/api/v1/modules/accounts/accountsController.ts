@@ -1,12 +1,22 @@
 import { Request, Response } from "express";
 import { accountSchema } from "@rrd10-sas/validators";
 import accountsService from "./accountsService.js";
+import companyService from "../company/companyService.js";
 import logger from "../../config/logger.js";
 
 /**
  * Accounts Controller
  * Handles HTTP requests for account operations
  */
+
+/**
+ * Helper to get company MongoDB _id from the user's companyId (slug)
+ */
+const getCompanyObjectId = async (companyIdSlug: string): Promise<string> => {
+  const company = await companyService.getCompanyById(companyIdSlug);
+  return company._id.toString();
+};
+
 const accountsController = {
   /**
    * GET /api/v1/accounts
@@ -14,16 +24,17 @@ const accountsController = {
    */
   getAllAccounts: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const accounts = await accountsService.getAllAccounts(companyId);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const accounts = await accountsService.getAllAccounts(companyObjectId);
 
       return res.status(200).json({
         success: true,
@@ -49,17 +60,18 @@ const accountsController = {
   getAccountsByType: async (req: Request, res: Response) => {
     try {
       const { accountType } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const accounts = await accountsService.getAccountsByType(
-        companyId,
+        companyObjectId,
         accountType
       );
 
@@ -87,16 +99,17 @@ const accountsController = {
   getAccountById: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const account = await accountsService.getAccountById(companyId, id);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const account = await accountsService.getAccountById(companyObjectId, id);
 
       return res.status(200).json({
         success: true,
@@ -128,10 +141,10 @@ const accountsController = {
    */
   createAccount: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
       const accountData = req.body;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
@@ -148,8 +161,9 @@ const accountsController = {
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const account = await accountsService.createAccount(
-        companyId,
+        companyObjectId,
         validationResult.data
       );
 
@@ -178,10 +192,10 @@ const accountsController = {
   updateAccount: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
       const updateData = req.body;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
@@ -198,8 +212,9 @@ const accountsController = {
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const account = await accountsService.updateAccount(
-        companyId,
+        companyObjectId,
         id,
         validationResult.data
       );
@@ -236,16 +251,17 @@ const accountsController = {
   deleteAccount: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const account = await accountsService.deleteAccount(companyId, id);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const account = await accountsService.deleteAccount(companyObjectId, id);
 
       return res.status(200).json({
         success: true,
@@ -279,16 +295,20 @@ const accountsController = {
   getAccountBalance: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const balance = await accountsService.getAccountBalance(companyId, id);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const balance = await accountsService.getAccountBalance(
+        companyObjectId,
+        id
+      );
 
       return res.status(200).json({
         success: true,
@@ -321,9 +341,9 @@ const accountsController = {
   searchAccounts: async (req: Request, res: Response) => {
     try {
       const { q } = req.query;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
@@ -337,7 +357,8 @@ const accountsController = {
         });
       }
 
-      const accounts = await accountsService.searchAccounts(companyId, q);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const accounts = await accountsService.searchAccounts(companyObjectId, q);
 
       return res.status(200).json({
         success: true,
@@ -363,17 +384,18 @@ const accountsController = {
    */
   getChartOfAccounts: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const chartOfAccounts = await accountsService.getChartOfAccounts(
-        companyId
+        companyObjectId
       );
 
       return res.status(200).json({

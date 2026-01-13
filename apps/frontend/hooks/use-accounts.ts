@@ -21,37 +21,33 @@ export function useAccounts(accountType?: "Asset" | "Expense" | "Revenue") {
     const fetchAccounts = async () => {
       try {
         setLoading(true);
-        // TODO: Replace with actual API endpoint
-        // For now, use placeholder data based on seeded accounts
-        const mockAccounts: Account[] = [
-          {
-            _id: "694e85d390491da69f8bed0a",
-            accountCode: "1200",
-            accountName: "Inventory",
-            accountType: "Asset",
-            subType: "Current Asset",
-          },
-          {
-            _id: "694e85d390491da69f8bed0c",
-            accountCode: "5000",
-            accountName: "Cost of Goods Sold",
-            accountType: "Expense",
-            subType: "Cost of Goods Sold",
-          },
-          {
-            _id: "694e85d390491da69f8bed0e",
-            accountCode: "4000",
-            accountName: "Sales Revenue",
-            accountType: "Revenue",
-            subType: "Product Sales",
-          },
-        ];
 
-        const filtered = accountType
-          ? mockAccounts.filter((acc) => acc.accountType === accountType)
-          : mockAccounts;
+        const baseUrl =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
+        const endpoint = accountType
+          ? `${baseUrl}/accounts/type/${accountType}`
+          : `${baseUrl}/accounts`;
 
-        setAccounts(filtered);
+        const response = await fetch(endpoint, {
+          method: "GET",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch accounts: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+          setAccounts(result.data);
+        } else {
+          setAccounts([]);
+        }
+
         setError(null);
       } catch (err) {
         setError(

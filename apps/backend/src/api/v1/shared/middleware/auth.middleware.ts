@@ -3,6 +3,7 @@ import { NextFunction, Request, Response } from "express";
 
 import { authServer } from "../../modules/auth/betterAuth.js";
 import { AuthenticationError } from "../error-types/authentcation.error.js";
+import logger from "../../config/logger.js";
 
 export const requireAuth = async (
   req: Request,
@@ -17,6 +18,14 @@ export const requireAuth = async (
     if (!session) {
       throw new AuthenticationError("Authentication required");
     }
+
+    // Debug log to see what's in the session user
+    logger.debug("Auth session user", {
+      userId: session.user?.id,
+      email: session.user?.email,
+      companyId: session.user?.companyId,
+      role: session.user?.role,
+    });
 
     req.authSession = session;
     req.authUser = session.user;

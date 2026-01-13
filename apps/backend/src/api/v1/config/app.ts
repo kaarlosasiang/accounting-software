@@ -120,8 +120,8 @@ export default (app: Application): Application => {
   // Error logging middleware (before error handlers)
   app.use(errorLogger);
 
-  // Global error handler
-  app.use((err: any, req: Request, res: Response) => {
+  // Global error handler (must have 4 parameters to be recognized as error handler)
+  app.use((err: any, req: Request, res: Response, _next: Function) => {
     // Log the error
     logger.logError(err, {
       path: req.path,

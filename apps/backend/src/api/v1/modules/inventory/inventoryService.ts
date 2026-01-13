@@ -81,16 +81,13 @@ const inventoryService = {
   },
 
   /**
-   * Get inventory item by item code
+   * Get inventory item by SKU
    */
-  getItemByCode: async (
-    companyId: string | Types.ObjectId,
-    itemCode: string
-  ) => {
+  getItemBySku: async (companyId: string | Types.ObjectId, sku: string) => {
     try {
-      const item = await InventoryItem.findByItemCode(
+      const item = await InventoryItem.findBySku(
         new Types.ObjectId(companyId),
-        itemCode
+        sku
       );
       if (!item) {
         throw new Error("Inventory item not found");
@@ -98,9 +95,9 @@ const inventoryService = {
       return item;
     } catch (error) {
       logger.logError(error as Error, {
-        operation: "get-inventory-item-by-code",
+        operation: "get-inventory-item-by-sku",
         companyId: companyId.toString(),
-        itemCode,
+        sku,
       });
       throw error;
     }
@@ -176,30 +173,46 @@ const inventoryService = {
   createItem: async (
     companyId: string | Types.ObjectId,
     itemData: {
-      itemCode: string;
+      sku: string;
       itemName: string;
       description?: string;
-      category: string;
-      unit: string;
+      category: "Food" | "Non-Food";
+      unit:
+        | "pcs"
+        | "kg"
+        | "sack"
+        | "box"
+        | "pack"
+        | "bottle"
+        | "can"
+        | "set"
+        | "bundle"
+        | "liter";
       quantityOnHand?: number;
+      quantityAsOfDate?: Date;
       reorderLevel?: number;
       unitCost: number;
       sellingPrice: number;
       inventoryAccountId: string | Types.ObjectId;
       cogsAccountId: string | Types.ObjectId;
       incomeAccountId: string | Types.ObjectId;
+      supplierId?: string | Types.ObjectId;
+      salesTaxEnabled: boolean;
+      salesTaxRate?: number;
+      purchaseTaxRate?: number;
+      isActive?: boolean;
     }
   ) => {
     try {
-      // Check if item code already exists
-      const existingItem = await InventoryItem.findByItemCode(
+      // Check if SKU already exists
+      const existingItem = await InventoryItem.findBySku(
         new Types.ObjectId(companyId),
-        itemData.itemCode
+        itemData.sku
       );
 
       if (existingItem) {
         throw new Error(
-          `Item with code ${itemData.itemCode} already exists for this company`
+          `Item with SKU ${itemData.sku} already exists for this company`
         );
       }
 
@@ -207,14 +220,16 @@ const inventoryService = {
         ...itemData,
         companyId,
         quantityOnHand: itemData.quantityOnHand ?? 0,
+        quantityAsOfDate: itemData.quantityAsOfDate ?? new Date(),
         reorderLevel: itemData.reorderLevel ?? 0,
+        isActive: itemData.isActive ?? true,
       });
 
       await item.save();
 
       logger.info("Inventory item created successfully", {
         itemId: item._id,
-        itemCode: item.itemCode,
+        sku: item.sku,
         companyId: companyId.toString(),
       });
 
@@ -237,14 +252,28 @@ const inventoryService = {
     updateData: Partial<{
       itemName: string;
       description: string;
-      category: string;
-      unit: string;
+      category: "Food" | "Non-Food";
+      unit:
+        | "pcs"
+        | "kg"
+        | "sack"
+        | "box"
+        | "pack"
+        | "bottle"
+        | "can"
+        | "set"
+        | "bundle"
+        | "liter";
       reorderLevel: number;
       unitCost: number;
       sellingPrice: number;
       inventoryAccountId: string | Types.ObjectId;
       cogsAccountId: string | Types.ObjectId;
       incomeAccountId: string | Types.ObjectId;
+      supplierId: string | Types.ObjectId;
+      salesTaxEnabled: boolean;
+      salesTaxRate: number;
+      purchaseTaxRate: number;
       isActive: boolean;
     }>
   ) => {
@@ -256,7 +285,8 @@ const inventoryService = {
       )
         .populate("inventoryAccountId", "accountCode accountName")
         .populate("cogsAccountId", "accountCode accountName")
-        .populate("incomeAccountId", "accountCode accountName");
+        .populate("incomeAccountId", "accountCode accountName")
+        .populate("supplierId", "supplierName");
 
       if (!item) {
         throw new Error("Inventory item not found");
@@ -264,7 +294,7 @@ const inventoryService = {
 
       logger.info("Inventory item updated successfully", {
         itemId: item._id,
-        itemCode: item.itemCode,
+        sku: item.sku,
         companyId: companyId.toString(),
       });
 
@@ -299,7 +329,7 @@ const inventoryService = {
 
       logger.info("Inventory item deactivated successfully", {
         itemId: item._id,
-        itemCode: item.itemCode,
+        sku: item.sku,
         companyId: companyId.toString(),
       });
 
@@ -406,7 +436,7 @@ const inventoryService = {
         companyId: new Types.ObjectId(companyId),
       })
         .populate("createdBy", "first_name last_name email")
-        .populate("inventoryItemId", "itemCode itemName")
+        .populate("inventoryItemId", "sku itemName")
         .sort({ transactionDate: -1 });
 
       return transactions;
@@ -474,13 +504,11 @@ const inventoryService = {
   getInventoryValuation: async (companyId: string | Types.ObjectId) => {
     try {
       const items = await InventoryItem.find({ companyId, isActive: true })
-        .select(
-          "itemCode itemName category quantityOnHand unitCost sellingPrice"
-        )
+        .select("sku itemName category quantityOnHand unitCost sellingPrice")
         .sort({ category: 1, itemName: 1 });
 
       const valuation = items.map((item: any) => ({
-        itemCode: item.itemCode,
+        sku: item.sku,
         itemName: item.itemName,
         category: item.category,
         quantityOnHand: item.quantityOnHand,

@@ -60,8 +60,10 @@ export function OrganizationMembers() {
       setLoading(true);
       setError(null);
       const result: any = await organization.listMembers({
-        organizationId,
-        limit: 100,
+        query: {
+          organizationId,
+          limit: 100,
+        },
       });
 
       if (result?.data?.members) {
@@ -95,7 +97,9 @@ export function OrganizationMembers() {
       setInviteRole("member");
       alert("Invitation sent successfully!");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send invitation");
+      setError(
+        err instanceof Error ? err.message : "Failed to send invitation"
+      );
     } finally {
       setInviting(false);
     }
@@ -106,7 +110,10 @@ export function OrganizationMembers() {
 
     try {
       setError(null);
-      await organization.removeMember(memberId, organizationId);
+      await organization.removeMember({
+        memberIdOrEmail: memberId,
+        organizationId,
+      });
       await loadMembers();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to remove member");
@@ -212,7 +219,9 @@ export function OrganizationMembers() {
                 >
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <p className="font-medium">{member.user?.name || "Unknown"}</p>
+                      <p className="font-medium">
+                        {member.user?.name || "Unknown"}
+                      </p>
                       <Badge variant="secondary">{member.role}</Badge>
                     </div>
                     <p className="text-sm text-muted-foreground">

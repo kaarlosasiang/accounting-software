@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Info, Save, AlertCircle } from "lucide-react";
+import { Info, Save, Percent } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { inventoryItemSchema } from "@rrd10-sas/validators";
 import { useAccounts } from "@/hooks/use-accounts";
@@ -36,18 +36,23 @@ export function InventoryItemForm({
   const { accounts: revenueAccounts } = useAccounts("Revenue");
 
   const [formData, setFormData] = useState<InventoryItemForm>({
-    itemCode: "",
+    sku: "",
     itemName: "",
     description: "",
-    category: "",
-    unit: "",
+    category: "Food",
+    unit: "pcs",
     quantityOnHand: 0,
+    quantityAsOfDate: new Date(),
     reorderLevel: 0,
     unitCost: 0,
     sellingPrice: 0,
     inventoryAccountId: "",
     cogsAccountId: "",
     incomeAccountId: "",
+    supplierId: undefined,
+    salesTaxEnabled: false,
+    salesTaxRate: undefined,
+    purchaseTaxRate: undefined,
     isActive: true,
     ...initialData,
   });
@@ -57,7 +62,7 @@ export function InventoryItemForm({
 
   const handleChange = (
     field: keyof InventoryItemForm,
-    value: string | number | boolean
+    value: string | number | boolean | Date | undefined
   ) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
@@ -118,18 +123,18 @@ export function InventoryItemForm({
       {/* Basic Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="itemCode">
-            Item Code <span className="text-destructive">*</span>
+          <Label htmlFor="sku">
+            SKU <span className="text-destructive">*</span>
           </Label>
           <Input
-            id="itemCode"
+            id="sku"
             placeholder="e.g., FOOD-001"
-            value={formData.itemCode}
-            onChange={(e) => handleChange("itemCode", e.target.value)}
-            className={errors.itemCode ? "border-destructive" : ""}
+            value={formData.sku}
+            onChange={(e) => handleChange("sku", e.target.value)}
+            className={errors.sku ? "border-destructive" : ""}
           />
-          {errors.itemCode && (
-            <p className="text-xs text-destructive">{errors.itemCode}</p>
+          {errors.sku && (
+            <p className="text-xs text-destructive">{errors.sku}</p>
           )}
         </div>
         <div className="space-y-2">
@@ -237,34 +242,90 @@ export function InventoryItemForm({
           )}
         </div>
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="reorderLevel">
-              Reorder Level <span className="text-destructive">*</span>
-            </Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Info className="inline-block ml-1 h-4 w-4 text-muted-foreground" />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Alert when stock falls below this level</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
+          <Label htmlFor="quantityAsOfDate">
+            Quantity As Of Date <span className="text-destructive">*</span>
+          </Label>
           <Input
-            id="reorderLevel"
-            type="number"
-            min="0"
-            placeholder="0"
-            value={formData.reorderLevel}
-            onChange={(e) =>
-              handleChange("reorderLevel", Number(e.target.value))
+            id="quantityAsOfDate"
+            type="date"
+            value={
+              formData.quantityAsOfDate instanceof Date
+                ? formData.quantityAsOfDate.toISOString().split("T")[0]
+                : new Date().toISOString().split("T")[0]
             }
-            className={errors.reorderLevel ? "border-destructive" : ""}
+            onChange={(e) =>
+              handleChange("quantityAsOfDate", new Date(e.target.value))
+            }
+            className={errors.quantityAsOfDate ? "border-destructive" : ""}
           />
-          {errors.reorderLevel && (
-            <p className="text-xs text-destructive">{errors.reorderLevel}</p>
+          {errors.quantityAsOfDate && (
+            <p className="text-xs text-destructive">
+              {errors.quantityAsOfDate}
+            </p>
           )}
         </div>
+      </div>
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <Label htmlFor="reorderLevel">
+            Reorder Level <span className="text-destructive">*</span>
+          </Label>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Info className="inline-block ml-1 h-4 w-4 text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Alert when stock falls below this level</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
+        <Input
+          id="reorderLevel"
+          type="number"
+          min="0"
+          placeholder="0"
+          value={formData.reorderLevel}
+          onChange={(e) => handleChange("reorderLevel", Number(e.target.value))}
+          className={errors.reorderLevel ? "border-destructive" : ""}
+        />
+        {errors.reorderLevel && (
+          <p className="text-xs text-destructive">{errors.reorderLevel}</p>
+        )}
+      </div>
+
+      {/* Inventory Account */}
+      <div className="space-y-2">
+        <Label htmlFor="inventoryAccountId">
+          Inventory Account <span className="text-destructive">*</span>
+        </Label>
+        <Select
+          value={formData.inventoryAccountId}
+          onValueChange={(value) => handleChange("inventoryAccountId", value)}
+        >
+          <SelectTrigger
+            className={errors.inventoryAccountId ? "border-destructive" : ""}
+          >
+            <SelectValue placeholder="Select inventory account" />
+          </SelectTrigger>
+          <SelectContent>
+            {assetAccounts.length > 0 ? (
+              assetAccounts.map((account) => (
+                <SelectItem key={account._id} value={account._id}>
+                  {account.accountCode} - {account.accountName}
+                </SelectItem>
+              ))
+            ) : (
+              <div className="py-2 px-2 text-sm text-muted-foreground">
+                No asset accounts available
+              </div>
+            )}
+          </SelectContent>
+        </Select>
+        {errors.inventoryAccountId && (
+          <p className="text-xs text-destructive">
+            {errors.inventoryAccountId}
+          </p>
+        )}
       </div>
 
       {/* Pricing Information */}
@@ -288,6 +349,41 @@ export function InventoryItemForm({
           )}
         </div>
         <div className="space-y-2">
+          <Label htmlFor="cogsAccountId">
+            COGS Account <span className="text-destructive">*</span>
+          </Label>
+          <Select
+            value={formData.cogsAccountId}
+            onValueChange={(value) => handleChange("cogsAccountId", value)}
+          >
+            <SelectTrigger
+              className={`${
+                errors.cogsAccountId ? "border-destructive" : ""
+              } w-full`}
+            >
+              <SelectValue placeholder="COGS account" />
+            </SelectTrigger>
+            <SelectContent>
+              {expenseAccounts.length > 0 ? (
+                expenseAccounts.map((account) => (
+                  <SelectItem key={account._id} value={account._id}>
+                    {account.accountCode} - {account.accountName}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="py-2 px-2 text-sm text-muted-foreground">
+                  No expense accounts available
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+          {errors.cogsAccountId && (
+            <p className="text-xs text-destructive">{errors.cogsAccountId}</p>
+          )}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-2">
           <Label htmlFor="sellingPrice">
             Selling Price <span className="text-destructive">*</span>
           </Label>
@@ -307,6 +403,39 @@ export function InventoryItemForm({
             <p className="text-xs text-destructive">{errors.sellingPrice}</p>
           )}
         </div>
+        <div className="space-y-2">
+          <Label htmlFor="incomeAccountId">
+            Income Account <span className="text-destructive">*</span>
+          </Label>
+          <Select
+            value={formData.incomeAccountId}
+            onValueChange={(value) => handleChange("incomeAccountId", value)}
+          >
+            <SelectTrigger
+              className={`${
+                errors.incomeAccountId ? "border-destructive" : ""
+              } w-full`}
+            >
+              <SelectValue placeholder="income account" />
+            </SelectTrigger>
+            <SelectContent>
+              {revenueAccounts.length > 0 ? (
+                revenueAccounts.map((account) => (
+                  <SelectItem key={account._id} value={account._id}>
+                    {account.accountCode} - {account.accountName}
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="py-2 px-2 text-sm text-muted-foreground">
+                  No revenue accounts available
+                </div>
+              )}
+            </SelectContent>
+          </Select>
+          {errors.incomeAccountId && (
+            <p className="text-xs text-destructive">{errors.incomeAccountId}</p>
+          )}
+        </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
         <div>
@@ -319,117 +448,87 @@ export function InventoryItemForm({
         </div>
       </div>
 
-      {/* Accounting Accounts */}
-      <div className="space-y-4 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-900">
+      {/* Tax Information */}
+      <div className="space-y-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
         <div className="flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
-          <div className="text-sm text-blue-700 dark:text-blue-300">
-            <p className="font-medium">Link Accounting Accounts</p>
+          <Percent className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+          <div className="text-sm text-amber-700 dark:text-amber-300">
+            <p className="font-medium">Tax Configuration</p>
             <p className="text-xs mt-1">
-              Select the accounts for inventory asset, cost of goods sold, and
-              revenue.
+              Configure sales and purchase tax rates for this item.
             </p>
           </div>
         </div>
         <div className="space-y-3 mt-4">
-          <div className="space-y-2">
-            <Label htmlFor="inventoryAccountId">
-              Inventory Account <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={formData.inventoryAccountId}
-              onValueChange={(value) =>
-                handleChange("inventoryAccountId", value)
-              }
-            >
-              <SelectTrigger
-                className={
-                  errors.inventoryAccountId ? "border-destructive" : ""
-                }
-              >
-                <SelectValue placeholder="Select inventory account" />
-              </SelectTrigger>
-              <SelectContent>
-                {assetAccounts.length > 0 ? (
-                  assetAccounts.map((account) => (
-                    <SelectItem key={account._id} value={account._id}>
-                      {account.accountCode} - {account.accountName}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem disabled value="">
-                    No asset accounts available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            {errors.inventoryAccountId && (
-              <p className="text-xs text-destructive">
-                {errors.inventoryAccountId}
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="salesTaxEnabled">Enable Sales Tax</Label>
+              <p className="text-sm text-muted-foreground">
+                {formData.salesTaxEnabled
+                  ? "Sales tax will be applied to this item"
+                  : "No sales tax for this item"}
               </p>
-            )}
+            </div>
+            <Switch
+              id="salesTaxEnabled"
+              checked={formData.salesTaxEnabled}
+              onCheckedChange={(checked) => {
+                handleChange("salesTaxEnabled", checked);
+                if (!checked) {
+                  handleChange("salesTaxRate", undefined);
+                }
+              }}
+            />
           </div>
+          {formData.salesTaxEnabled && (
+            <div className="space-y-2">
+              <Label htmlFor="salesTaxRate">
+                Sales Tax Rate (%) <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="salesTaxRate"
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                placeholder="e.g., 12"
+                value={formData.salesTaxRate ?? ""}
+                onChange={(e) =>
+                  handleChange(
+                    "salesTaxRate",
+                    e.target.value ? Number(e.target.value) : undefined
+                  )
+                }
+                className={errors.salesTaxRate ? "border-destructive" : ""}
+              />
+              {errors.salesTaxRate && (
+                <p className="text-xs text-destructive">
+                  {errors.salesTaxRate}
+                </p>
+              )}
+            </div>
+          )}
           <div className="space-y-2">
-            <Label htmlFor="cogsAccountId">
-              COGS Account <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={formData.cogsAccountId}
-              onValueChange={(value) => handleChange("cogsAccountId", value)}
-            >
-              <SelectTrigger
-                className={errors.cogsAccountId ? "border-destructive" : ""}
-              >
-                <SelectValue placeholder="Select COGS account" />
-              </SelectTrigger>
-              <SelectContent>
-                {expenseAccounts.length > 0 ? (
-                  expenseAccounts.map((account) => (
-                    <SelectItem key={account._id} value={account._id}>
-                      {account.accountCode} - {account.accountName}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem disabled value="">
-                    No expense accounts available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            {errors.cogsAccountId && (
-              <p className="text-xs text-destructive">{errors.cogsAccountId}</p>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="incomeAccountId">
-              Income Account <span className="text-destructive">*</span>
-            </Label>
-            <Select
-              value={formData.incomeAccountId}
-              onValueChange={(value) => handleChange("incomeAccountId", value)}
-            >
-              <SelectTrigger
-                className={errors.incomeAccountId ? "border-destructive" : ""}
-              >
-                <SelectValue placeholder="Select income account" />
-              </SelectTrigger>
-              <SelectContent>
-                {revenueAccounts.length > 0 ? (
-                  revenueAccounts.map((account) => (
-                    <SelectItem key={account._id} value={account._id}>
-                      {account.accountCode} - {account.accountName}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <SelectItem disabled value="">
-                    No revenue accounts available
-                  </SelectItem>
-                )}
-              </SelectContent>
-            </Select>
-            {errors.incomeAccountId && (
+            <Label htmlFor="purchaseTaxRate">Purchase Tax Rate (%)</Label>
+            <Input
+              id="purchaseTaxRate"
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              placeholder="e.g., 12"
+              value={formData.purchaseTaxRate ?? ""}
+              onChange={(e) =>
+                handleChange(
+                  "purchaseTaxRate",
+                  e.target.value ? Number(e.target.value) : undefined
+                )
+              }
+              className={errors.purchaseTaxRate ? "border-destructive" : ""}
+            />
+            {errors.purchaseTaxRate && (
               <p className="text-xs text-destructive">
-                {errors.incomeAccountId}
+                {errors.purchaseTaxRate}
               </p>
             )}
           </div>

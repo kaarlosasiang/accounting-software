@@ -1,12 +1,22 @@
 import { Request, Response } from "express";
 import { inventoryItemSchema } from "@rrd10-sas/validators";
 import inventoryService from "./inventoryService.js";
+import companyService from "../company/companyService.js";
 import logger from "../../config/logger.js";
 
 /**
  * Inventory Controller
  * Handles HTTP requests for inventory operations
  */
+
+/**
+ * Helper to get company MongoDB _id from the user's companyId (slug)
+ */
+const getCompanyObjectId = async (companyIdSlug: string): Promise<string> => {
+  const company = await companyService.getCompanyById(companyIdSlug);
+  return company._id.toString();
+};
+
 const inventoryController = {
   /**
    * GET /api/v1/inventory
@@ -14,16 +24,17 @@ const inventoryController = {
    */
   getAllItems: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const items = await inventoryService.getAllItems(companyId);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const items = await inventoryService.getAllItems(companyObjectId);
 
       return res.status(200).json({
         success: true,
@@ -48,16 +59,17 @@ const inventoryController = {
    */
   getActiveItems: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const items = await inventoryService.getActiveItems(companyId);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const items = await inventoryService.getActiveItems(companyObjectId);
 
       return res.status(200).json({
         success: true,
@@ -83,16 +95,17 @@ const inventoryController = {
   getItemById: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const item = await inventoryService.getItemById(companyId, id);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const item = await inventoryService.getItemById(companyObjectId, id);
 
       return res.status(200).json({
         success: true,
@@ -119,22 +132,23 @@ const inventoryController = {
   },
 
   /**
-   * GET /api/v1/inventory/code/:itemCode
-   * Get inventory item by item code
+   * GET /api/v1/inventory/sku/:sku
+   * Get inventory item by SKU
    */
-  getItemByCode: async (req: Request, res: Response) => {
+  getItemBySku: async (req: Request, res: Response) => {
     try {
-      const { itemCode } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const { sku } = req.params;
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const item = await inventoryService.getItemByCode(companyId, itemCode);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const item = await inventoryService.getItemBySku(companyObjectId, sku);
 
       return res.status(200).json({
         success: true,
@@ -142,7 +156,7 @@ const inventoryController = {
       });
     } catch (error) {
       logger.logError(error as Error, {
-        operation: "get-inventory-item-by-code-controller",
+        operation: "get-inventory-item-by-sku-controller",
       });
 
       if ((error as Error).message === "Inventory item not found") {
@@ -167,17 +181,18 @@ const inventoryController = {
   getItemsByCategory: async (req: Request, res: Response) => {
     try {
       const { category } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const items = await inventoryService.getItemsByCategory(
-        companyId,
+        companyObjectId,
         category
       );
 
@@ -204,16 +219,19 @@ const inventoryController = {
    */
   getItemsNeedingReorder: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const items = await inventoryService.getItemsNeedingReorder(companyId);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const items = await inventoryService.getItemsNeedingReorder(
+        companyObjectId
+      );
 
       return res.status(200).json({
         success: true,
@@ -239,9 +257,9 @@ const inventoryController = {
   searchItems: async (req: Request, res: Response) => {
     try {
       const { q } = req.query;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
@@ -255,7 +273,8 @@ const inventoryController = {
         });
       }
 
-      const items = await inventoryService.searchItems(companyId, q);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const items = await inventoryService.searchItems(companyObjectId, q);
 
       return res.status(200).json({
         success: true,
@@ -280,10 +299,10 @@ const inventoryController = {
    */
   createItem: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
       const itemData = req.body;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
@@ -300,8 +319,9 @@ const inventoryController = {
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const item = await inventoryService.createItem(
-        companyId,
+        companyObjectId,
         validationResult.data
       );
 
@@ -337,10 +357,10 @@ const inventoryController = {
   updateItem: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
       const updateData = req.body;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
@@ -359,8 +379,9 @@ const inventoryController = {
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const item = await inventoryService.updateItem(
-        companyId,
+        companyObjectId,
         id,
         validationResult.data
       );
@@ -397,16 +418,17 @@ const inventoryController = {
   deleteItem: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const item = await inventoryService.deleteItem(companyId, id);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const item = await inventoryService.deleteItem(companyObjectId, id);
 
       return res.status(200).json({
         success: true,
@@ -440,10 +462,11 @@ const inventoryController = {
   adjustQuantity: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId, userId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
+      const userId = req.authUser?.id;
       const { adjustment, reason } = req.body;
 
-      if (!companyId || !userId) {
+      if (!companyIdSlug || !userId) {
         return res.status(401).json({
           success: false,
           message: "Company ID and User ID are required",
@@ -457,8 +480,9 @@ const inventoryController = {
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const item = await inventoryService.adjustQuantity(
-        companyId,
+        companyObjectId,
         id,
         adjustment,
         reason,
@@ -503,17 +527,18 @@ const inventoryController = {
    */
   getTotalInventoryValue: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const totalValue = await inventoryService.getTotalInventoryValue(
-        companyId
+        companyObjectId
       );
 
       return res.status(200).json({
@@ -539,17 +564,18 @@ const inventoryController = {
   getItemTransactions: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
       const transactions = await inventoryService.getItemTransactions(
-        companyId,
+        companyObjectId,
         id
       );
 
@@ -578,9 +604,9 @@ const inventoryController = {
     try {
       const { id } = req.params;
       const { startDate, endDate } = req.query;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
@@ -624,9 +650,9 @@ const inventoryController = {
     try {
       const { id } = req.params;
       const { startDate, endDate } = req.query;
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
@@ -668,16 +694,19 @@ const inventoryController = {
    */
   getInventoryValuation: async (req: Request, res: Response) => {
     try {
-      const { companyId } = req.body.auth?.user ?? {};
+      const companyIdSlug = req.authUser?.companyId;
 
-      if (!companyId) {
+      if (!companyIdSlug) {
         return res.status(401).json({
           success: false,
           message: "Company ID is required",
         });
       }
 
-      const valuation = await inventoryService.getInventoryValuation(companyId);
+      const companyObjectId = await getCompanyObjectId(companyIdSlug);
+      const valuation = await inventoryService.getInventoryValuation(
+        companyObjectId
+      );
 
       return res.status(200).json({
         success: true,

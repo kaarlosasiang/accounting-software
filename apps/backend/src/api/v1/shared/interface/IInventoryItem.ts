@@ -6,18 +6,33 @@ import { Document, Types } from "mongoose";
 export interface IInventoryItem {
   _id: Types.ObjectId;
   companyId: Types.ObjectId;
-  itemCode: string; // SKU or product code
+  sku: string; // SKU or product code
   itemName: string;
   description?: string;
-  category: string;
-  unit: string; // 'pcs', 'kg', 'box'
+  category: "Food" | "Non-Food";
+  unit:
+    | "pcs"
+    | "kg"
+    | "sack"
+    | "box"
+    | "pack"
+    | "bottle"
+    | "can"
+    | "set"
+    | "bundle"
+    | "liter";
   quantityOnHand: number;
+  quantityAsOfDate: Date;
   reorderLevel: number;
   unitCost: number; // Cost of goods
   sellingPrice: number;
   inventoryAccountId: Types.ObjectId; // Reference to Account (Asset)
   cogsAccountId: Types.ObjectId; // Reference to Account (Expense - Cost of Goods Sold)
   incomeAccountId: Types.ObjectId; // Reference to Account (Revenue)
+  supplierId?: Types.ObjectId; // Reference to Supplier (optional)
+  salesTaxEnabled: boolean;
+  salesTaxRate?: number; // Required if salesTaxEnabled is true
+  purchaseTaxRate?: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -40,9 +55,9 @@ export interface IInventoryItemMethods {
  */
 export interface IInventoryItemModel {
   findActive(companyId: Types.ObjectId): Promise<IInventoryItemDocument[]>;
-  findByItemCode(
+  findBySku(
     companyId: Types.ObjectId,
-    itemCode: string
+    sku: string
   ): Promise<IInventoryItemDocument | null>;
   findByCategory(
     companyId: Types.ObjectId,

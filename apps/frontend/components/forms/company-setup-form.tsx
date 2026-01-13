@@ -7,6 +7,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { useOrganization } from "@/hooks/use-organization";
+import type {
+  BusinessType,
+  CompanyAddress,
+  CompanyContact,
+  CompanyMetadata,
+} from "@/lib/types/auth";
 import {
   Building2,
   MapPin,
@@ -59,6 +66,24 @@ const INDUSTRIES = [
   "Other",
 ];
 
+const BUSINESS_TYPES: { value: BusinessType; label: string }[] = [
+  { value: "sole proprietorship", label: "Sole Proprietorship" },
+  { value: "partnership", label: "Partnership" },
+  { value: "corporation", label: "Corporation" },
+  { value: "non-profit", label: "Non-Profit" },
+  { value: "government", label: "Government" },
+  { value: "other", label: "Other" },
+];
+
+const CURRENCIES = [
+  { value: "PHP", label: "PHP - Philippine Peso" },
+  { value: "USD", label: "USD - US Dollar" },
+  { value: "EUR", label: "EUR - Euro" },
+  { value: "GBP", label: "GBP - British Pound" },
+  { value: "JPY", label: "JPY - Japanese Yen" },
+  { value: "SGD", label: "SGD - Singapore Dollar" },
+];
+
 const COMPANY_SIZES = [
   "1-10 employees",
   "11-50 employees",
@@ -77,6 +102,14 @@ const companySetupSchema = z.object({
       /^[a-z0-9-]+$/,
       "Only lowercase letters, numbers, and hyphens allowed"
     ),
+  businessType: z.enum([
+    "sole proprietorship",
+    "partnership",
+    "corporation",
+    "non-profit",
+    "government",
+    "other",
+  ]),
   industry: z.string().min(1, "Please select an industry"),
   companySize: z.string().min(1, "Please select company size"),
   description: z.string().optional(),
@@ -87,9 +120,13 @@ const companySetupSchema = z.object({
   postalCode: z.string().min(2, "Postal code is required"),
   taxId: z.string().optional(),
   registrationNumber: z.string().optional(),
+  currency: z.string().min(1, "Please select a currency"),
+  fiscalYearStart: z.string().optional(),
   website: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   phone: z.string().optional(),
   email: z.string().email("Must be a valid email").optional().or(z.literal("")),
+  logo: z.string().url("Must be a valid URL").optional().or(z.literal("")),
+  headerText: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof companySetupSchema>;
@@ -97,6 +134,7 @@ type FormValues = z.infer<typeof companySetupSchema>;
 const defaultValues: FormValues = {
   companyName: "",
   companyId: "",
+  businessType: "corporation",
   industry: "",
   companySize: "",
   description: "",
@@ -107,13 +145,18 @@ const defaultValues: FormValues = {
   postalCode: "",
   taxId: "",
   registrationNumber: "",
+  currency: "PHP",
+  fiscalYearStart: new Date().toISOString().split("T")[0], // Current date
   website: "",
   phone: "",
   email: "",
+  logo: "",
+  headerText: "",
 };
 
 interface CompanySetupFormProps {
-  userId: string;
+  /** @deprecated No longer needed - organization uses session automatically */
+  userId?: string;
   onSuccess?: () => void;
   className?: string;
 }
@@ -125,12 +168,12 @@ const STEPS = [
 ];
 
 export function CompanySetupForm({
-  userId,
   onSuccess,
   className,
 }: CompanySetupFormProps) {
   const router = useRouter();
   const { refetchSession } = useAuth();
+  const { organization } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
 
@@ -148,6 +191,8 @@ export function CompanySetupForm({
 
   const industry = watch("industry");
   const companySize = watch("companySize");
+  const businessType = watch("businessType");
+  const currency = watch("currency");
 
   const validateStep = async (step: number) => {
     let fieldsToValidate: (keyof FormValues)[] = [];
@@ -156,8 +201,10 @@ export function CompanySetupForm({
       fieldsToValidate = [
         "companyName",
         "companyId",
+        "businessType",
         "industry",
         "companySize",
+        "currency",
       ];
     } else if (step === 2) {
       fieldsToValidate = ["address", "city", "country", "postalCode"];
@@ -183,41 +230,68 @@ export function CompanySetupForm({
   };
 
   const onSubmit = async (values: FormValues) => {
+    // Only allow submission on the final step
+    if (currentStep !== 3) {
+      handleNext();
+      return;
+    }
+
+    if (!organization?.create) {
+      toast.error("Organization service not available");
+      return;
+    }
+
     setIsSubmitting(true);
     try {
-      const API_URL =
-        process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-
-      // Create company in database
-      const companyResponse = await fetch(`${API_URL}/companies`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      // Build address array
+      const addressData: CompanyAddress[] = [
+        {
+          street: values.address,
+          city: values.city,
+          state: values.state || undefined,
+          zipCode: values.postalCode,
+          country: values.country,
         },
-        body: JSON.stringify({
-          userId,
-          ...values,
-        }),
+      ];
+
+      // Build contact array
+      const contactData: CompanyContact[] = [
+        {
+          phone: values.phone || undefined,
+          email: values.email || undefined,
+          website: values.website || undefined,
+        },
+      ];
+
+      // Build metadata object for nested data
+      const metadata: CompanyMetadata = {
+        address: addressData,
+        contact: contactData,
+        industry: values.industry,
+        companySize: values.companySize,
+        description: values.description || undefined,
+      };
+
+      // Create organization (company) via better-auth
+      const result = await organization.create({
+        name: values.companyName,
+        slug: values.companyId,
+        logo: values.logo || undefined,
+        metadata,
+        // Company-specific scalar fields (additionalFields)
+        businessType: values.businessType,
+        taxId: values.taxId || undefined,
+        fiscalYearStart: values.fiscalYearStart || new Date().toISOString(),
+        currency: values.currency,
+        headerText: values.headerText || values.companyName,
+        isActive: true,
       });
 
-      if (!companyResponse.ok) {
-        const errorData = await companyResponse.json();
-        throw new Error(errorData.message || "Failed to create company");
+      if (result?.error) {
+        throw new Error(result.error.message || "Failed to create company");
       }
 
-      const companyResult = await companyResponse.json();
-
-      // Also store in localStorage for demo purposes
-      localStorage.setItem(
-        `company_${userId}`,
-        JSON.stringify({
-          ...values,
-          userId,
-          createdAt: new Date().toISOString(),
-        })
-      );
-
-      // Force refresh the session to get updated user data (bypass cookie cache)
+      // Force refresh the session to get updated user data
       console.log("Fetching updated session...");
       await refetchSession();
       console.log("Session updated successfully");
@@ -370,6 +444,38 @@ export function CompanySetupForm({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <Field>
+                  <FieldLabel htmlFor="businessType">
+                    Business Type <span className="text-destructive">*</span>
+                  </FieldLabel>
+                  <Select
+                    value={businessType}
+                    onValueChange={(value) =>
+                      setValue("businessType", value as BusinessType)
+                    }
+                  >
+                    <SelectTrigger
+                      className={cn(
+                        errors.businessType && "border-destructive"
+                      )}
+                    >
+                      <SelectValue placeholder="Select business type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BUSINESS_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.businessType && (
+                    <p className="text-sm text-destructive">
+                      {errors.businessType.message}
+                    </p>
+                  )}
+                </Field>
+
+                <Field>
                   <FieldLabel htmlFor="industry">
                     Industry <span className="text-destructive">*</span>
                   </FieldLabel>
@@ -396,7 +502,9 @@ export function CompanySetupForm({
                     </p>
                   )}
                 </Field>
+              </div>
 
+              <div className="grid gap-4 sm:grid-cols-2">
                 <Field>
                   <FieldLabel htmlFor="companySize">
                     Company Size <span className="text-destructive">*</span>
@@ -421,6 +529,34 @@ export function CompanySetupForm({
                   {errors.companySize && (
                     <p className="text-sm text-destructive">
                       {errors.companySize.message}
+                    </p>
+                  )}
+                </Field>
+
+                <Field>
+                  <FieldLabel htmlFor="currency">
+                    Currency <span className="text-destructive">*</span>
+                  </FieldLabel>
+                  <Select
+                    value={currency}
+                    onValueChange={(value) => setValue("currency", value)}
+                  >
+                    <SelectTrigger
+                      className={cn(errors.currency && "border-destructive")}
+                    >
+                      <SelectValue placeholder="Select currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CURRENCIES.map((cur) => (
+                        <SelectItem key={cur.value} value={cur.value}>
+                          {cur.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.currency && (
+                    <p className="text-sm text-destructive">
+                      {errors.currency.message}
                     </p>
                   )}
                 </Field>

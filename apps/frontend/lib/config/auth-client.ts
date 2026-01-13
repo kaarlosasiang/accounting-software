@@ -16,7 +16,34 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 export const authClient = createAuthClient({
   baseURL: AUTH_BASE_URL,
   plugins: [
-    organizationClient(),
+    organizationClient({
+      // Define additional Company fields for the organization schema
+      // Note: address, contact, industry, companySize stored in metadata (built-in)
+      schema: {
+        organization: {
+          additionalFields: {
+            businessType: {
+              type: "string",
+            },
+            taxId: {
+              type: "string",
+            },
+            fiscalYearStart: {
+              type: "string",
+            },
+            currency: {
+              type: "string",
+            },
+            headerText: {
+              type: "string",
+            },
+            isActive: {
+              type: "boolean",
+            },
+          },
+        },
+      },
+    }),
     adminClient(),
     emailOTPClient(),
     ...(GOOGLE_CLIENT_ID
@@ -39,5 +66,5 @@ export const {
   signUp,
   signOut,
   useActiveOrganization,
+  useListOrganizations,
 } = authClient;
-

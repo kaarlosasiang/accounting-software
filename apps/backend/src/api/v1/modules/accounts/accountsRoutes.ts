@@ -1,7 +1,11 @@
 import express, { Router } from "express";
 import accountsController from "./accountsController.js";
+import { requireAuth } from "../../shared/middleware/auth.middleware.js";
 
 const accountsRoutes: Router = express.Router();
+
+// Apply auth middleware to all routes
+accountsRoutes.use(requireAuth);
 
 // Get all accounts for the company
 accountsRoutes.get("/", accountsController.getAllAccounts);
