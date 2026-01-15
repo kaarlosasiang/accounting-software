@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -27,6 +27,11 @@ import {
 } from "@ui/sheet";
 
 import { InventoryItemForm } from "@/components/forms";
+import { inventoryService } from "@/lib/services/inventory.service";
+import type {
+  InventoryItem,
+  InventoryItemForm as InventoryItemFormType,
+} from "@/lib/types/inventory";
 
 import {
   Plus,
@@ -38,10 +43,9 @@ import {
   Download,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { toast } from "sonner";
 import type { InventoryItem as ColumnsInventoryItem } from "./columns";
 import type { RowData, TableMeta } from "@tanstack/react-table";
-
-type InventoryItem = ColumnsInventoryItem;
 
 declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
@@ -51,12 +55,88 @@ declare module "@tanstack/react-table" {
 }
 
 export default function InventoryPage() {
-  const [inventory] = useState<InventoryItem[]>([]);
+  const [inventory, setInventory] = useState<ColumnsInventoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   // Keep lightweight search input wired to hidden column "search"
   const [searchQuery, setSearchQuery] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
+  const [editingItem, setEditingItem] = useState<ColumnsInventoryItem | null>(
+    null
+  );
+  const [editingFormData, setEditingFormData] = useState<
+    Partial<InventoryItemFormType & { _id: string }> | undefined
+  >(undefined);
   const filteredInventory = inventory; // DataTable handles filters client-side
+
+  // Transform API inventory item to table format
+  const transformInventoryItem = (
+    item: InventoryItem
+  ): ColumnsInventoryItem => {
+    // Determine status based on quantity
+    let status: "in-stock" | "low-stock" | "out-of-stock" = "in-stock";
+    if (item.quantityOnHand === 0) {
+      status = "out-of-stock";
+    } else if (item.quantityOnHand <= item.reorderLevel) {
+      status = "low-stock";
+    }
+
+    // Extract account IDs (handle both string and object formats)
+    const inventoryAccountId =
+      typeof item.inventoryAccountId === "string"
+        ? item.inventoryAccountId
+        : item.inventoryAccountId?._id || "";
+    const cogsAccountId =
+      typeof item.cogsAccountId === "string"
+        ? item.cogsAccountId
+        : item.cogsAccountId?._id || "";
+    const incomeAccountId =
+      typeof item.incomeAccountId === "string"
+        ? item.incomeAccountId
+        : item.incomeAccountId?._id || "";
+
+    return {
+      id: item._id,
+      itemCode: item.sku,
+      itemName: item.itemName,
+      category: item.category,
+      unit: item.unit,
+      quantityOnHand: item.quantityOnHand,
+      reorderLevel: item.reorderLevel,
+      unitCost: item.unitCost,
+      sellingPrice: item.sellingPrice,
+      status,
+      lastRestocked: item.quantityAsOfDate
+        ? new Date(item.quantityAsOfDate).toLocaleDateString()
+        : new Date().toLocaleDateString(),
+    };
+  };
+
+  // Fetch inventory items
+  const fetchInventory = async () => {
+    setIsLoading(true);
+    try {
+      const result = await inventoryService.getAllItems();
+      if (result.success && result.data) {
+        const transformed = result.data.map(transformInventoryItem);
+        setInventory(transformed);
+      } else {
+        throw new Error(result.error || "Failed to fetch inventory items");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch inventory items";
+      toast.error(message);
+      console.error("Error fetching inventory:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchInventory();
+  }, []);
 
   const totalItems = inventory.length;
   const inStock = inventory.filter((i) => i.status === "in-stock").length;
@@ -121,20 +201,43 @@ export default function InventoryPage() {
     a.click();
   };
 
-  const handleAddOrEditItem = async (data: any) => {
-    // TODO: API call to save inventory item
-    console.log("Saving inventory item:", data);
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
+  const handleAddOrEditItem = async () => {
+    // Refresh inventory after successful save
+    await fetchInventory();
 
     // Close the sheet after successful save
     setIsSheetOpen(false);
     setEditingItem(null);
+    setEditingFormData(undefined);
+  };
+
+  // Transform table item back to form format for editing
+  const getFormInitialData = (
+    item: ColumnsInventoryItem
+  ): Partial<InventoryItemFormType & { _id: string }> | undefined => {
+    if (!item) return undefined;
+
+    // Find the original API item to get all fields
+    const originalItem = inventory.find((i) => i.id === item.id);
+    if (!originalItem) return undefined;
+
+    // We need to fetch the full item details for editing
+    // For now, return basic structure - the form will need to fetch full details
+    return {
+      _id: item.id,
+      sku: item.itemCode,
+      itemName: item.itemName,
+      category: item.category as "Food" | "Non-Food",
+      unit: item.unit as any,
+      quantityOnHand: item.quantityOnHand,
+      reorderLevel: item.reorderLevel,
+      unitCost: item.unitCost,
+      sellingPrice: item.sellingPrice,
+    };
   };
 
   // Initialize DataTable (client-side data with URL-sync state)
-  const { table } = useDataTable<InventoryItem>({
+  const { table } = useDataTable<ColumnsInventoryItem>({
     data: filteredInventory,
     columns,
     pageCount: Math.max(1, Math.ceil(filteredInventory.length / 10)),
@@ -151,11 +254,60 @@ export default function InventoryPage() {
     manualSorting: false,
     manualPagination: false,
     meta: {
-      onEdit: (item: InventoryItem) => {
-        setEditingItem(item);
-        setIsSheetOpen(true);
+      onEdit: async (item: ColumnsInventoryItem) => {
+        try {
+          // Fetch full item details for editing
+          const result = await inventoryService.getItemById(item.id);
+          if (result.success && result.data) {
+            const formData: Partial<InventoryItemFormType & { _id: string }> = {
+              _id: result.data._id,
+              sku: result.data.sku,
+              itemName: result.data.itemName,
+              description: result.data.description,
+              category: result.data.category,
+              unit: result.data.unit,
+              quantityOnHand: result.data.quantityOnHand,
+              quantityAsOfDate:
+                result.data.quantityAsOfDate instanceof Date
+                  ? result.data.quantityAsOfDate
+                  : new Date(result.data.quantityAsOfDate),
+              reorderLevel: result.data.reorderLevel,
+              unitCost: result.data.unitCost,
+              sellingPrice: result.data.sellingPrice,
+              inventoryAccountId:
+                typeof result.data.inventoryAccountId === "string"
+                  ? result.data.inventoryAccountId
+                  : result.data.inventoryAccountId?._id || "",
+              cogsAccountId:
+                typeof result.data.cogsAccountId === "string"
+                  ? result.data.cogsAccountId
+                  : result.data.cogsAccountId?._id || "",
+              incomeAccountId:
+                typeof result.data.incomeAccountId === "string"
+                  ? result.data.incomeAccountId
+                  : result.data.incomeAccountId?._id || "",
+              supplierId: result.data.supplierId,
+              salesTaxEnabled: result.data.salesTaxEnabled,
+              salesTaxRate: result.data.salesTaxRate,
+              purchaseTaxRate: result.data.purchaseTaxRate,
+              isActive: result.data.isActive,
+            };
+            setEditingItem(item);
+            setEditingFormData(formData);
+            setIsSheetOpen(true);
+          } else {
+            throw new Error(result.error || "Failed to fetch item details");
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Failed to load item for editing";
+          toast.error(message);
+          console.error("Error fetching item:", error);
+        }
       },
-      onView: (item: InventoryItem) => {
+      onView: (item: ColumnsInventoryItem) => {
         // TODO: route to details or open a view dialog
         console.log("View item", item);
       },
@@ -174,9 +326,23 @@ export default function InventoryPage() {
           </p>
         </div>
 
-        <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <Sheet
+          open={isSheetOpen}
+          onOpenChange={(open) => {
+            setIsSheetOpen(open);
+            if (!open) {
+              setEditingItem(null);
+              setEditingFormData(undefined);
+            }
+          }}
+        >
           <SheetTrigger asChild>
-            <Button>
+            <Button
+              onClick={() => {
+                setEditingItem(null);
+                setEditingFormData(undefined);
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Add Item
             </Button>
@@ -190,18 +356,23 @@ export default function InventoryPage() {
                 </span>
               </SheetTitle>
               <SheetDescription>
-                Create a new inventory item with stock details
+                {editingItem
+                  ? "Update inventory item details"
+                  : "Create a new inventory item with stock details"}
               </SheetDescription>
             </SheetHeader>
             {/* Inventory form */}
             <div className="overflow-y-scroll pb-10 no-scrollbar">
               <InventoryItemForm
-                initialData={editingItem ?? undefined}
+                key={editingItem?.id || "new"} // Force re-render when editing different items
+                initialData={editingFormData}
                 onSubmit={handleAddOrEditItem}
                 onCancel={() => {
                   setIsSheetOpen(false);
                   setEditingItem(null);
+                  setEditingFormData(undefined);
                 }}
+                submitButtonText={editingItem ? "Update Item" : "Save Item"}
               />
             </div>
           </SheetContent>
@@ -280,10 +451,10 @@ export default function InventoryPage() {
 
       {/* Inventory Table */}
       <Card className="border border-border/50 gap-2">
-        <CardHeader>
+        {/* <CardHeader>
           <CardTitle>Inventory Items</CardTitle>
           <CardDescription>View and manage all inventory items</CardDescription>
-        </CardHeader>
+        </CardHeader> */}
         <CardContent>
           <DataTable table={table}>
             <DataTableAdvancedToolbar table={table}>

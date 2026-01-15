@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 import {
   Tooltip,
   TooltipContent,
@@ -18,11 +20,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Info, Save, Percent } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { inventoryItemSchema } from "@rrd10-sas/validators";
+import { inventoryItemSchema, type InventoryItem } from "@rrd10-sas/validators";
 import { useAccounts } from "@/hooks/use-accounts";
-import type { InventoryItemForm, InventoryItemFormProps } from "./ types";
+import { inventoryService } from "@/lib/services/inventory.service";
+import { toast } from "sonner";
+import type {
+  InventoryItemForm,
+  InventoryItemFormProps,
+} from "@/lib/types/inventory";
+import { z } from "zod";
 
 export function InventoryItemForm({
   onSubmit,
@@ -35,534 +51,659 @@ export function InventoryItemForm({
   const { accounts: expenseAccounts } = useAccounts("Expense");
   const { accounts: revenueAccounts } = useAccounts("Revenue");
 
-  const [formData, setFormData] = useState<InventoryItemForm>({
-    sku: "",
-    itemName: "",
-    description: "",
-    category: "Food",
-    unit: "pcs",
-    quantityOnHand: 0,
-    quantityAsOfDate: new Date(),
-    reorderLevel: 0,
-    unitCost: 0,
-    sellingPrice: 0,
-    inventoryAccountId: "",
-    cogsAccountId: "",
-    incomeAccountId: "",
-    supplierId: undefined,
-    salesTaxEnabled: false,
-    salesTaxRate: undefined,
-    purchaseTaxRate: undefined,
-    isActive: true,
-    ...initialData,
+  // Helper to convert date string or Date to Date object
+  const parseDate = (date: Date | string | undefined): Date => {
+    if (!date) return new Date();
+    if (date instanceof Date) return date;
+    return new Date(date);
+  };
+
+  const getDefaultValues = (): InventoryItem => {
+    const baseData: InventoryItem = {
+      sku: "",
+      itemName: "",
+      description: "",
+      category: "Food",
+      unit: "pcs",
+      quantityOnHand: 0,
+      quantityAsOfDate: new Date(),
+      reorderLevel: 0,
+      unitCost: 0,
+      sellingPrice: 0,
+      inventoryAccountId: "",
+      cogsAccountId: "",
+      incomeAccountId: "",
+      supplierId: undefined,
+      salesTaxEnabled: false,
+      salesTaxRate: undefined,
+      purchaseTaxRate: undefined,
+      isActive: true,
+    };
+
+    if (initialData) {
+      return {
+        ...baseData,
+        ...initialData,
+        // Ensure required fields are always present
+        sku: initialData.sku ?? baseData.sku,
+        itemName: initialData.itemName ?? baseData.itemName,
+        category: initialData.category ?? baseData.category,
+        unit: initialData.unit ?? baseData.unit,
+        quantityOnHand: initialData.quantityOnHand ?? baseData.quantityOnHand,
+        quantityAsOfDate: initialData.quantityAsOfDate
+          ? parseDate(initialData.quantityAsOfDate as Date | string)
+          : baseData.quantityAsOfDate,
+        reorderLevel: initialData.reorderLevel ?? baseData.reorderLevel,
+        unitCost: initialData.unitCost ?? baseData.unitCost,
+        sellingPrice: initialData.sellingPrice ?? baseData.sellingPrice,
+        inventoryAccountId:
+          initialData.inventoryAccountId ?? baseData.inventoryAccountId,
+        cogsAccountId: initialData.cogsAccountId ?? baseData.cogsAccountId,
+        incomeAccountId:
+          initialData.incomeAccountId ?? baseData.incomeAccountId,
+        isActive: initialData.isActive ?? baseData.isActive,
+        salesTaxEnabled:
+          initialData.salesTaxEnabled ?? baseData.salesTaxEnabled,
+      };
+    }
+
+    return baseData;
+  };
+
+  const form = useForm({
+    resolver: zodResolver(inventoryItemSchema),
+    defaultValues: getDefaultValues(),
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  // Update form when initialData changes
+  useEffect(() => {
+    if (initialData) {
+      const values = getDefaultValues();
+      Object.keys(values).forEach((key) => {
+        form.setValue(
+          key as keyof InventoryItem,
+          values[key as keyof InventoryItem] as any
+        );
+      });
+    }
+  }, [initialData]);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleChange = (
-    field: keyof InventoryItemForm,
-    value: string | number | boolean | Date | undefined
-  ) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    if (errors[field]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-  };
+  // Watch form values for computed fields
+  const sellingPrice = form.watch("sellingPrice");
+  const unitCost = form.watch("unitCost");
+  const quantityOnHand = form.watch("quantityOnHand");
+  const salesTaxEnabled = form.watch("salesTaxEnabled");
 
-  const validateForm = (): boolean => {
-    const result = inventoryItemSchema.safeParse(formData);
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
-        const key = (issue.path[0] ?? "") as string;
-        if (key) fieldErrors[key] = issue.message;
-      });
-      setErrors(fieldErrors);
-      return false;
-    }
-    setErrors({});
-    return true;
-  };
+  const profitMargin =
+    sellingPrice > 0
+      ? (((sellingPrice - unitCost) / sellingPrice) * 100).toFixed(2)
+      : "0.00";
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const totalValue = formatCurrency(quantityOnHand * unitCost);
 
-    if (!validateForm()) {
-      return;
-    }
-
+  const handleSubmit = async (data: InventoryItem) => {
     setIsSubmitting(true);
-    console.log("Submitting form data:", formData);
     try {
-      await onSubmit?.(formData);
+      // Check if we're updating an existing item (has _id in initialData)
+      const itemId =
+        initialData && "_id" in initialData ? initialData._id : undefined;
+
+      if (itemId && typeof itemId === "string") {
+        // Update existing item
+        const result = await inventoryService.updateItem(itemId, data);
+
+        if (result.success) {
+          toast.success("Inventory item updated successfully");
+          await onSubmit?.(data);
+        } else {
+          throw new Error(result.error || "Failed to update inventory item");
+        }
+      } else {
+        // Create new item
+        const result = await inventoryService.createItem(data);
+
+        if (result.success) {
+          toast.success("Inventory item created successfully");
+          await onSubmit?.(data);
+        } else {
+          throw new Error(result.error || "Failed to create inventory item");
+        }
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save inventory item. Please try again.";
+      toast.error(message);
+      console.error("Error saving inventory item:", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const profitMargin =
-    formData.sellingPrice > 0
-      ? (
-          ((formData.sellingPrice - formData.unitCost) /
-            formData.sellingPrice) *
-          100
-        ).toFixed(2)
-      : "0.00";
-
-  const totalValue = formatCurrency(
-    formData.quantityOnHand * formData.unitCost
-  );
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 px-4">
-      {/* Basic Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="sku">
-            SKU <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="sku"
-            placeholder="e.g., FOOD-001"
-            value={formData.sku}
-            onChange={(e) => handleChange("sku", e.target.value)}
-            className={errors.sku ? "border-destructive" : ""}
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(handleSubmit)}
+        className="space-y-4 px-4"
+      >
+        {/* Basic Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="sku"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  SKU <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., FOOD-001" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.sku && (
-            <p className="text-xs text-destructive">{errors.sku}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="itemName">
-            Item Name <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="itemName"
-            placeholder="e.g., Rice (50kg sack)"
-            value={formData.itemName}
-            onChange={(e) => handleChange("itemName", e.target.value)}
-            className={errors.itemName ? "border-destructive" : ""}
+          <FormField
+            control={form.control}
+            name="itemName"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Item Name <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input placeholder="e.g., Rice (50kg sack)" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.itemName && (
-            <p className="text-xs text-destructive">{errors.itemName}</p>
-          )}
         </div>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          placeholder="Optional item description..."
-          value={formData.description}
-          onChange={(e) => handleChange("description", e.target.value)}
-          rows={3}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Optional item description..."
+                  rows={3}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="category">
-            Category <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={formData.category}
-            onValueChange={(value) => handleChange("category", value)}
-          >
-            <SelectTrigger
-              className={`${
-                errors.category ? "border-destructive" : ""
-              } w-full`}
-            >
-              <SelectValue placeholder="Select category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Food">Food</SelectItem>
-              <SelectItem value="Non-Food">Non-Food</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.category && (
-            <p className="text-xs text-destructive">{errors.category}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="unit">
-            Unit <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={formData.unit}
-            onValueChange={(value) => handleChange("unit", value)}
-          >
-            <SelectTrigger
-              className={`${errors.unit ? "border-destructive" : ""} w-full`}
-            >
-              <SelectValue placeholder="Select unit" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pcs">Pieces (pcs)</SelectItem>
-              <SelectItem value="kg">Kilograms (kg)</SelectItem>
-              <SelectItem value="sack">Sack</SelectItem>
-              <SelectItem value="box">Box</SelectItem>
-              <SelectItem value="pack">Pack</SelectItem>
-              <SelectItem value="bottle">Bottle</SelectItem>
-              <SelectItem value="can">Can</SelectItem>
-              <SelectItem value="set">Set</SelectItem>
-              <SelectItem value="bundle">Bundle</SelectItem>
-              <SelectItem value="liter">Liter (L)</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.unit && (
-            <p className="text-xs text-destructive">{errors.unit}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Stock Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="quantityOnHand">
-            Quantity on Hand <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="quantityOnHand"
-            type="number"
-            min="0"
-            placeholder="0"
-            value={formData.quantityOnHand}
-            onChange={(e) =>
-              handleChange("quantityOnHand", Number(e.target.value))
-            }
-            className={errors.quantityOnHand ? "border-destructive" : ""}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Category <span className="text-destructive">*</span>
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="Food">Food</SelectItem>
+                    <SelectItem value="Non-Food">Non-Food</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.quantityOnHand && (
-            <p className="text-xs text-destructive">{errors.quantityOnHand}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="quantityAsOfDate">
-            Quantity As Of Date <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="quantityAsOfDate"
-            type="date"
-            value={
-              formData.quantityAsOfDate instanceof Date
-                ? formData.quantityAsOfDate.toISOString().split("T")[0]
-                : new Date().toISOString().split("T")[0]
-            }
-            onChange={(e) =>
-              handleChange("quantityAsOfDate", new Date(e.target.value))
-            }
-            className={errors.quantityAsOfDate ? "border-destructive" : ""}
+          <FormField
+            control={form.control}
+            name="unit"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Unit <span className="text-destructive">*</span>
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select unit" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="pcs">Pieces (pcs)</SelectItem>
+                    <SelectItem value="kg">Kilograms (kg)</SelectItem>
+                    <SelectItem value="sack">Sack</SelectItem>
+                    <SelectItem value="box">Box</SelectItem>
+                    <SelectItem value="pack">Pack</SelectItem>
+                    <SelectItem value="bottle">Bottle</SelectItem>
+                    <SelectItem value="can">Can</SelectItem>
+                    <SelectItem value="set">Set</SelectItem>
+                    <SelectItem value="bundle">Bundle</SelectItem>
+                    <SelectItem value="liter">Liter (L)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-          {errors.quantityAsOfDate && (
-            <p className="text-xs text-destructive">
-              {errors.quantityAsOfDate}
-            </p>
-          )}
         </div>
-      </div>
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="reorderLevel">
-            Reorder Level <span className="text-destructive">*</span>
-          </Label>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Info className="inline-block ml-1 h-4 w-4 text-muted-foreground" />
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Alert when stock falls below this level</p>
-            </TooltipContent>
-          </Tooltip>
-        </div>
-        <Input
-          id="reorderLevel"
-          type="number"
-          min="0"
-          placeholder="0"
-          value={formData.reorderLevel}
-          onChange={(e) => handleChange("reorderLevel", Number(e.target.value))}
-          className={errors.reorderLevel ? "border-destructive" : ""}
-        />
-        {errors.reorderLevel && (
-          <p className="text-xs text-destructive">{errors.reorderLevel}</p>
-        )}
-      </div>
 
-      {/* Inventory Account */}
-      <div className="space-y-2">
-        <Label htmlFor="inventoryAccountId">
-          Inventory Account <span className="text-destructive">*</span>
-        </Label>
-        <Select
-          value={formData.inventoryAccountId}
-          onValueChange={(value) => handleChange("inventoryAccountId", value)}
-        >
-          <SelectTrigger
-            className={errors.inventoryAccountId ? "border-destructive" : ""}
-          >
-            <SelectValue placeholder="Select inventory account" />
-          </SelectTrigger>
-          <SelectContent>
-            {assetAccounts.length > 0 ? (
-              assetAccounts.map((account) => (
-                <SelectItem key={account._id} value={account._id}>
-                  {account.accountCode} - {account.accountName}
-                </SelectItem>
-              ))
-            ) : (
-              <div className="py-2 px-2 text-sm text-muted-foreground">
-                No asset accounts available
+        {/* Stock Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="quantityOnHand"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Quantity on Hand <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="0"
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    value={field.value}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="quantityAsOfDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Quantity As Of Date{" "}
+                  <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="date"
+                    value={
+                      field.value instanceof Date
+                        ? field.value.toISOString().split("T")[0]
+                        : new Date().toISOString().split("T")[0]
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value) {
+                        field.onChange(new Date(value));
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <FormField
+          control={form.control}
+          name="reorderLevel"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <FormLabel>
+                  Reorder Level <span className="text-destructive">*</span>
+                </FormLabel>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="inline-block ml-1 h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Alert when stock falls below this level</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
-            )}
-          </SelectContent>
-        </Select>
-        {errors.inventoryAccountId && (
-          <p className="text-xs text-destructive">
-            {errors.inventoryAccountId}
-          </p>
-        )}
-      </div>
-
-      {/* Pricing Information */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="unitCost">
-            Unit Cost <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="unitCost"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0.00"
-            value={formData.unitCost}
-            onChange={(e) => handleChange("unitCost", Number(e.target.value))}
-            className={errors.unitCost ? "border-destructive" : ""}
-          />
-          {errors.unitCost && (
-            <p className="text-xs text-destructive">{errors.unitCost}</p>
+              <FormControl>
+                <Input
+                  type="number"
+                  min="0"
+                  placeholder="0"
+                  {...field}
+                  onChange={(e) => field.onChange(Number(e.target.value))}
+                  value={field.value}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
           )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="cogsAccountId">
-            COGS Account <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={formData.cogsAccountId}
-            onValueChange={(value) => handleChange("cogsAccountId", value)}
-          >
-            <SelectTrigger
-              className={`${
-                errors.cogsAccountId ? "border-destructive" : ""
-              } w-full`}
-            >
-              <SelectValue placeholder="COGS account" />
-            </SelectTrigger>
-            <SelectContent>
-              {expenseAccounts.length > 0 ? (
-                expenseAccounts.map((account) => (
-                  <SelectItem key={account._id} value={account._id}>
-                    {account.accountCode} - {account.accountName}
-                  </SelectItem>
-                ))
-              ) : (
-                <div className="py-2 px-2 text-sm text-muted-foreground">
-                  No expense accounts available
-                </div>
-              )}
-            </SelectContent>
-          </Select>
-          {errors.cogsAccountId && (
-            <p className="text-xs text-destructive">{errors.cogsAccountId}</p>
-          )}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="sellingPrice">
-            Selling Price <span className="text-destructive">*</span>
-          </Label>
-          <Input
-            id="sellingPrice"
-            type="number"
-            min="0"
-            step="0.01"
-            placeholder="0.00"
-            value={formData.sellingPrice}
-            onChange={(e) =>
-              handleChange("sellingPrice", Number(e.target.value))
-            }
-            className={errors.sellingPrice ? "border-destructive" : ""}
-          />
-          {errors.sellingPrice && (
-            <p className="text-xs text-destructive">{errors.sellingPrice}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="incomeAccountId">
-            Income Account <span className="text-destructive">*</span>
-          </Label>
-          <Select
-            value={formData.incomeAccountId}
-            onValueChange={(value) => handleChange("incomeAccountId", value)}
-          >
-            <SelectTrigger
-              className={`${
-                errors.incomeAccountId ? "border-destructive" : ""
-              } w-full`}
-            >
-              <SelectValue placeholder="income account" />
-            </SelectTrigger>
-            <SelectContent>
-              {revenueAccounts.length > 0 ? (
-                revenueAccounts.map((account) => (
-                  <SelectItem key={account._id} value={account._id}>
-                    {account.accountCode} - {account.accountName}
-                  </SelectItem>
-                ))
-              ) : (
-                <div className="py-2 px-2 text-sm text-muted-foreground">
-                  No revenue accounts available
-                </div>
-              )}
-            </SelectContent>
-          </Select>
-          {errors.incomeAccountId && (
-            <p className="text-xs text-destructive">{errors.incomeAccountId}</p>
-          )}
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
-        <div>
-          <p className="text-sm text-muted-foreground">Profit Margin</p>
-          <p className="text-xl font-bold text-primary">{profitMargin}%</p>
-        </div>
-        <div>
-          <p className="text-sm text-muted-foreground">Total Stock Value</p>
-          <p className="text-xl font-bold text-primary">{totalValue}</p>
-        </div>
-      </div>
-
-      {/* Tax Information */}
-      <div className="space-y-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
-        <div className="flex items-start gap-2">
-          <Percent className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
-          <div className="text-sm text-amber-700 dark:text-amber-300">
-            <p className="font-medium">Tax Configuration</p>
-            <p className="text-xs mt-1">
-              Configure sales and purchase tax rates for this item.
-            </p>
-          </div>
-        </div>
-        <div className="space-y-3 mt-4">
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="salesTaxEnabled">Enable Sales Tax</Label>
-              <p className="text-sm text-muted-foreground">
-                {formData.salesTaxEnabled
-                  ? "Sales tax will be applied to this item"
-                  : "No sales tax for this item"}
-              </p>
-            </div>
-            <Switch
-              id="salesTaxEnabled"
-              checked={formData.salesTaxEnabled}
-              onCheckedChange={(checked) => {
-                handleChange("salesTaxEnabled", checked);
-                if (!checked) {
-                  handleChange("salesTaxRate", undefined);
-                }
-              }}
-            />
-          </div>
-          {formData.salesTaxEnabled && (
-            <div className="space-y-2">
-              <Label htmlFor="salesTaxRate">
-                Sales Tax Rate (%) <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="salesTaxRate"
-                type="number"
-                min="0"
-                max="100"
-                step="0.01"
-                placeholder="e.g., 12"
-                value={formData.salesTaxRate ?? ""}
-                onChange={(e) =>
-                  handleChange(
-                    "salesTaxRate",
-                    e.target.value ? Number(e.target.value) : undefined
-                  )
-                }
-                className={errors.salesTaxRate ? "border-destructive" : ""}
-              />
-              {errors.salesTaxRate && (
-                <p className="text-xs text-destructive">
-                  {errors.salesTaxRate}
-                </p>
-              )}
-            </div>
-          )}
-          <div className="space-y-2">
-            <Label htmlFor="purchaseTaxRate">Purchase Tax Rate (%)</Label>
-            <Input
-              id="purchaseTaxRate"
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              placeholder="e.g., 12"
-              value={formData.purchaseTaxRate ?? ""}
-              onChange={(e) =>
-                handleChange(
-                  "purchaseTaxRate",
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
-              className={errors.purchaseTaxRate ? "border-destructive" : ""}
-            />
-            {errors.purchaseTaxRate && (
-              <p className="text-xs text-destructive">
-                {errors.purchaseTaxRate}
-              </p>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Status */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-0.5">
-          <Label htmlFor="isActive">Active Status</Label>
-          <p className="text-sm text-muted-foreground">
-            {formData.isActive
-              ? "This item is active and available"
-              : "This item is inactive and hidden"}
-          </p>
-        </div>
-        <Switch
-          id="isActive"
-          checked={formData.isActive}
-          onCheckedChange={(checked) => handleChange("isActive", checked)}
         />
-      </div>
 
-      {/* Actions */}
-      <div className="flex items-center justify-end gap-4">
-        {/* <Button type="button" variant="outline" onClick={onCancel}>
-          <X className="mr-2 h-4 w-4" />
-          {cancelButtonText}
-        </Button> */}
-        <Button type="submit" disabled={isSubmitting} className="w-full">
-          <Save className="mr-2 h-4 w-4" />
-          {isSubmitting ? "Saving..." : submitButtonText}
-        </Button>
-      </div>
-    </form>
+        {/* Inventory Account */}
+        <FormField
+          control={form.control}
+          name="inventoryAccountId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Inventory Account <span className="text-destructive">*</span>
+              </FormLabel>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                value={field.value}
+              >
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select inventory account" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {assetAccounts.length > 0 ? (
+                    assetAccounts.map((account) => (
+                      <SelectItem key={account._id} value={account._id}>
+                        {account.accountCode} - {account.accountName}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <div className="py-2 px-2 text-sm text-muted-foreground">
+                      No asset accounts available
+                    </div>
+                  )}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Pricing Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="unitCost"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Unit Cost <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    value={field.value}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="cogsAccountId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  COGS Account <span className="text-destructive">*</span>
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="COGS account" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {expenseAccounts.length > 0 ? (
+                      expenseAccounts.map((account) => (
+                        <SelectItem key={account._id} value={account._id}>
+                          {account.accountCode} - {account.accountName}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="py-2 px-2 text-sm text-muted-foreground">
+                        No expense accounts available
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="sellingPrice"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Selling Price <span className="text-destructive">*</span>
+                </FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0.00"
+                    {...field}
+                    onChange={(e) => field.onChange(Number(e.target.value))}
+                    value={field.value}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="incomeAccountId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>
+                  Income Account <span className="text-destructive">*</span>
+                </FormLabel>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  value={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="income account" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {revenueAccounts.length > 0 ? (
+                      revenueAccounts.map((account) => (
+                        <SelectItem key={account._id} value={account._id}>
+                          {account.accountCode} - {account.accountName}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <div className="py-2 px-2 text-sm text-muted-foreground">
+                        No revenue accounts available
+                      </div>
+                    )}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+          <div>
+            <p className="text-sm text-muted-foreground">Profit Margin</p>
+            <p className="text-xl font-bold text-primary">{profitMargin}%</p>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground">Total Stock Value</p>
+            <p className="text-xl font-bold text-primary">{totalValue}</p>
+          </div>
+        </div>
+
+        {/* Tax Information */}
+        <div className="space-y-4 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-900">
+          <div className="flex items-start gap-2">
+            <Percent className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+            <div className="text-sm text-amber-700 dark:text-amber-300">
+              <p className="font-medium">Tax Configuration</p>
+              <p className="text-xs mt-1">
+                Configure sales and purchase tax rates for this item.
+              </p>
+            </div>
+          </div>
+          <div className="space-y-3 mt-4">
+            <FormField
+              control={form.control}
+              name="salesTaxEnabled"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <FormLabel>Enable Sales Tax</FormLabel>
+                      <p className="text-sm text-muted-foreground">
+                        {field.value
+                          ? "Sales tax will be applied to this item"
+                          : "No sales tax for this item"}
+                      </p>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={(checked) => {
+                          field.onChange(checked);
+                          if (!checked) {
+                            form.setValue("salesTaxRate", undefined);
+                          }
+                        }}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {salesTaxEnabled && (
+              <FormField
+                control={form.control}
+                name="salesTaxRate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      Sales Tax Rate (%){" "}
+                      <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                        placeholder="e.g., 12"
+                        {...field}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value ? Number(e.target.value) : undefined
+                          )
+                        }
+                        value={field.value ?? ""}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+            <FormField
+              control={form.control}
+              name="purchaseTaxRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Purchase Tax Rate (%)</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.01"
+                      placeholder="e.g., 12"
+                      {...field}
+                      onChange={(e) =>
+                        field.onChange(
+                          e.target.value ? Number(e.target.value) : undefined
+                        )
+                      }
+                      value={field.value ?? ""}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        </div>
+
+        {/* Status */}
+        <FormField
+          control={form.control}
+          name="isActive"
+          render={({ field }) => (
+            <FormItem>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <FormLabel>Active Status</FormLabel>
+                  <p className="text-sm text-muted-foreground">
+                    {field.value
+                      ? "This item is active and available"
+                      : "This item is inactive and hidden"}
+                  </p>
+                </div>
+                <FormControl>
+                  <Switch
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-4">
+          {/* <Button type="button" variant="outline" onClick={onCancel}>
+            <X className="mr-2 h-4 w-4" />
+            {cancelButtonText}
+          </Button> */}
+          <Button type="submit" disabled={isSubmitting} className="w-full">
+            <Save className="mr-2 h-4 w-4" />
+            {isSubmitting ? "Saving..." : submitButtonText}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { authClient } from "@/lib/config/auth-client";
+import { accountsService } from "@/lib/services/accounts.service";
 
 export interface Account {
   _id: string;
@@ -17,30 +19,27 @@ export function useAccounts(accountType?: "Asset" | "Expense" | "Revenue") {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+  const activeOrgId = activeOrganization?.id;
+
   useEffect(() => {
     const fetchAccounts = async () => {
+      console.log("Active Organization:", activeOrganization);
+      console.log("Active Org ID:", activeOrgId);
+
+      if (!activeOrgId) {
+        setAccounts([]);
+        setError("Select an organization to view accounts");
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
 
-        const baseUrl =
-          process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api/v1";
-        const endpoint = accountType
-          ? `${baseUrl}/accounts/type/${accountType}`
-          : `${baseUrl}/accounts`;
-
-        const response = await fetch(endpoint, {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch accounts: ${response.statusText}`);
-        }
-
-        const result = await response.json();
+        const result = accountType
+          ? await accountsService.getAccountsByType(accountType)
+          : await accountsService.getAllAccounts();
 
         if (result.success && result.data) {
           setAccounts(result.data);
@@ -60,7 +59,7 @@ export function useAccounts(accountType?: "Asset" | "Expense" | "Revenue") {
     };
 
     fetchAccounts();
-  }, [accountType]);
+  }, [accountType, activeOrgId]);
 
   return { accounts, loading, error };
 }

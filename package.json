@@ -1,13 +1,13 @@
 {
-  "name": "rrd10-sas",
+  "name": "accounting-system",
   "version": "1.0.0",
-  "description": "RRD10-SAS Monorepo",
+  "description": "",
   "private": true,
   "scripts": {
     "postinstall": "node scripts/ensure-better-auth-tsconfig-base.mjs",
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
     "dev:api": "pnpm --filter api dev",
-    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:app": "pnpm --filter frontend dev",
     "storybook": "pnpm --filter ui storybook",
     "build": "pnpm --recursive build",
     "build:api": "pnpm --filter api build",

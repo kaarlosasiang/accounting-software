@@ -19,12 +19,15 @@ export const requireAuth = async (
       throw new AuthenticationError("Authentication required");
     }
 
-    // Debug log to see what's in the session user
-    logger.debug("Auth session user", {
+    // Debug log to see what's in the session
+    logger.debug("Auth session details", {
       userId: session.user?.id,
       email: session.user?.email,
       companyId: session.user?.companyId,
       role: session.user?.role,
+      activeOrganizationId: session.session?.activeOrganizationId,
+      fullSession: JSON.stringify(session.session),
+      fullUser: JSON.stringify(session.user),
     });
 
     req.authSession = session;

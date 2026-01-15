@@ -1,393 +1,437 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { MoreHorizontal, Plus, Search, Building2, Download, Eye, Edit, Trash, TrendingUp, TrendingDown } from "lucide-react"
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { DataTable } from "@/components/common/data-table/data-table";
+import { DataTableAdvancedToolbar } from "@/components/common/data-table/data-table-advanced-toolbar";
+import { DataTableFilterMenu } from "@/components/common/data-table/data-table-filter-menu";
+import { DataTableSortList } from "@/components/common/data-table/data-table-sort-list";
+import { useDataTable } from "@/hooks/use-data-table";
+import { columns } from "./columns";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@ui/sheet";
+import { SupplierForm } from "@/components/forms/supplier-form/form";
+import { supplierService } from "@/lib/services/supplier.service";
+import type {
+  Supplier as SupplierType,
+  SupplierForm as SupplierFormType,
+} from "@/lib/types/supplier";
+import {
+  Plus,
+  Building2,
+  TrendingUp,
+  TrendingDown,
+  Download,
+  Search,
+} from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { toast } from "sonner";
+import type { Supplier as ColumnsSupplier } from "./columns";
+import type { RowData, TableMeta } from "@tanstack/react-table";
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card"
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
-import { formatCurrency } from "@/lib/utils"
-
-interface Supplier {
-    id: string
-    supplierCode: string
-    supplierName: string
-    displayName: string
-    email: string
-    phone: string
-    address: {
-        street: string
-        city: string
-        state: string
-        zipCode: string
-        country: string
-    }
-    taxId: string
-    paymentTerms: string
-    currentBalance: number
-    isActive: boolean
-    category: "Food" | "Non-Food" | "Supplies" | "Services"
+declare module "@tanstack/react-table" {
+  interface TableMeta<TData extends RowData> {
+    onEdit?: (supplier: TData) => void;
+    onView?: (supplier: TData) => void;
+    onDelete?: (supplier: TData) => void;
+  }
 }
 
-const mockSuppliers: Supplier[] = [
-    {
-        id: "SUP-001",
-        supplierCode: "MRT-2025",
-        supplierName: "Manila Rice Trading Co.",
-        displayName: "Manila Rice Trading",
-        email: "accounts@manilarice.com",
-        phone: "+63 2 1234 5678",
-        address: {
-            street: "123 Rizal Avenue",
-            city: "Manila",
-            state: "Metro Manila",
-            zipCode: "1000",
-            country: "Philippines"
-        },
-        taxId: "123-456-789-000",
-        paymentTerms: "Net 30",
-        currentBalance: 0,
-        isActive: true,
-        category: "Food"
-    },
-    {
-        id: "SUP-002",
-        supplierCode: "MCS-2025",
-        supplierName: "Metro Cleaning Supplies Inc.",
-        displayName: "Metro Cleaning Supplies",
-        email: "billing@metrocleaning.ph",
-        phone: "+63 2 9876 5432",
-        address: {
-            street: "456 Quezon Boulevard",
-            city: "Quezon City",
-            state: "Metro Manila",
-            zipCode: "1100",
-            country: "Philippines"
-        },
-        taxId: "234-567-890-000",
-        paymentTerms: "Net 30",
-        currentBalance: 3500.00,
-        isActive: true,
-        category: "Non-Food"
-    },
-    {
-        id: "SUP-003",
-        supplierCode: "BPW-2025",
-        supplierName: "Beauty Products Wholesalers Corp.",
-        displayName: "Beauty Products Wholesalers",
-        email: "sales@beautyproducts.ph",
-        phone: "+63 2 5555 1234",
-        address: {
-            street: "789 Makati Avenue",
-            city: "Makati",
-            state: "Metro Manila",
-            zipCode: "1200",
-            country: "Philippines"
-        },
-        taxId: "345-678-901-000",
-        paymentTerms: "Net 15",
-        currentBalance: 5250.00,
-        isActive: true,
-        category: "Supplies"
-    },
-    {
-        id: "SUP-004",
-        supplierCode: "QCG-2025",
-        supplierName: "Quick Canned Goods Distributor",
-        displayName: "Quick Canned Goods",
-        email: "accounts@quickcanned.com",
-        phone: "+63 2 7777 8888",
-        address: {
-            street: "321 Commonwealth Avenue",
-            city: "Quezon City",
-            state: "Metro Manila",
-            zipCode: "1101",
-            country: "Philippines"
-        },
-        taxId: "456-789-012-000",
-        paymentTerms: "Net 30",
-        currentBalance: 3250.00,
-        isActive: true,
-        category: "Food"
-    },
-    {
-        id: "SUP-005",
-        supplierCode: "ODM-2025",
-        supplierName: "Office Depot Manila",
-        displayName: "Office Depot",
-        email: "billing@officedepot.ph",
-        phone: "+63 2 3333 4444",
-        address: {
-            street: "654 Ortigas Avenue",
-            city: "Pasig",
-            state: "Metro Manila",
-            zipCode: "1600",
-            country: "Philippines"
-        },
-        taxId: "567-890-123-000",
-        paymentTerms: "Net 30",
-        currentBalance: 0,
-        isActive: false,
-        category: "Non-Food"
-    },
-]
-
 export default function SuppliersPage() {
-    const [suppliers] = useState<Supplier[]>(mockSuppliers)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [suppliers, setSuppliers] = useState<ColumnsSupplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  // Keep lightweight search input wired to hidden column "search"
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [editingSupplier, setEditingSupplier] =
+    useState<ColumnsSupplier | null>(null);
+  const [editingFormData, setEditingFormData] = useState<
+    Partial<SupplierFormType & { _id?: string }> | undefined
+  >(undefined);
+  const filteredSuppliers = suppliers; // DataTable handles filters client-side
 
-    const filteredSuppliers = suppliers.filter((supplier) => {
-        const matchesSearch =
-            supplier.supplierName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            supplier.supplierCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            supplier.email.toLowerCase().includes(searchQuery.toLowerCase())
+  // Transform API supplier to table format
+  const transformSupplier = (supplier: SupplierType): ColumnsSupplier => {
+    return {
+      id: supplier._id,
+      supplierCode: supplier.supplierCode,
+      supplierName: supplier.supplierName,
+      displayName: supplier.displayName,
+      email: supplier.email,
+      phone: supplier.phone,
+      address: supplier.address,
+      paymentTerms: supplier.paymentTerms,
+      currentBalance: supplier.currentBalance,
+      isActive: supplier.isActive,
+    };
+  };
 
-        const matchesCategory = categoryFilter === "all" || supplier.category === categoryFilter
+  // Fetch suppliers
+  const fetchSuppliers = async () => {
+    setIsLoading(true);
+    try {
+      const result = await supplierService.getAllSuppliers();
+      if (result.success && result.data) {
+        const transformed = result.data.map(transformSupplier);
+        setSuppliers(transformed);
+      } else {
+        throw new Error(result.error || "Failed to fetch suppliers");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to fetch suppliers";
+      toast.error(message);
+      console.error("Error fetching suppliers:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-        return matchesSearch && matchesCategory
-    })
+  useEffect(() => {
+    fetchSuppliers();
+  }, []);
 
-    const activeSuppliers = suppliers.filter(s => s.isActive).length
-    const totalBalance = suppliers.reduce((sum, s) => sum + s.currentBalance, 0)
+  const totalSuppliers = suppliers.length;
+  const activeSuppliers = suppliers.filter((s) => s.isActive).length;
+  const totalBalance = suppliers.reduce((sum, s) => sum + s.currentBalance, 0);
 
-    return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
-                        Suppliers
-                    </h1>
-                    <p className="text-muted-foreground">
-                        Manage your supplier relationships
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                        <Download className="h-4 w-4 mr-2" />
-                        Export
-                    </Button>
-                    <Link href="/suppliers/create">
-                        <Button size="sm">
-                            <Plus className="h-4 w-4 mr-2" />
-                            New Supplier
-                        </Button>
-                    </Link>
-                </div>
-            </div>
+  // Calculate average payment terms (simplified - just show "Net 30" for now)
+  const avgPaymentTerms = "Net 30";
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
-                        <Building2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{suppliers.length}</div>
-                        <p className="text-xs text-muted-foreground">
-                            {activeSuppliers} active
-                        </p>
-                    </CardContent>
-                </Card>
+  // Initialize DataTable
+  const { table } = useDataTable<ColumnsSupplier>({
+    data: filteredSuppliers,
+    columns,
+    pageCount: Math.max(1, Math.ceil(filteredSuppliers.length / 10)),
+    initialState: {
+      sorting: [{ id: "supplierName", desc: false }],
+      pagination: {
+        pageSize: 10,
+        pageIndex: 0,
+      },
+      columnVisibility: { search: false },
+    },
+    getRowId: (row) => row.id,
+    manualFiltering: false,
+    manualSorting: false,
+    manualPagination: false,
+    meta: {
+      onEdit: async (supplier: ColumnsSupplier) => {
+        try {
+          // Fetch full supplier details for editing
+          const result = await supplierService.getSupplierById(supplier.id);
+          if (result.success && result.data) {
+            const formData: Partial<SupplierFormType & { _id?: string }> = {
+              _id: result.data._id,
+              supplierCode: result.data.supplierCode,
+              supplierName: result.data.supplierName,
+              displayName: result.data.displayName,
+              email: result.data.email,
+              phone: result.data.phone,
+              website: result.data.website,
+              address: result.data.address,
+              taxId: result.data.taxId,
+              paymentTerms: result.data.paymentTerms,
+              openingBalance: result.data.openingBalance,
+              isActive: result.data.isActive,
+              notes: result.data.notes,
+            };
+            setEditingFormData(formData);
+            setEditingSupplier(supplier);
+            setIsSheetOpen(true);
+          }
+        } catch (error) {
+          toast.error("Failed to load supplier details");
+          console.error("Error loading supplier:", error);
+        }
+      },
+      onView: async (supplier: ColumnsSupplier) => {
+        // For now, same as edit - can be enhanced later
+        const result = await supplierService.getSupplierById(supplier.id);
+        if (result.success && result.data) {
+          const formData: Partial<SupplierFormType & { _id?: string }> = {
+            _id: result.data._id,
+            supplierCode: result.data.supplierCode,
+            supplierName: result.data.supplierName,
+            displayName: result.data.displayName,
+            email: result.data.email,
+            phone: result.data.phone,
+            website: result.data.website,
+            address: result.data.address,
+            taxId: result.data.taxId,
+            paymentTerms: result.data.paymentTerms,
+            openingBalance: result.data.openingBalance,
+            isActive: result.data.isActive,
+            notes: result.data.notes,
+          };
+          setEditingFormData(formData);
+          setEditingSupplier(supplier);
+          setIsSheetOpen(true);
+        }
+      },
+      onDelete: async (supplier: ColumnsSupplier) => {
+        if (
+          !confirm(
+            `Are you sure you want to delete ${supplier.supplierName}? This will deactivate the supplier.`
+          )
+        ) {
+          return;
+        }
 
-                <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Suppliers</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-green-600 group-hover:text-green-500 transition-colors" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{activeSuppliers}</div>
-                        <p className="text-xs text-muted-foreground">
-                            {((activeSuppliers / suppliers.length) * 100).toFixed(0)}% of total
-                        </p>
-                    </CardContent>
-                </Card>
+        try {
+          const result = await supplierService.deleteSupplier(supplier.id);
+          if (result.success) {
+            toast.success("Supplier deleted successfully");
+            await fetchSuppliers();
+          } else {
+            throw new Error(result.error || "Failed to delete supplier");
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Failed to delete supplier";
+          toast.error(message);
+          console.error("Error deleting supplier:", error);
+        }
+      },
+    },
+  });
 
-                <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Payables</CardTitle>
-                        <TrendingDown className="h-4 w-4 text-red-600 group-hover:text-red-500 transition-colors" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">{formatCurrency(totalBalance)}</div>
-                        <p className="text-xs text-muted-foreground">
-                            Outstanding balance
-                        </p>
-                    </CardContent>
-                </Card>
+  const handleFormSubmit = async () => {
+    // Refresh suppliers after successful save
+    await fetchSuppliers();
 
-                <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Avg Payment Terms</CardTitle>
-                        <Building2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">Net 30</div>
-                        <p className="text-xs text-muted-foreground">
-                            Standard terms
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
+    // Close the sheet after successful save
+    setIsSheetOpen(false);
+    setEditingSupplier(null);
+    setEditingFormData(undefined);
+  };
 
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                        <div>
-                            <CardTitle>All Suppliers</CardTitle>
-                            <CardDescription>
-                                View and manage supplier information
-                            </CardDescription>
-                        </div>
-                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-                            <div className="relative flex-1 md:w-64">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search suppliers..."
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="pl-8"
-                                />
-                            </div>
-                            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                                <SelectTrigger className="w-full sm:w-[140px]">
-                                    <SelectValue placeholder="Category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Categories</SelectItem>
-                                    <SelectItem value="Food">Food</SelectItem>
-                                    <SelectItem value="Non-Food">Non-Food</SelectItem>
-                                    <SelectItem value="Supplies">Supplies</SelectItem>
-                                    <SelectItem value="Services">Services</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent>
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Code</TableHead>
-                                    <TableHead>Supplier Name</TableHead>
-                                    <TableHead>Category</TableHead>
-                                    <TableHead>Contact</TableHead>
-                                    <TableHead>Payment Terms</TableHead>
-                                    <TableHead>Balance</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredSuppliers.map((supplier) => (
-                                    <TableRow key={supplier.id}>
-                                        <TableCell className="font-medium">{supplier.supplierCode}</TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">{supplier.displayName}</span>
-                                                <span className="text-xs text-muted-foreground">
-                                                    {supplier.address.city}, {supplier.address.state}
-                                                </span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={
-                                                supplier.category === "Supplies" ? "bg-purple-500/10 text-purple-600 border-purple-500/20" :
-                                                supplier.category === "Food" ? "bg-blue-500/10 text-blue-600 border-blue-500/20" :
-                                                supplier.category === "Services" ? "bg-orange-500/10 text-orange-600 border-orange-500/20" :
-                                                "bg-green-500/10 text-green-600 border-green-500/20"
-                                            }>
-                                                {supplier.category}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="text-sm">{supplier.email}</span>
-                                                <span className="text-xs text-muted-foreground">{supplier.phone}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{supplier.paymentTerms}</TableCell>
-                                        <TableCell className="font-medium">
-                                            {supplier.currentBalance > 0 ? (
-                                                <span className="text-red-600">{formatCurrency(supplier.currentBalance)}</span>
-                                            ) : (
-                                                <span className="text-green-600">{formatCurrency(0)}</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className={
-                                                supplier.isActive 
-                                                    ? "bg-green-500/10 text-green-600 border-green-500/20" 
-                                                    : "bg-gray-500/10 text-gray-600 border-gray-500/20"
-                                            }>
-                                                {supplier.isActive ? "Active" : "Inactive"}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <span className="sr-only">Open menu</span>
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        View Details
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Edit
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="text-red-600">
-                                                        <Trash className="mr-2 h-4 w-4" />
-                                                        Delete
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+  const handleNewSupplier = () => {
+    setEditingSupplier(null);
+    setEditingFormData(undefined);
+    setIsSheetOpen(true);
+  };
+
+  const handleExportCSV = () => {
+    // Export currently filtered rows from the table
+    const rows = table.getFilteredRowModel().rows;
+    const header = [
+      "Supplier Code",
+      "Supplier Name",
+      "Email",
+      "Phone",
+      "Payment Terms",
+      "Balance",
+      "Status",
+    ];
+    const data = rows.map((r) => r.original);
+    const csv = [
+      header,
+      ...data.map((s) => [
+        s.supplierCode,
+        s.supplierName,
+        s.email,
+        s.phone,
+        s.paymentTerms,
+        s.currentBalance,
+        s.isActive ? "Active" : "Inactive",
+      ]),
+    ]
+      .map((row) => row.join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "suppliers.csv";
+    a.click();
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+            Suppliers
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your supplier relationships
+          </p>
         </div>
-    )
+
+        <Sheet
+          open={isSheetOpen}
+          onOpenChange={(open) => {
+            setIsSheetOpen(open);
+            if (!open) {
+              setEditingSupplier(null);
+              setEditingFormData(undefined);
+            }
+          }}
+        >
+          <SheetTrigger asChild>
+            <Button
+              onClick={() => {
+                setEditingSupplier(null);
+                setEditingFormData(undefined);
+              }}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Supplier
+            </Button>
+          </SheetTrigger>
+          <SheetContent className="min-w-1/3">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <span>🏢</span>{" "}
+                <span>
+                  {editingSupplier ? "Edit Supplier" : "Add Supplier"}
+                </span>
+              </SheetTitle>
+              <SheetDescription>
+                {editingSupplier
+                  ? "Update supplier information"
+                  : "Add a new supplier to your system"}
+              </SheetDescription>
+            </SheetHeader>
+            {/* Supplier form */}
+            <div className="overflow-y-scroll pb-10 no-scrollbar">
+              <SupplierForm
+                key={editingSupplier?.id || "new"} // Force re-render when editing different suppliers
+                initialData={editingFormData}
+                onSubmit={handleFormSubmit}
+                onCancel={() => {
+                  setIsSheetOpen(false);
+                  setEditingSupplier(null);
+                  setEditingFormData(undefined);
+                }}
+                submitButtonText={
+                  editingSupplier ? "Update Supplier" : "Create Supplier"
+                }
+              />
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Suppliers
+            </CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalSuppliers}</div>
+            <p className="text-xs text-muted-foreground">
+              {activeSuppliers} active
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Active Suppliers
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600 group-hover:text-green-500 transition-colors" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeSuppliers}</div>
+            <p className="text-xs text-muted-foreground">
+              {totalSuppliers > 0
+                ? `${((activeSuppliers / totalSuppliers) * 100).toFixed(
+                    0
+                  )}% of total`
+                : "0% of total"}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Payables
+            </CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-600 group-hover:text-red-500 transition-colors" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(totalBalance)}
+            </div>
+            <p className="text-xs text-muted-foreground">Outstanding balance</p>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Avg Payment Terms
+            </CardTitle>
+            <Building2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{avgPaymentTerms}</div>
+            <p className="text-xs text-muted-foreground">Standard terms</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Suppliers Table */}
+      <Card className="border border-border/50 gap-2">
+        {/* <CardHeader>
+          <CardTitle>Suppliers</CardTitle>
+          <CardDescription>View and manage all suppliers</CardDescription>
+        </CardHeader> */}
+        <CardContent>
+          <DataTable table={table}>
+            <DataTableAdvancedToolbar table={table}>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search suppliers..."
+                  className="pl-8 w-56 h-8"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSearchQuery(v);
+                    table.getColumn("search")?.setFilterValue(v || undefined);
+                  }}
+                />
+              </div>
+              <DataTableFilterMenu table={table} />
+              <DataTableSortList table={table} />
+              <Button
+                variant="outline"
+                size={"sm"}
+                className="font-normal"
+                onClick={handleExportCSV}
+              >
+                <Download className="mr-2 h-4 w-4 text-muted-foreground" />
+                Export CSV
+              </Button>
+            </DataTableAdvancedToolbar>
+          </DataTable>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

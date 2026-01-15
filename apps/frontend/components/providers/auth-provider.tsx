@@ -26,11 +26,11 @@ export default function AuthProvider({
   } = useSession();
   const [error, setError] = useState<Error | null>(null);
 
-  console.log("[AuthProvider] useSession state:", {
-    isPending,
-    hasSessionData: !!sessionData,
-    hasUser: !!sessionData?.user,
-  });
+  // console.log("[AuthProvider] useSession state:", {
+  //   isPending,
+  //   hasSessionData: !!sessionData,
+  //   hasUser: !!sessionData?.user,
+  // });
 
   // Update error state
   useEffect(() => {

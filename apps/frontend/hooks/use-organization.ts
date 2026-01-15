@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useEffect } from "react";
 import type {
   Organization,
   ParsedOrganization,
@@ -12,6 +12,7 @@ import type {
 import {
   useActiveOrganization,
   useListOrganizations,
+  useSession,
   authClient,
 } from "@/lib/config/auth-client";
 
@@ -107,11 +108,92 @@ export type UseOrganizationReturn = {
  * @returns Organization utilities and active organization (company) data
  */
 export function useOrganization(): UseOrganizationReturn {
-  const { data, isPending, error } = useActiveOrganization();
-  console.log("useOrganization - active organization data:", data);
+  const { data: activeOrgData, isPending, error } = useActiveOrganization();
+  const { data: sessionData } = useSession();
+  const { data: organizationsData } = useListOrganizations();
 
-  // useActiveOrganization returns the active org data directly, not wrapped under a property
-  const activeOrganization = (data ?? null) as Organization | null;
+  // Debug logging
+  console.log("useOrganization - useActiveOrganization response:", {
+    data: activeOrgData,
+    isPending,
+    error,
+    dataType: typeof activeOrgData,
+    dataKeys: activeOrgData ? Object.keys(activeOrgData) : null,
+  });
+
+  console.log("useOrganization - session data:", {
+    session: sessionData,
+    sessionKeys: sessionData ? Object.keys(sessionData) : null,
+    activeOrganizationId: (sessionData as any)?.session?.activeOrganizationId,
+    activeOrganization: (sessionData as any)?.session?.activeOrganization,
+  });
+
+  console.log("useOrganization - organizations list:", organizationsData);
+
+  // Better-auth's useActiveOrganization can return data in different formats:
+  // 1. Direct organization object
+  // 2. Wrapped in { organization: {...} }
+  // 3. Wrapped in { data: {...} }
+  // 4. null if no active organization is set
+  let activeOrganization: Organization | null = null;
+
+  if (activeOrgData) {
+    if (typeof activeOrgData === "object") {
+      // Check if it's wrapped in a property
+      if ("organization" in activeOrgData && activeOrgData.organization) {
+        activeOrganization = activeOrgData.organization as Organization;
+      } else if ("data" in activeOrgData && activeOrgData.data) {
+        activeOrganization = activeOrgData.data as Organization;
+      } else if (
+        "id" in activeOrgData ||
+        "name" in activeOrgData ||
+        "slug" in activeOrgData
+      ) {
+        // It's likely the organization object directly
+        activeOrganization = activeOrgData as Organization;
+      }
+    }
+  }
+
+  // Fallback: Try to get from session if hook returns null
+  if (!activeOrganization && sessionData) {
+    const session = (sessionData as any)?.session;
+    if (session?.activeOrganization) {
+      activeOrganization = session.activeOrganization as Organization;
+    }
+  }
+
+  // Auto-set first organization as active if none is set but user has organizations
+  useEffect(() => {
+    if (!isPending && !activeOrganization && organizationsData) {
+      const orgs = Array.isArray(organizationsData)
+        ? organizationsData
+        : (organizationsData as any)?.data ||
+          (organizationsData as any)?.organizations ||
+          [];
+
+      if (orgs.length > 0 && orgs[0]) {
+        const firstOrg = orgs[0] as Organization;
+        console.log(
+          "useOrganization - Auto-setting first organization as active:",
+          firstOrg
+        );
+        const orgClient = (authClient as any)?.organization;
+        if (orgClient?.setActive) {
+          orgClient
+            .setActive({ organizationId: firstOrg.id })
+            .catch((err: Error) => {
+              console.error("Failed to auto-set active organization:", err);
+            });
+        }
+      }
+    }
+  }, [isPending, activeOrganization, organizationsData]);
+
+  console.log(
+    "useOrganization - final activeOrganization:",
+    activeOrganization
+  );
   const organization: OrganizationClient =
     (authClient as any)?.organization ?? null;
 

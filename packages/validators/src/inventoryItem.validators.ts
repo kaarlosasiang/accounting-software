@@ -29,7 +29,9 @@ const inventoryItemSchema = z
     quantityOnHand: z
       .number({ message: "Quantity on hand must be a number" })
       .min(0, "Quantity on hand cannot be negative"),
-    quantityAsOfDate: z.date({ message: "Quantity as of date is required" }),
+    quantityAsOfDate: z.date({
+      message: "Quantity as of date is required",
+    }),
     reorderLevel: z
       .number({ message: "Reorder level must be a number" })
       .min(0, "Reorder level cannot be negative"),

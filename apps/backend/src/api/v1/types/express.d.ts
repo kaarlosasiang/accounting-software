@@ -5,6 +5,7 @@ declare global {
       email: string;
       name?: string;
       companyId?: string | null;
+      organizationId?: string | null;
       role?: string | null;
       [key: string]: unknown;
     }

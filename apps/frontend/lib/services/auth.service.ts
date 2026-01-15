@@ -1,6 +1,7 @@
 "use client";
 
 import { authClient } from "../config/auth-client";
+import { apiFetch } from "../config/api-client";
 
 export type LoginPayload = {
   email: string;
@@ -62,33 +63,23 @@ export async function signUp(payload: SignupPayload): Promise<SignUpResponse> {
     username,
   } = payload;
 
-  // Use fetch directly to send custom fields to Better Auth
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL}/auth/sign-up/email`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email,
-        password,
-        name: getFullName(firstName, middleName, lastName),
-        first_name: firstName,
-        middle_name: middleName,
-        last_name: lastName,
-        phone_number: phoneNumber,
-        companyId,
-        role,
-        username,
-      }),
-      credentials: "include",
-    }
-  );
+  const result = await apiFetch<SignUpResponse>("/auth/sign-up/email", {
+    method: "POST",
+    body: JSON.stringify({
+      email,
+      password,
+      name: getFullName(firstName, middleName, lastName),
+      first_name: firstName,
+      middle_name: middleName,
+      last_name: lastName,
+      phone_number: phoneNumber,
+      companyId,
+      role,
+      username,
+    }),
+  });
 
-  const result = await response.json();
-
-  if (!response.ok || result.error) {
+  if (result.error) {
     throw new Error(result.error?.message ?? "Unable to sign up right now.");
   }
 
