@@ -1,4 +1,7 @@
-import type { User as BetterAuthUser, Session as BetterAuthSession } from "better-auth/types";
+import type {
+  User as BetterAuthUser,
+  Session as BetterAuthSession,
+} from "better-auth/types";
 
 /**
  * Extended User type with additional fields from Better Auth configuration.
@@ -93,16 +96,60 @@ export interface SetPasswordData {
 }
 
 /**
- * Organization plugin types
+ * Organization plugin types (mapped to Company entity)
  */
+export interface CompanyAddress {
+  street?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}
+
+export interface CompanyContact {
+  phone?: string;
+  email?: string;
+  website?: string;
+}
+
+export type BusinessType =
+  | "sole proprietorship"
+  | "partnership"
+  | "corporation"
+  | "non-profit"
+  | "government"
+  | "other";
+
+/**
+ * Metadata stored in organization.metadata field
+ * Contains nested objects that don't need direct DB querying
+ */
+export interface CompanyMetadata {
+  address?: CompanyAddress[];
+  contact?: CompanyContact[];
+  industry?: string;
+  companySize?: string;
+  description?: string;
+}
+
 export interface Organization {
   id: string;
   name: string;
   slug: string;
   logo?: string;
-  metadata?: Record<string, any>;
+  metadata?: CompanyMetadata;
   createdAt: Date;
+  // Company-specific scalar fields (additionalFields)
+  businessType?: BusinessType;
+  taxId?: string;
+  fiscalYearStart?: string; // ISO date string
+  currency?: string;
+  headerText?: string;
+  isActive?: boolean;
 }
+
+// Helper type alias - Organization already has typed metadata
+export type ParsedOrganization = Organization;
 
 export interface Member {
   id: string;
@@ -157,7 +204,16 @@ export interface ListMembersQuery {
   sortBy?: string;
   sortDirection?: "asc" | "desc";
   filterField?: string;
-  filterOperator?: "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "in" | "nin" | "contains";
+  filterOperator?:
+    | "eq"
+    | "ne"
+    | "gt"
+    | "gte"
+    | "lt"
+    | "lte"
+    | "in"
+    | "nin"
+    | "contains";
   filterValue?: string;
 }
 

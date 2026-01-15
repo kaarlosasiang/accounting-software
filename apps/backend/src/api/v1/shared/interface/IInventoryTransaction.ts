@@ -16,6 +16,7 @@ export enum InventoryTransactionType {
 export enum InventoryReferenceType {
   INVOICE = "Invoice",
   BILL = "Bill",
+  JOURNAL_ENTRY = "JournalEntry",
   MANUAL = "Manual",
 }
 
@@ -38,6 +39,42 @@ export interface IInventoryTransaction {
   notes?: string;
   createdBy: Types.ObjectId;
   createdAt: Date;
+}
+
+/**
+ * Inventory Transaction Static Methods
+ */
+export interface IInventoryTransactionModel {
+  findByInventoryItem(
+    inventoryItemId: Types.ObjectId
+  ): Promise<IInventoryTransactionDocument[]>;
+  findByType(
+    companyId: Types.ObjectId,
+    transactionType: InventoryTransactionType
+  ): Promise<IInventoryTransactionDocument[]>;
+  findByDateRange(
+    companyId: Types.ObjectId,
+    startDate: Date,
+    endDate: Date
+  ): Promise<IInventoryTransactionDocument[]>;
+  findByReference(
+    referenceType: InventoryReferenceType,
+    referenceId: Types.ObjectId
+  ): Promise<IInventoryTransactionDocument[]>;
+  getMovementSummary(
+    inventoryItemId: Types.ObjectId,
+    startDate: Date,
+    endDate: Date
+  ): Promise<any[]>;
+  calculateCOGS(
+    inventoryItemId: Types.ObjectId,
+    startDate: Date,
+    endDate: Date
+  ): Promise<{
+    totalCOGS: number;
+    totalQuantitySold: number;
+    averageCost: number;
+  }>;
 }
 
 /**

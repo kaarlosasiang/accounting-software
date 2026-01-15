@@ -1,11 +1,12 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Model } from "mongoose";
 
 import {
   IInventoryTransaction,
   IInventoryTransactionDocument,
+  IInventoryTransactionModel,
   InventoryReferenceType,
   InventoryTransactionType,
-} from '../shared/interface/IInventoryTransaction.js';
+} from "../shared/interface/IInventoryTransaction.js";
 
 /**
  * Inventory Transaction Schema
@@ -92,7 +93,7 @@ const InventoryTransactionSchema = new Schema<IInventoryTransaction>(
   {
     timestamps: { createdAt: true, updatedAt: false },
     collection: "inventoryTransactions",
-  },
+  }
 );
 
 /**
@@ -123,13 +124,13 @@ InventoryTransactionSchema.pre("save", function () {
 InventoryTransactionSchema.pre("save", function () {
   if (this.quantityIn > 0 && this.quantityOut > 0) {
     throw new Error(
-      "A transaction cannot have both quantity in and quantity out. One must be zero.",
+      "A transaction cannot have both quantity in and quantity out. One must be zero."
     );
   }
 
   if (this.quantityIn === 0 && this.quantityOut === 0) {
     throw new Error(
-      "A transaction must have either quantity in or quantity out greater than zero.",
+      "A transaction must have either quantity in or quantity out greater than zero."
     );
   }
 
@@ -153,7 +154,7 @@ InventoryTransactionSchema.pre("save", function () {
  * Static method: Find transactions by inventory item
  */
 InventoryTransactionSchema.statics.findByInventoryItem = function (
-  inventoryItemId: mongoose.Types.ObjectId,
+  inventoryItemId: mongoose.Types.ObjectId
 ) {
   return this.find({ inventoryItemId }).sort({ transactionDate: -1 });
 };
@@ -163,7 +164,7 @@ InventoryTransactionSchema.statics.findByInventoryItem = function (
  */
 InventoryTransactionSchema.statics.findByType = function (
   companyId: mongoose.Types.ObjectId,
-  transactionType: InventoryTransactionType,
+  transactionType: InventoryTransactionType
 ) {
   return this.find({ companyId, transactionType }).sort({
     transactionDate: -1,
@@ -176,7 +177,7 @@ InventoryTransactionSchema.statics.findByType = function (
 InventoryTransactionSchema.statics.findByDateRange = function (
   companyId: mongoose.Types.ObjectId,
   startDate: Date,
-  endDate: Date,
+  endDate: Date
 ) {
   return this.find({
     companyId,
@@ -189,7 +190,7 @@ InventoryTransactionSchema.statics.findByDateRange = function (
  */
 InventoryTransactionSchema.statics.findByReference = function (
   referenceType: InventoryReferenceType,
-  referenceId: mongoose.Types.ObjectId,
+  referenceId: mongoose.Types.ObjectId
 ) {
   return this.find({ referenceType, referenceId }).sort({
     transactionDate: -1,
@@ -202,7 +203,7 @@ InventoryTransactionSchema.statics.findByReference = function (
 InventoryTransactionSchema.statics.getMovementSummary = async function (
   inventoryItemId: mongoose.Types.ObjectId,
   startDate: Date,
-  endDate: Date,
+  endDate: Date
 ) {
   const result = await this.aggregate([
     {
@@ -231,7 +232,7 @@ InventoryTransactionSchema.statics.getMovementSummary = async function (
 InventoryTransactionSchema.statics.calculateCOGS = async function (
   inventoryItemId: mongoose.Types.ObjectId,
   startDate: Date,
-  endDate: Date,
+  endDate: Date
 ) {
   const result = await this.aggregate([
     {
@@ -266,9 +267,8 @@ InventoryTransactionSchema.statics.calculateCOGS = async function (
  * Export the model
  */
 export const InventoryTransaction =
-  (mongoose.models
-    .InventoryTransaction as mongoose.Model<IInventoryTransactionDocument>) ||
+  (mongoose.models.InventoryTransaction as any) ||
   mongoose.model<IInventoryTransactionDocument>(
     "InventoryTransaction",
-    InventoryTransactionSchema as any,
+    InventoryTransactionSchema as any
   );

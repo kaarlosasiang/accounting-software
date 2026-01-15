@@ -15,7 +15,7 @@ export default function CompanySetupPage() {
     <div className="bg-background flex min-h-svh flex-col items-center pb-10">
       <AuthNavbar />
       <div className="w-full max-w-2xl px-4 py-8">
-        <CompanySetupForm userId={user.id} />
+        <CompanySetupForm />
       </div>
     </div>
   );

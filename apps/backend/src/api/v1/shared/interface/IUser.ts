@@ -17,4 +17,10 @@ export interface IUser extends Document {
   updatedAt?: Date;
   last_login_date?: Date;
   last_activity: Date;
+  hasActiveSubscription?: boolean;
+  subscriptionPlan?: string;
+  subscriptionStatus?: string;
+  subscriptionActivatedAt?: Date;
+  subscriptionCancelledAt?: Date;
+  companySetupCompletedAt?: Date;
 }

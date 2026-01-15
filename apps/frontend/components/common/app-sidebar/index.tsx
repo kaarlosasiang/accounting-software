@@ -21,6 +21,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Crown } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { useOrganization } from "@/hooks/use-organization";
 
 // This is sample data (nav only).
 const data = {
@@ -168,10 +169,6 @@ const data = {
           title: "Transactions",
           url: "/inventory/transactions",
         },
-        {
-          title: "Add Item",
-          url: "/inventory/add",
-        },
       ],
     },
     {
@@ -238,12 +235,16 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user: authUser } = useAuth();
+  const { organizationName } = useOrganization();
+
+  console.log("Active Organization Name:", organizationName);
+
   const displayName =
     (authUser?.first_name && authUser?.last_name
       ? `${authUser.first_name} ${authUser.last_name}`
       : authUser?.name) ||
     (authUser?.email ? authUser.email.split("@")[0] : "User");
-  const displayEmail = authUser?.email ?? "";
+  const displayEmail = organizationName || authUser?.email || "";
   const displayAvatar = (authUser as any)?.image ?? "/avatars/user.jpg";
 
   const sidebarUser = {

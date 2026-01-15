@@ -1,6 +1,6 @@
 import { model, Schema } from "mongoose";
 
-import { IAccount } from '../shared/interface/IAccount.js';
+import { IAccount } from "../shared/interface/IAccount.js";
 
 /**
  * Account schema
@@ -73,7 +73,7 @@ const accountSchema = new Schema<IAccount>(
     toObject: {
       virtuals: true,
     },
-  },
+  }
 );
 
 // Compound index to ensure unique account code per company
