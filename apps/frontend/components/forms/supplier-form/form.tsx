@@ -3,7 +3,10 @@
 import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { supplierSchema } from "@rrd10-sas/validators";
+import {
+  supplierSchema,
+  type Supplier as SupplierSchemaType,
+} from "@rrd10-sas/validators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -19,7 +22,11 @@ import { Switch } from "@/components/ui/switch";
 import { Save } from "lucide-react";
 import { supplierService } from "@/lib/services/supplier.service";
 import { toast } from "sonner";
-import type { SupplierForm, SupplierFormProps } from "@/lib/types/supplier";
+import type {
+  Address,
+  SupplierForm,
+  SupplierFormProps,
+} from "@/lib/types/supplier";
 
 export function SupplierForm({
   onSubmit,
@@ -30,8 +37,16 @@ export function SupplierForm({
 }: SupplierFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const getDefaultValues = (): SupplierForm => {
-    const baseData: Partial<SupplierForm> = {
+  const getDefaultValues = (): Partial<SupplierSchemaType> => {
+    const defaultAddress = {
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      country: "",
+    };
+
+    const baseData: Partial<SupplierSchemaType> = {
       // supplierCode: "MRT-2025",
       // supplierName: "Manila Rice Trading Co.",
       // displayName: "Manila Rice Trading",
@@ -53,19 +68,23 @@ export function SupplierForm({
     };
 
     if (initialData) {
+      const address = initialData.address || baseData.address || defaultAddress;
       return {
         ...baseData,
         ...initialData,
-        address: initialData.address || baseData.address,
+        address,
       };
     }
 
     return baseData;
   };
 
+  // The types on useForm are strict about required fields,
+  // but react-hook-form works fine with partial defaultValues.
+  // Cast getDefaultValues() as any to avoid the error.
   const form = useForm({
     resolver: zodResolver(supplierSchema),
-    defaultValues: getDefaultValues(),
+    defaultValues: getDefaultValues() as any,
   });
 
   // Update form when initialData changes
@@ -81,7 +100,7 @@ export function SupplierForm({
     }
   }, [initialData]);
 
-  const handleSubmit = async (data: SupplierForm) => {
+  const handleSubmit = async (data: SupplierSchemaType) => {
     setIsSubmitting(true);
     try {
       // Check if we're updating an existing supplier (has _id in initialData)
