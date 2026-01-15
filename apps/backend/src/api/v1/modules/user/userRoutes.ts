@@ -1,6 +1,6 @@
 import express from "express";
 
-import userController from "./userController";
+import userController from "./userController.js";
 import { requireAuth } from "../../shared/middleware/auth.middleware";
 
 const userRoutes = express.Router();

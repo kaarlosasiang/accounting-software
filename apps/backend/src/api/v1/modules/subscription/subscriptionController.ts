@@ -4,7 +4,7 @@ import {
   subscriptionCancellationSchema,
 } from "@rrd10-sas/validators";
 
-import subscriptionService from "./subscriptionService";
+import subscriptionService from "./subscriptionService.js";
 
 const subscriptionController = {
   // Define your controller methods here
