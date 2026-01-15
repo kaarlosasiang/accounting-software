@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { inventoryItemSchema } from "@rrd10-sas/validators";
 import inventoryService from "./inventoryService.js";
 import logger from "../../config/logger.js";
-import { getOrganizationId } from "../../shared/helpers/utils.js";
+import { getCompanyId } from "../../shared/helpers/utils.js";
 
 /**
  * Inventory Controller
@@ -16,16 +16,16 @@ const inventoryController = {
    */
   getAllItems: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const items = await inventoryService.getAllItems(organizationId);
+      const items = await inventoryService.getAllItems(companyId);
 
       return res.status(200).json({
         success: true,
@@ -50,16 +50,16 @@ const inventoryController = {
    */
   getActiveItems: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const items = await inventoryService.getActiveItems(organizationId);
+      const items = await inventoryService.getActiveItems(companyId);
 
       return res.status(200).json({
         success: true,
@@ -85,16 +85,16 @@ const inventoryController = {
   getItemById: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const item = await inventoryService.getItemById(organizationId, id);
+      const item = await inventoryService.getItemById(companyId, id);
 
       return res.status(200).json({
         success: true,
@@ -127,16 +127,16 @@ const inventoryController = {
   getItemBySku: async (req: Request, res: Response) => {
     try {
       const { sku } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const item = await inventoryService.getItemBySku(organizationId, sku);
+      const item = await inventoryService.getItemBySku(companyId, sku);
 
       return res.status(200).json({
         success: true,
@@ -169,9 +169,9 @@ const inventoryController = {
   getItemsByCategory: async (req: Request, res: Response) => {
     try {
       const { category } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -179,7 +179,7 @@ const inventoryController = {
       }
 
       const items = await inventoryService.getItemsByCategory(
-        organizationId,
+        companyId,
         category
       );
 
@@ -206,9 +206,9 @@ const inventoryController = {
    */
   getItemsNeedingReorder: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -216,7 +216,7 @@ const inventoryController = {
       }
 
       const items = await inventoryService.getItemsNeedingReorder(
-        organizationId
+        companyId
       );
 
       return res.status(200).json({
@@ -243,9 +243,9 @@ const inventoryController = {
   searchItems: async (req: Request, res: Response) => {
     try {
       const { q } = req.query;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -259,7 +259,7 @@ const inventoryController = {
         });
       }
 
-      const items = await inventoryService.searchItems(organizationId, q);
+      const items = await inventoryService.searchItems(companyId, q);
 
       return res.status(200).json({
         success: true,
@@ -284,10 +284,10 @@ const inventoryController = {
    */
   createItem: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
       const itemData = req.body;
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -305,7 +305,7 @@ const inventoryController = {
       }
 
       const item = await inventoryService.createItem(
-        organizationId,
+        companyId,
         validationResult.data
       );
 
@@ -341,10 +341,10 @@ const inventoryController = {
   updateItem: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
       const updateData = req.body;
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -364,7 +364,7 @@ const inventoryController = {
       }
 
       const item = await inventoryService.updateItem(
-        organizationId,
+        companyId,
         id,
         validationResult.data
       );
@@ -401,16 +401,16 @@ const inventoryController = {
   deleteItem: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const item = await inventoryService.deleteItem(organizationId, id);
+      const item = await inventoryService.deleteItem(companyId, id);
 
       return res.status(200).json({
         success: true,
@@ -444,11 +444,11 @@ const inventoryController = {
   adjustQuantity: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
       const userId = req.authUser?.id;
       const { adjustment, reason } = req.body;
 
-      if (!organizationId || !userId) {
+      if (!companyId || !userId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID and User ID are required",
@@ -463,7 +463,7 @@ const inventoryController = {
       }
 
       const item = await inventoryService.adjustQuantity(
-        organizationId,
+        companyId,
         id,
         adjustment,
         reason,
@@ -508,9 +508,9 @@ const inventoryController = {
    */
   getTotalInventoryValue: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -518,7 +518,7 @@ const inventoryController = {
       }
 
       const totalValue = await inventoryService.getTotalInventoryValue(
-        organizationId
+        companyId
       );
 
       return res.status(200).json({
@@ -544,9 +544,9 @@ const inventoryController = {
   getItemTransactions: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -554,7 +554,7 @@ const inventoryController = {
       }
 
       const transactions = await inventoryService.getItemTransactions(
-        organizationId,
+        companyId,
         id
       );
 
@@ -583,9 +583,9 @@ const inventoryController = {
     try {
       const { id } = req.params;
       const { startDate, endDate } = req.query;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -629,9 +629,9 @@ const inventoryController = {
     try {
       const { id } = req.params;
       const { startDate, endDate } = req.query;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -673,9 +673,9 @@ const inventoryController = {
    */
   getInventoryValuation: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -683,7 +683,7 @@ const inventoryController = {
       }
 
       const valuation = await inventoryService.getInventoryValuation(
-        organizationId
+        companyId
       );
 
       return res.status(200).json({

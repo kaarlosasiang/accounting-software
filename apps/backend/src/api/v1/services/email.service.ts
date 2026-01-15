@@ -118,31 +118,31 @@ export class EmailService {
   }
 
   /**
-   * Send organization invitation email
+   * Send company invitation email
    */
-  static async sendOrganizationInvitation(params: {
+  static async sendCompanyInvitation(params: {
     email: string;
     invitedByUsername: string;
     invitedByEmail: string;
-    organizationName: string;
+    companyName: string;
     inviteLink: string;
   }): Promise<void> {
-    const { email, invitedByUsername, organizationName, inviteLink } = params;
+    const { email, invitedByUsername, companyName, inviteLink } = params;
 
-    logger.info(`[Email Service] Sending organization invitation to ${email}`);
+    logger.info(`[Email Service] Sending company invitation to ${email}`);
 
     try {
       // TODO: Replace with actual email sending
       console.log(`
 ╔════════════════════════════════════════╗
-║    ORGANIZATION INVITATION             ║
+║    COMPANY INVITATION                  ║
 ╠════════════════════════════════════════╣
 ║ To: ${email.padEnd(38)}║
 ║                                        ║
 ║ ${invitedByUsername.substring(0, 38).padEnd(38)}║
 ║ invited you to join:                   ║
 ║                                        ║
-║ ${organizationName.substring(0, 38).padEnd(38)}║
+║ ${companyName.substring(0, 38).padEnd(38)}║
 ║                                        ║
 ║ Accept Invitation:                     ║
 ║ ${inviteLink.substring(0, 38).padEnd(38)}║
@@ -151,10 +151,10 @@ export class EmailService {
 ╚════════════════════════════════════════╝
       `);
 
-      logger.info(`[Email Service] Organization invitation sent to ${email}`);
+      logger.info(`[Email Service] Company invitation sent to ${email}`);
     } catch (error) {
       logger.error(
-        `[Email Service] Failed to send organization invitation to ${email}`,
+        `[Email Service] Failed to send company invitation to ${email}`,
         {
           error: error instanceof Error ? error.message : String(error),
         }

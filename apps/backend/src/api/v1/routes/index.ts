@@ -3,7 +3,6 @@ import { Application } from "express";
 import authRoutes from "../modules/auth/authRoutes.js";
 import subscriptionRoutes from "../modules/subscription/subscriptionRoutes.js";
 import accountsRoutes from "../modules/accounts/accountsRoutes.js";
-import companyRoutes from "../modules/company/companyRoutes.js";
 import inventoryRoutes from "../modules/inventory/inventoryRoutes.js";
 import supplierRoutes from "../modules/supplier/supplierRoutes.js";
 
@@ -25,9 +24,6 @@ export default (app: Application): void => {
 
   // Subscription routes (mock endpoints)
   app.use(`${API_PREFIX}/subscriptions`, subscriptionRoutes);
-
-  // Company routes
-  app.use(`${API_PREFIX}/companies`, companyRoutes);
 
   // Accounts routes
   app.use(`${API_PREFIX}/accounts`, accountsRoutes);

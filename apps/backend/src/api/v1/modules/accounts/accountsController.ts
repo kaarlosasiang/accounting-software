@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { accountSchema } from "@rrd10-sas/validators";
 import accountsService from "./accountsService.js";
 import logger from "../../config/logger.js";
-import { getOrganizationId } from "../../shared/helpers/utils.js";
+import { getCompanyId } from "../../shared/helpers/utils.js";
 
 /**
  * Accounts Controller
@@ -16,16 +16,16 @@ const accountsController = {
    */
   getAllAccounts: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const accounts = await accountsService.getAllAccounts(organizationId);
+      const accounts = await accountsService.getAllAccounts(companyId);
 
       return res.status(200).json({
         success: true,
@@ -51,9 +51,9 @@ const accountsController = {
   getAccountsByType: async (req: Request, res: Response) => {
     try {
       const { accountType } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -61,7 +61,7 @@ const accountsController = {
       }
 
       const accounts = await accountsService.getAccountsByType(
-        organizationId,
+        companyId,
         accountType
       );
 
@@ -89,16 +89,16 @@ const accountsController = {
   getAccountById: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const account = await accountsService.getAccountById(organizationId, id);
+      const account = await accountsService.getAccountById(companyId, id);
 
       return res.status(200).json({
         success: true,
@@ -130,10 +130,10 @@ const accountsController = {
    */
   createAccount: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
       const accountData = req.body;
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -151,7 +151,7 @@ const accountsController = {
       }
 
       const account = await accountsService.createAccount(
-        organizationId,
+        companyId,
         validationResult.data
       );
 
@@ -180,10 +180,10 @@ const accountsController = {
   updateAccount: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
       const updateData = req.body;
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -201,7 +201,7 @@ const accountsController = {
       }
 
       const account = await accountsService.updateAccount(
-        organizationId,
+        companyId,
         id,
         validationResult.data
       );
@@ -238,16 +238,16 @@ const accountsController = {
   deleteAccount: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const account = await accountsService.deleteAccount(organizationId, id);
+      const account = await accountsService.deleteAccount(companyId, id);
 
       return res.status(200).json({
         success: true,
@@ -281,9 +281,9 @@ const accountsController = {
   getAccountBalance: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -291,7 +291,7 @@ const accountsController = {
       }
 
       const balance = await accountsService.getAccountBalance(
-        organizationId,
+        companyId,
         id
       );
 
@@ -326,9 +326,9 @@ const accountsController = {
   searchAccounts: async (req: Request, res: Response) => {
     try {
       const { q } = req.query;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -342,7 +342,7 @@ const accountsController = {
         });
       }
 
-      const accounts = await accountsService.searchAccounts(organizationId, q);
+      const accounts = await accountsService.searchAccounts(companyId, q);
 
       return res.status(200).json({
         success: true,
@@ -368,9 +368,9 @@ const accountsController = {
    */
   getChartOfAccounts: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -378,7 +378,7 @@ const accountsController = {
       }
 
       const chartOfAccounts = await accountsService.getChartOfAccounts(
-        organizationId
+        companyId
       );
 
       return res.status(200).json({

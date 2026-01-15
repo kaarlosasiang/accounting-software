@@ -13,13 +13,16 @@ const mongoClient = new MongoClient(constants.mongodbUri, {
 
 const db = mongoClient.db(constants.dbName);
 
-// Create a proxy to intercept collection calls and rename "user" to "users"
+// Create a proxy to intercept collection calls and rename collections
 const dbProxy = new Proxy(db, {
   get(target, prop, receiver) {
     if (prop === "collection") {
       return function (name: string, options?: any) {
         // Redirect "user" collection to "users"
-        const collectionName = name === "user" ? "users" : name;
+        // Redirect "organization" collection to "company"
+        let collectionName = name;
+        if (name === "user") collectionName = "users";
+        if (name === "organization") collectionName = "company";
         return target.collection(collectionName, options);
       };
     }
@@ -88,23 +91,23 @@ export const authServer = betterAuth({
   plugins: [
     organization({
       async sendInvitationEmail(data) {
-        // Send organization invitation email
+        // Send company invitation email
         const inviteLink = `${constants.frontEndUrl}/accept-invitation/${data.id}`;
-        EmailService.sendOrganizationInvitation({
+        EmailService.sendCompanyInvitation({
           email: data.email,
           invitedByUsername: data.inviter.user.name,
           invitedByEmail: data.inviter.user.email,
-          organizationName: data.organization.name,
+          companyName: data.organization.name,
           inviteLink,
         }).catch((error) => {
-          logger.error("Failed to send organization invitation", {
+          logger.error("Failed to send company invitation", {
             error,
             email: data.email,
           });
         });
       },
       allowUserToCreateOrganization: true,
-      organizationLimit: 5, // Max 5 organizations per user
+      organizationLimit: 5, // Max 5 companies per user
       creatorRole: "owner",
       membershipLimit: 100, // Max 100 members per organization
       invitationExpiresIn: 60 * 60 * 24 * 7, // 7 days
@@ -112,7 +115,7 @@ export const authServer = betterAuth({
       // Map organization to Company entity with additional fields
       schema: {
         organization: {
-          modelName: "organization", // Keep as organization for better-auth compatibility
+          modelName: "company", // Use 'company' collection for accounting terminology
           additionalFields: {
             // Simple scalar fields as additionalFields for direct querying
             businessType: {

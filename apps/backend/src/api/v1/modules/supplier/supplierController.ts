@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { supplierSchema } from "@rrd10-sas/validators";
 import supplierService from "./supplierService.js";
 import logger from "../../config/logger.js";
-import { getOrganizationId } from "../../shared/helpers/utils.js";
+import { getCompanyId } from "../../shared/helpers/utils.js";
 
 /**
  * Supplier Controller
@@ -16,16 +16,16 @@ const supplierController = {
    */
   getAllSuppliers: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const suppliers = await supplierService.getAllSuppliers(organizationId);
+      const suppliers = await supplierService.getAllSuppliers(companyId);
 
       return res.status(200).json({
         success: true,
@@ -50,9 +50,9 @@ const supplierController = {
    */
   getActiveSuppliers: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -60,7 +60,7 @@ const supplierController = {
       }
 
       const suppliers = await supplierService.getActiveSuppliers(
-        organizationId
+        companyId
       );
 
       return res.status(200).json({
@@ -87,9 +87,9 @@ const supplierController = {
   getSupplierById: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -97,7 +97,7 @@ const supplierController = {
       }
 
       const supplier = await supplierService.getSupplierById(
-        organizationId,
+        companyId,
         id
       );
 
@@ -132,9 +132,9 @@ const supplierController = {
   getSupplierByCode: async (req: Request, res: Response) => {
     try {
       const { code } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -142,7 +142,7 @@ const supplierController = {
       }
 
       const supplier = await supplierService.getSupplierByCode(
-        organizationId,
+        companyId,
         code
       );
 
@@ -177,9 +177,9 @@ const supplierController = {
   searchSuppliers: async (req: Request, res: Response) => {
     try {
       const { q } = req.query;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -194,7 +194,7 @@ const supplierController = {
       }
 
       const suppliers = await supplierService.searchSuppliers(
-        organizationId,
+        companyId,
         q
       );
 
@@ -221,9 +221,9 @@ const supplierController = {
    */
   createSupplier: async (req: Request, res: Response) => {
     try {
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -241,7 +241,7 @@ const supplierController = {
       }
 
       const supplier = await supplierService.createSupplier(
-        organizationId,
+        companyId,
         validationResult.data
       );
 
@@ -280,9 +280,9 @@ const supplierController = {
   updateSupplier: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
@@ -300,7 +300,7 @@ const supplierController = {
       }
 
       const supplier = await supplierService.updateSupplier(
-        organizationId,
+        companyId,
         id,
         validationResult.data
       );
@@ -347,16 +347,16 @@ const supplierController = {
   deleteSupplier: async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      const organizationId = getOrganizationId(req);
+      const companyId = getCompanyId(req);
 
-      if (!organizationId) {
+      if (!companyId) {
         return res.status(401).json({
           success: false,
           message: "Organization ID is required",
         });
       }
 
-      const supplier = await supplierService.deleteSupplier(organizationId, id);
+      const supplier = await supplierService.deleteSupplier(companyId, id);
 
       return res.status(200).json({
         success: true,
