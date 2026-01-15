@@ -44,7 +44,7 @@ const AddressSchema = new Schema<IAddress>(
 /**
  * Supplier Schema
  */
-const SupplierSchema = new Schema<ISupplier>(
+const SupplierSchema = new Schema<ISupplierDocument>(
   {
     companyId: {
       type: Schema.Types.ObjectId,
