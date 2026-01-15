@@ -17,12 +17,15 @@ export interface AuthContextValue {
     social: (provider: string, options?: any) => Promise<any>;
     emailOtp: (email: string, otp: string) => Promise<any>;
   };
-  
+
   signUp: {
     email: (data: SignupPayload) => Promise<any>;
   };
   signOut: () => Promise<void>;
   updateUser: (data: Partial<User>) => Promise<any>;
+
+  // Session refresh (force bypass cookie cache)
+  refetchSession: () => Promise<any>;
 
   // Email verification
   emailVerification: {

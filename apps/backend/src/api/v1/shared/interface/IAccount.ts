@@ -5,11 +5,11 @@ export interface IAccount extends Document {
   companyId: Types.ObjectId;
   accountCode: string;
   accountName: string;
-  accountType: "asset" | "liability" | "equity" | "revenue" | "expense";
+  accountType: "Asset" | "Liability" | "Equity" | "Revenue" | "Expense";
   subType?: string;
   parentAccount?: Types.ObjectId;
   balance: number;
-  normalBalance: "debit" | "credit";
+  normalBalance: "Debit" | "Credit";
   description?: string;
   createdAt: Date;
   updatedAt?: Date;

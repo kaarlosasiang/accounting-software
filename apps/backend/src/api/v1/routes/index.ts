@@ -1,9 +1,13 @@
 import { Application } from "express";
 
-import authRoutes from "./auth.routes.js";
-import companyRoutes from "./company.routes.js";
-import subscriptionRoutes from "./subscription.routes.js";
-import userRoutes from "./user.routes.js";
+import authRoutes from "../modules/auth/authRoutes.js";
+import subscriptionRoutes from "../modules/subscription/subscriptionRoutes.js";
+import accountsRoutes from "../modules/accounts/accountsRoutes.js";
+import companyRoutes from "../modules/company/companyRoutes.js";
+import inventoryRoutes from "../modules/inventory/inventoryRoutes.js";
+import supplierRoutes from "../modules/supplier/supplierRoutes.js";
+
+import userRoutes from "../modules/user/userRoutes.js";
 
 /**
  * Register all API routes
@@ -24,6 +28,15 @@ export default (app: Application): void => {
 
   // Company routes
   app.use(`${API_PREFIX}/companies`, companyRoutes);
+
+  // Accounts routes
+  app.use(`${API_PREFIX}/accounts`, accountsRoutes);
+
+  // Inventory routes
+  app.use(`${API_PREFIX}/inventory`, inventoryRoutes);
+
+  // Supplier routes
+  app.use(`${API_PREFIX}/suppliers`, supplierRoutes);
 
   // Add more routes here as needed
   // app.use(`${API_PREFIX}/clients`, clientRoutes);

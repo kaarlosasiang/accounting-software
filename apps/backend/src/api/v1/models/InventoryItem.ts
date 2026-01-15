@@ -1,9 +1,11 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Schema, Model } from "mongoose";
 
 import {
   IInventoryItem,
   IInventoryItemDocument,
-} from '../shared/interface/IInventoryItem.js';
+  IInventoryItemModel,
+  IInventoryItemMethods,
+} from "../shared/interface/IInventoryItem.js";
 
 /**
  * Inventory Item Schema
@@ -16,9 +18,9 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
       required: [true, "Company ID is required"],
       index: true,
     },
-    itemCode: {
+    sku: {
       type: String,
-      required: [true, "Item code is required"],
+      required: [true, "SKU is required"],
       trim: true,
       uppercase: true,
       index: true,
@@ -36,12 +38,25 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
     category: {
       type: String,
       required: [true, "Category is required"],
+      enum: ["Food", "Non-Food"],
       trim: true,
       index: true,
     },
     unit: {
       type: String,
       required: [true, "Unit is required"],
+      enum: [
+        "pcs",
+        "kg",
+        "sack",
+        "box",
+        "pack",
+        "bottle",
+        "can",
+        "set",
+        "bundle",
+        "liter",
+      ],
       trim: true,
       lowercase: true,
     },
@@ -50,6 +65,11 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
       required: [true, "Quantity on hand is required"],
       default: 0,
       min: [0, "Quantity cannot be negative"],
+    },
+    quantityAsOfDate: {
+      type: Date,
+      required: [true, "Quantity as of date is required"],
+      default: Date.now,
     },
     reorderLevel: {
       type: Number,
@@ -85,6 +105,29 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
       required: [true, "Income account ID is required"],
       index: true,
     },
+    supplierId: {
+      type: Schema.Types.ObjectId,
+      ref: "Supplier",
+      default: null,
+      index: true,
+    },
+    salesTaxEnabled: {
+      type: Boolean,
+      required: [true, "Sales tax enabled status is required"],
+      default: false,
+    },
+    salesTaxRate: {
+      type: Number,
+      min: [0, "Sales tax rate cannot be negative"],
+      max: [100, "Sales tax rate cannot exceed 100%"],
+      default: null,
+    },
+    purchaseTaxRate: {
+      type: Number,
+      min: [0, "Purchase tax rate cannot be negative"],
+      max: [100, "Purchase tax rate cannot exceed 100%"],
+      default: null,
+    },
     isActive: {
       type: Boolean,
       required: [true, "Active status is required"],
@@ -95,16 +138,17 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
   {
     timestamps: true,
     collection: "inventoryItems",
-  },
+  }
 );
 
 /**
  * Indexes for performance
  */
-InventoryItemSchema.index({ companyId: 1, itemCode: 1 }, { unique: true });
+InventoryItemSchema.index({ companyId: 1, sku: 1 }, { unique: true });
 InventoryItemSchema.index({ companyId: 1, category: 1 });
 InventoryItemSchema.index({ companyId: 1, isActive: 1 });
 InventoryItemSchema.index({ companyId: 1, itemName: 1 });
+InventoryItemSchema.index({ companyId: 1, supplierId: 1 });
 
 /**
  * Virtual: Inventory value
@@ -133,12 +177,14 @@ InventoryItemSchema.virtual("needsReorder").get(function () {
  */
 InventoryItemSchema.methods.adjustQuantity = function (
   adjustment: number,
-  reason: string,
+  reason: string
 ) {
   const newQuantity = this.quantityOnHand + adjustment;
   if (newQuantity < 0) {
     throw new Error(
-      `Insufficient inventory. Available: ${this.quantityOnHand}, Requested: ${Math.abs(adjustment)}`,
+      `Insufficient inventory. Available: ${
+        this.quantityOnHand
+      }, Requested: ${Math.abs(adjustment)}`
     );
   }
   this.quantityOnHand = newQuantity;
@@ -171,19 +217,19 @@ InventoryItemSchema.methods.updateSellingPrice = function (newPrice: number) {
  * Static method: Find active items
  */
 InventoryItemSchema.statics.findActive = function (
-  companyId: mongoose.Types.ObjectId,
+  companyId: mongoose.Types.ObjectId
 ) {
   return this.find({ companyId, isActive: true }).sort({ itemName: 1 });
 };
 
 /**
- * Static method: Find by item code
+ * Static method: Find by SKU
  */
-InventoryItemSchema.statics.findByItemCode = function (
+InventoryItemSchema.statics.findBySku = function (
   companyId: mongoose.Types.ObjectId,
-  itemCode: string,
+  sku: string
 ) {
-  return this.findOne({ companyId, itemCode: itemCode.toUpperCase() });
+  return this.findOne({ companyId, sku: sku.toUpperCase() });
 };
 
 /**
@@ -191,7 +237,7 @@ InventoryItemSchema.statics.findByItemCode = function (
  */
 InventoryItemSchema.statics.findByCategory = function (
   companyId: mongoose.Types.ObjectId,
-  category: string,
+  category: string
 ) {
   return this.find({ companyId, category, isActive: true }).sort({
     itemName: 1,
@@ -202,7 +248,7 @@ InventoryItemSchema.statics.findByCategory = function (
  * Static method: Find items needing reorder
  */
 InventoryItemSchema.statics.findNeedingReorder = function (
-  companyId: mongoose.Types.ObjectId,
+  companyId: mongoose.Types.ObjectId
 ) {
   return this.find({
     companyId,
@@ -212,17 +258,17 @@ InventoryItemSchema.statics.findNeedingReorder = function (
 };
 
 /**
- * Static method: Search items by name or code
+ * Static method: Search items by name or SKU
  */
 InventoryItemSchema.statics.searchItems = function (
   companyId: mongoose.Types.ObjectId,
-  searchTerm: string,
+  searchTerm: string
 ) {
   const regex = new RegExp(searchTerm, "i");
   return this.find({
     companyId,
     isActive: true,
-    $or: [{ itemName: regex }, { itemCode: regex }, { description: regex }],
+    $or: [{ itemName: regex }, { sku: regex }, { description: regex }],
   }).sort({ itemName: 1 });
 };
 
@@ -230,7 +276,7 @@ InventoryItemSchema.statics.searchItems = function (
  * Static method: Get total inventory value
  */
 InventoryItemSchema.statics.getTotalInventoryValue = async function (
-  companyId: mongoose.Types.ObjectId,
+  companyId: mongoose.Types.ObjectId
 ) {
   const result = await this.aggregate([
     {
@@ -256,8 +302,8 @@ InventoryItemSchema.statics.getTotalInventoryValue = async function (
  * Export the model
  */
 export const InventoryItem =
-  (mongoose.models.InventoryItem as mongoose.Model<IInventoryItemDocument>) ||
+  (mongoose.models.InventoryItem as any) ||
   mongoose.model<IInventoryItemDocument>(
     "InventoryItem",
-    InventoryItemSchema as any,
+    InventoryItemSchema as any
   );

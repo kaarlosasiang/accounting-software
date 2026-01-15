@@ -1,10 +1,10 @@
 import mongoose from "mongoose";
 
-import logger from './logger.js';
+import logger from "./logger.js";
 
 // Mongoose configuration
 const MONGODB_URI = process.env.MONGODB_URI;
-const DB_NAME = process.env.DB_NAME || "rrd10-sas";
+const DB_NAME = process.env.DB_NAME || "accounting-software";
 
 // Connection options
 const options: mongoose.ConnectOptions = {

@@ -12,7 +12,6 @@ const app = express();
 // Configure all middleware (includes global error handler)
 configureApp(app);
 
-// Start server function
 const startServer = async () => {
   try {
     // Connect to database first

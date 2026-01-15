@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Check, ChevronsUpDown, PlusCircle } from "lucide-react";
-import { useOrganization, type OrganizationClient } from "@/hooks/use-organization";
+import {
+  useOrganization,
+  type OrganizationClient,
+} from "@/hooks/use-organization";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -63,7 +66,7 @@ export function OrganizationSwitcher({
 
   const handleSelectOrganization = async (org: Organization) => {
     try {
-      await orgClient?.setActive?.(org.id);
+      await orgClient?.setActive?.({ organizationId: org.id });
       setOpen(false);
       // Reload page to reflect new active organization
       window.location.reload();
@@ -126,9 +129,7 @@ export function OrganizationSwitcher({
                   <Check
                     className={cn(
                       "ml-auto h-4 w-4",
-                      activeOrg?.id === org.id
-                        ? "opacity-100"
-                        : "opacity-0"
+                      activeOrg?.id === org.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                 </CommandItem>

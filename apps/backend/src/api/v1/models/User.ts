@@ -1,6 +1,6 @@
 import { model, Schema } from "mongoose";
 
-import { IUser } from '../shared/interface/IUser.js';
+import { IUser } from "../shared/interface/IUser.js";
 
 /**
  * User schema
@@ -78,6 +78,27 @@ const userSchema = new Schema<IUser>(
       type: Date,
       required: [true, "Last activity is required"],
     },
+    hasActiveSubscription: {
+      type: Boolean,
+      default: false,
+    },
+    subscriptionPlan: {
+      type: String,
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ["active", "cancelled", "expired", null],
+      default: null,
+    },
+    subscriptionActivatedAt: {
+      type: Date,
+    },
+    subscriptionCancelledAt: {
+      type: Date,
+    },
+    companySetupCompletedAt: {
+      type: Date,
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt
@@ -92,13 +113,13 @@ const userSchema = new Schema<IUser>(
     toObject: {
       virtuals: true,
     },
-  },
+  }
 );
 
 // Virtual for full name
 userSchema.virtual("fullName").get(function (this: IUser) {
   const parts = [this.first_name, this.middle_name, this.last_name].filter(
-    Boolean,
+    Boolean
   );
   return parts.join(" ");
 });

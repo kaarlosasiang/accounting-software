@@ -1,6 +1,6 @@
-import { Document, Types } from "mongoose";
+import mongoose, { Document, Types } from "mongoose";
 
-import { IAddress } from './IAddress.js';
+import { IAddress } from "./IAddress.js";
 
 /**
  * Supplier Document Interface
@@ -13,7 +13,7 @@ export interface ISupplier {
   displayName?: string;
   email: string;
   phone: string;
-  website?: Date;
+  website?: string;
   address: IAddress;
   taxId: string;
   paymentTerms: string;
@@ -28,4 +28,38 @@ export interface ISupplier {
 /**
  * Supplier Document (Mongoose)
  */
-export interface ISupplierDocument extends Omit<ISupplier, "_id">, Document {}
+export interface ISupplierDocument extends Omit<ISupplier, "_id">, Document {
+  updateBalance(amount: number): Promise<ISupplierDocument>;
+}
+
+/**
+ * Supplier Model Static Methods
+ */
+export interface ISupplierModel extends mongoose.Model<ISupplierDocument> {
+  findActive(
+    companyId: Types.ObjectId
+  ): mongoose.Query<
+    ISupplierDocument[],
+    ISupplierDocument,
+    {},
+    ISupplierDocument
+  >;
+  findBySupplierCode(
+    companyId: Types.ObjectId,
+    supplierCode: string
+  ): mongoose.Query<
+    ISupplierDocument | null,
+    ISupplierDocument,
+    {},
+    ISupplierDocument
+  >;
+  searchSuppliers(
+    companyId: Types.ObjectId,
+    searchTerm: string
+  ): mongoose.Query<
+    ISupplierDocument[],
+    ISupplierDocument,
+    {},
+    ISupplierDocument
+  >;
+}

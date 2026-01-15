@@ -1,6 +1,6 @@
 import cookieParser from "cookie-parser";
 import cors from "cors";
-import express, { Application } from "express";
+import express, { Application, Request, Response } from "express";
 import helmet from "helmet";
 import morgan from "morgan";
 
@@ -45,7 +45,7 @@ export default (app: Application): Application => {
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       optionsSuccessStatus: 200,
-    }),
+    })
   );
 
   // Cookie parsing - Better Auth needs this early
@@ -71,7 +71,7 @@ export default (app: Application): Application => {
   app.use(requestLogger);
 
   // Default route
-  app.get("/", (req, res) => {
+  app.get("/", (req: Request, res: Response) => {
     res.json({
       message: "RRD10 SAS API is running",
       version: "1.0.0",
@@ -80,7 +80,7 @@ export default (app: Application): Application => {
   });
 
   // Health check endpoint
-  app.get("/health", (req, res) => {
+  app.get("/health", (req: Request, res: Response) => {
     const dbStatus =
       dbConnection.mongoose?.connection?.readyState === 1
         ? "connected"
@@ -96,7 +96,7 @@ export default (app: Application): Application => {
   });
 
   // Status check (returns frontend URL)
-  app.get("/status", (req, res) => {
+  app.get("/status", (req: Request, res: Response) => {
     res.json({
       frontendUrl: constants.frontEndUrl,
       apiVersion: "1.0.0",
@@ -120,8 +120,8 @@ export default (app: Application): Application => {
   // Error logging middleware (before error handlers)
   app.use(errorLogger);
 
-  // Global error handler
-  app.use((err: any, req: any, res: any, next: any) => {
+  // Global error handler (must have 4 parameters to be recognized as error handler)
+  app.use((err: any, req: Request, res: Response, _next: Function) => {
     // Log the error
     logger.logError(err, {
       path: req.path,
