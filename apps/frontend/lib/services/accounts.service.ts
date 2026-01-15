@@ -1,13 +1,18 @@
 import { apiFetch } from "@/lib/config/api-client";
 
 export interface Account {
-  id: string;
-  name: string;
-  accountType: string;
-  accountNumber: string;
-  description?: string;
+  _id: string;
+  accountCode: string;
+  accountName: string;
+  accountType: "Asset" | "Liability" | "Equity" | "Revenue" | "Expense";
+  subType?: string;
   balance?: number;
-  // Add other fields based on your schema
+  description?: string;
+  normalBalance?: "Debit" | "Credit";
+  parentAccount?: string;
+  companyId?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export interface AccountsResponse {

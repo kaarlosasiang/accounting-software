@@ -11,7 +11,7 @@
     "storybook": "pnpm --filter ui storybook",
     "build": "pnpm --recursive build",
     "build:api": "pnpm --filter api build",
-    "build:frontend": "pnpm --filter frontend build",
+    "build:app": "pnpm --filter frontend build",
     "build:validators": "pnpm --filter @rrd10-sas/validators build",
     "start:api": "pnpm --filter api start",
     "start:frontend": "pnpm --filter frontend start",

@@ -1,14 +1,9 @@
 import { useEffect, useState } from "react";
 import { authClient } from "@/lib/config/auth-client";
-import { accountsService } from "@/lib/services/accounts.service";
-
-export interface Account {
-  _id: string;
-  accountCode: string;
-  accountName: string;
-  accountType: "Asset" | "Liability" | "Equity" | "Revenue" | "Expense";
-  subType?: string;
-}
+import {
+  accountsService,
+  type Account,
+} from "@/lib/services/accounts.service";
 
 /**
  * Hook to fetch accounts from the API

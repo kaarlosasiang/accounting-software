@@ -31,6 +31,15 @@ type ExtractData<T extends (...args: any) => Promise<any>> = Awaited<
 type SignInResponse = ExtractData<typeof authClient.signIn.email>;
 type SignUpResponse = ExtractData<typeof authClient.signUp.email>;
 
+type SignUpApiResponse = {
+  success?: boolean;
+  data?: SignUpResponse;
+  error?: {
+    message?: string;
+  };
+  message?: string;
+};
+
 const getFullName = (
   firstName: string,
   middleName: string | undefined,
@@ -63,7 +72,7 @@ export async function signUp(payload: SignupPayload): Promise<SignUpResponse> {
     username,
   } = payload;
 
-  const result = await apiFetch<SignUpResponse>("/auth/sign-up/email", {
+  const result = await apiFetch<SignUpApiResponse>("/auth/sign-up/email", {
     method: "POST",
     body: JSON.stringify({
       email,
@@ -81,6 +90,10 @@ export async function signUp(payload: SignupPayload): Promise<SignUpResponse> {
 
   if (result.error) {
     throw new Error(result.error?.message ?? "Unable to sign up right now.");
+  }
+
+  if (!result.data) {
+    throw new Error(result.message ?? "Unable to sign up right now.");
   }
 
   return result.data;
