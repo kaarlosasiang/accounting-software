@@ -5,6 +5,7 @@ import subscriptionRoutes from "../modules/subscription/subscriptionRoutes.js";
 import accountsRoutes from "../modules/accounts/accountsRoutes.js";
 import inventoryRoutes from "../modules/inventory/inventoryRoutes.js";
 import supplierRoutes from "../modules/supplier/supplierRoutes.js";
+import customerRoutes from "../modules/customer/customerRoutes.js";
 
 import userRoutes from "../modules/user/userRoutes.js";
 
@@ -34,8 +35,10 @@ export default (app: Application): void => {
   // Supplier routes
   app.use(`${API_PREFIX}/suppliers`, supplierRoutes);
 
+  // Customer routes
+  app.use(`${API_PREFIX}/customers`, customerRoutes);
+
   // Add more routes here as needed
-  // app.use(`${API_PREFIX}/clients`, clientRoutes);
   // app.use(`${API_PREFIX}/invoices`, invoiceRoutes);
   // app.use(`${API_PREFIX}/transactions`, transactionRoutes);
 };
