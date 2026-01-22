@@ -38,7 +38,7 @@ const inventoryService = {
   getActiveItems: async (companyId: string | Types.ObjectId) => {
     try {
       const items = await InventoryItem.findActive(
-        new Types.ObjectId(companyId)
+        new Types.ObjectId(companyId),
       );
       return items;
     } catch (error) {
@@ -55,7 +55,7 @@ const inventoryService = {
    */
   getItemById: async (
     companyId: string | Types.ObjectId,
-    itemId: string | Types.ObjectId
+    itemId: string | Types.ObjectId,
   ) => {
     try {
       const item = await InventoryItem.findOne({
@@ -87,7 +87,7 @@ const inventoryService = {
     try {
       const item = await InventoryItem.findBySku(
         new Types.ObjectId(companyId),
-        sku
+        sku,
       );
       if (!item) {
         throw new Error("Inventory item not found");
@@ -108,12 +108,12 @@ const inventoryService = {
    */
   getItemsByCategory: async (
     companyId: string | Types.ObjectId,
-    category: string
+    category: string,
   ) => {
     try {
       const items = await InventoryItem.findByCategory(
         new Types.ObjectId(companyId),
-        category
+        category,
       );
       return items;
     } catch (error) {
@@ -132,7 +132,7 @@ const inventoryService = {
   getItemsNeedingReorder: async (companyId: string | Types.ObjectId) => {
     try {
       const items = await InventoryItem.findNeedingReorder(
-        new Types.ObjectId(companyId)
+        new Types.ObjectId(companyId),
       );
       return items;
     } catch (error) {
@@ -149,12 +149,12 @@ const inventoryService = {
    */
   searchItems: async (
     companyId: string | Types.ObjectId,
-    searchTerm: string
+    searchTerm: string,
   ) => {
     try {
       const items = await InventoryItem.searchItems(
         new Types.ObjectId(companyId),
-        searchTerm
+        searchTerm,
       );
       return items;
     } catch (error) {
@@ -201,18 +201,18 @@ const inventoryService = {
       salesTaxRate?: number;
       purchaseTaxRate?: number;
       isActive?: boolean;
-    }
+    },
   ) => {
     try {
       // Check if SKU already exists
       const existingItem = await InventoryItem.findBySku(
         new Types.ObjectId(companyId),
-        itemData.sku
+        itemData.sku,
       );
 
       if (existingItem) {
         throw new Error(
-          `Item with SKU ${itemData.sku} already exists for this company`
+          `Item with SKU ${itemData.sku} already exists for this company`,
         );
       }
 
@@ -275,13 +275,13 @@ const inventoryService = {
       salesTaxRate: number;
       purchaseTaxRate: number;
       isActive: boolean;
-    }>
+    }>,
   ) => {
     try {
       const item = await InventoryItem.findOneAndUpdate(
         { _id: itemId, companyId },
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       )
         .populate("inventoryAccountId", "accountCode accountName")
         .populate("cogsAccountId", "accountCode accountName")
@@ -314,13 +314,13 @@ const inventoryService = {
    */
   deleteItem: async (
     companyId: string | Types.ObjectId,
-    itemId: string | Types.ObjectId
+    itemId: string | Types.ObjectId,
   ) => {
     try {
       const item = await InventoryItem.findOneAndUpdate(
         { _id: itemId, companyId },
         { $set: { isActive: false } },
-        { new: true }
+        { new: true },
       );
 
       if (!item) {
@@ -352,7 +352,7 @@ const inventoryService = {
     itemId: string | Types.ObjectId,
     adjustment: number,
     reason: string,
-    userId: string | Types.ObjectId
+    userId: string | Types.ObjectId,
   ) => {
     try {
       const item = await InventoryItem.findOne({
@@ -411,7 +411,7 @@ const inventoryService = {
   getTotalInventoryValue: async (companyId: string | Types.ObjectId) => {
     try {
       const totalValue = await InventoryItem.getTotalInventoryValue(
-        new Types.ObjectId(companyId)
+        new Types.ObjectId(companyId),
       );
       return totalValue;
     } catch (error) {
@@ -428,7 +428,7 @@ const inventoryService = {
    */
   getItemTransactions: async (
     companyId: string | Types.ObjectId,
-    itemId: string | Types.ObjectId
+    itemId: string | Types.ObjectId,
   ) => {
     try {
       const transactions = await InventoryTransaction.find({
@@ -451,18 +451,40 @@ const inventoryService = {
   },
 
   /**
+   * Get all inventory transactions for a company
+   */
+  getAllTransactions: async (companyId: string | Types.ObjectId) => {
+    try {
+      const transactions = await InventoryTransaction.find({
+        companyId: new Types.ObjectId(companyId),
+      })
+        .populate("createdBy", "first_name last_name email")
+        .populate("inventoryItemId", "sku itemName category unit")
+        .sort({ transactionDate: -1 });
+
+      return transactions;
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "get-all-transactions",
+        companyId: companyId.toString(),
+      });
+      throw error;
+    }
+  },
+
+  /**
    * Get inventory movement summary
    */
   getMovementSummary: async (
     itemId: string | Types.ObjectId,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ) => {
     try {
       const summary = await InventoryTransaction.getMovementSummary(
         new Types.ObjectId(itemId),
         startDate,
-        endDate
+        endDate,
       );
       return summary;
     } catch (error) {
@@ -480,13 +502,13 @@ const inventoryService = {
   calculateCOGS: async (
     itemId: string | Types.ObjectId,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ) => {
     try {
       const cogs = await InventoryTransaction.calculateCOGS(
         new Types.ObjectId(itemId),
         startDate,
-        endDate
+        endDate,
       );
       return cogs;
     } catch (error) {
@@ -531,7 +553,7 @@ const inventoryService = {
           totalInventoryValue: 0,
           totalPotentialRevenue: 0,
           totalPotentialProfit: 0,
-        }
+        },
       );
 
       return {

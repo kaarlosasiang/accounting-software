@@ -26,8 +26,8 @@ export const requireAuth = async (
       companyId: session.user?.companyId,
       role: session.user?.role,
       activeOrganizationId: session.session?.activeOrganizationId,
-      fullSession: JSON.stringify(session.session),
-      fullUser: JSON.stringify(session.user),
+      sessionKeys: Object.keys(session.session || {}),
+      userKeys: Object.keys(session.user || {}),
     });
 
     req.authSession = session;

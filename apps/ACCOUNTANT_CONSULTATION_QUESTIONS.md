@@ -583,10 +583,10 @@ Before the consultation:
 
 ## Notes Section
 
-**Date of Consultation:** ******\_\_\_******  
-**Accountant Name:** ******\_\_\_******  
-**Specialization:** ******\_\_\_******  
-**Years of Experience:** ******\_\_\_******
+**Date of Consultation:** **\*\***\_\_\_**\*\***  
+**Accountant Name:** **\*\***\_\_\_**\*\***  
+**Specialization:** **\*\***\_\_\_**\*\***  
+**Years of Experience:** **\*\***\_\_\_**\*\***
 
 ### Key Takeaways:
 
@@ -634,3 +634,5 @@ Before the consultation:
 ---
 
 _Good luck with your consultation! This will provide invaluable real-world validation for your accounting software._
+
+> **Note:** For detailed questions about the complete accounting cycle from inventory to financial statements, see [ACCOUNTING_CYCLE_FLOW.md](./ACCOUNTING_CYCLE_FLOW.md)

@@ -1,514 +1,640 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useMemo, useState } from "react";
+import type { ColumnDef } from "@tanstack/react-table";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table"
-import { Input } from "@/components/ui/input"
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog"
-import {
-    MoreHorizontal,
-    Plus,
-    Search,
-    Users,
-    Mail,
-    Phone,
-    Building2,
-    Eye,
-    Edit,
-    TrendingUp,
-    Download,
-} from "lucide-react"
-import { ClientForm } from "@/components/forms/client-form/form"
-import { formatCurrency } from "@/lib/utils"
-
-interface Address {
-    street: string
-    city: string
-    state: string
-    zipCode: string
-    country: string
-}
-
-interface Client {
-    id: string
-    customerCode: string
-    customerName: string
-    displayName: string
-    email: string
-    phone: string
-    billingAddress: Address
-    shippingAddress?: Address
-    taxId: string
-    paymentTerms: string
-    creditLimit: number
-    currentBalance: number
-    status: "active" | "inactive" | "archived"
-    totalInvoiced: number
-    lastInvoice: string
-}
-
-const mockClients: Client[] = [
-    {
-        id: "CLI-001",
-        customerCode: "CUST-001",
-        customerName: "Maria's Salon and Spa",
-        displayName: "Maria's Salon",
-        email: "billing@mariasalon.com",
-        phone: "+63 2 1234 5678",
-        billingAddress: {
-            street: "123 Quezon Avenue",
-            city: "Quezon City",
-            state: "Metro Manila",
-            zipCode: "1100",
-            country: "Philippines"
-        },
-        taxId: "123-456-789-000",
-        paymentTerms: "Net 15",
-        creditLimit: 25000.00,
-        currentBalance: 0,
-        status: "active",
-        totalInvoiced: 15000.00,
-        lastInvoice: "2025-11-25"
-    },
-    {
-        id: "CLI-002",
-        customerCode: "CUST-002",
-        customerName: "Juan's Grocery Store",
-        displayName: "Juan's Grocery",
-        email: "accounts@juangrocery.com",
-        phone: "+63 2 2345 6789",
-        billingAddress: {
-            street: "456 Rizal Street",
-            city: "Manila",
-            state: "Metro Manila",
-            zipCode: "1000",
-            country: "Philippines"
-        },
-        taxId: "234-567-890-000",
-        paymentTerms: "Net 30",
-        creditLimit: 50000.00,
-        currentBalance: 12750.00,
-        status: "active",
-        totalInvoiced: 45000.00,
-        lastInvoice: "2025-11-10"
-    },
-    {
-        id: "CLI-003",
-        customerCode: "CUST-003",
-        customerName: "Tech Solutions Office Complex",
-        displayName: "Tech Solutions Office",
-        email: "finance@techsol.com",
-        phone: "+63 2 3456 7890",
-        billingAddress: {
-            street: "789 Makati Avenue",
-            city: "Makati",
-            state: "Metro Manila",
-            zipCode: "1200",
-            country: "Philippines"
-        },
-        shippingAddress: {
-            street: "789 Makati Avenue, Floor 5",
-            city: "Makati",
-            state: "Metro Manila",
-            zipCode: "1200",
-            country: "Philippines"
-        },
-        taxId: "345-678-901-000",
-        paymentTerms: "Net 30",
-        creditLimit: 30000.00,
-        currentBalance: 5250.00,
-        status: "active",
-        totalInvoiced: 38000.00,
-        lastInvoice: "2025-11-15"
-    },
-    {
-        id: "CLI-004",
-        customerCode: "CUST-004",
-        customerName: "Beauty Bar Manila",
-        displayName: "Beauty Bar Manila",
-        email: "ap@beautybar.ph",
-        phone: "+63 2 4567 8901",
-        billingAddress: {
-            street: "321 Ortigas Avenue",
-            city: "Pasig",
-            state: "Metro Manila",
-            zipCode: "1600",
-            country: "Philippines"
-        },
-        taxId: "456-789-012-000",
-        paymentTerms: "Net 15",
-        creditLimit: 15000.00,
-        currentBalance: 1850.00,
-        status: "active",
-        totalInvoiced: 22000.00,
-        lastInvoice: "2025-10-20"
-    },
-    {
-        id: "CLI-005",
-        customerCode: "CUST-005",
-        customerName: "Pedro's Carinderia",
-        displayName: "Pedro's Carinderia",
-        email: "billing@pedros.ph",
-        phone: "+63 2 5678 9012",
-        billingAddress: {
-            street: "654 Taft Avenue",
-            city: "Manila",
-            state: "Metro Manila",
-            zipCode: "1004",
-            country: "Philippines"
-        },
-        taxId: "567-890-123-000",
-        paymentTerms: "Net 30",
-        creditLimit: 35000.00,
-        currentBalance: 0,
-        status: "inactive",
-        totalInvoiced: 18000.00,
-        lastInvoice: "2025-09-15"
-    },
-]
+  MoreHorizontal,
+  Plus,
+  Users,
+  DollarSign,
+  TrendingUp,
+  AlertCircle,
+  Mail,
+  Phone,
+  CreditCard,
+  FileText,
+} from "lucide-react";
+import { ClientForm } from "@/components/forms/client-form/form";
+import { formatCurrency } from "@/lib/utils";
+import { useCustomers } from "@/hooks/use-customers";
+import { DataTable } from "@/components/common/data-table/data-table";
+import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
+import { DataTableToolbar } from "@/components/common/data-table/data-table-toolbar";
+import { useDataTable } from "@/hooks/use-data-table";
+import type { Customer } from "@/lib/types/customer";
 
 export default function ClientsPage() {
-    const [clients] = useState<Client[]>(mockClients)
-    const [searchQuery, setSearchQuery] = useState("")
-    const [filterStatus, setFilterStatus] = useState<string>("all")
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
-    const [startDate, setStartDate] = useState("")
-    const [endDate, setEndDate] = useState("")
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
 
-    const handleExportCSV = () => {
-        const csv = [
-            ["Client ID", "Customer Code", "Name", "Display Name", "Email", "Phone", "Tax ID", "Payment Terms", "Status", "Total Invoiced", "Current Balance", "Credit Limit", "Last Invoice"],
-            ...filteredClients.map(c => [c.id, c.customerCode, c.customerName, c.displayName, c.email, c.phone, c.taxId, c.paymentTerms, c.status, c.totalInvoiced, c.currentBalance, c.creditLimit, c.lastInvoice])
-        ].map(row => row.join(",")).join("\n")
-        const blob = new Blob([csv], { type: "text/csv" })
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = "clients.csv"
-        a.click()
+  const { customers, loading, deleteCustomer, toggleCustomerStatus } =
+    useCustomers();
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this customer?")) {
+      await deleteCustomer(id);
     }
+  };
 
-    const filteredClients = clients.filter(client => {
-        const matchesSearch =
-            client.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            client.displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            client.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            client.customerCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            client.id.toLowerCase().includes(searchQuery.toLowerCase())
-        const matchesStatus = filterStatus === "all" || client.status === filterStatus
-        const matchesDateRange = (!startDate || new Date(client.lastInvoice) >= new Date(startDate)) &&
-                                 (!endDate || new Date(client.lastInvoice) <= new Date(endDate))
-        return matchesSearch && matchesStatus && matchesDateRange
-    })
+  const handleToggleStatus = async (id: string) => {
+    await toggleCustomerStatus(id);
+  };
 
-    const totalClients = clients.length
-    const activeClients = clients.filter(c => c.status === "active").length
-    const totalRevenue = clients.reduce((sum, c) => sum + c.totalInvoiced, 0)
-    const totalOutstanding = clients.reduce((sum, c) => sum + c.currentBalance, 0)
-    
-    const activePct = totalClients > 0 ? ((activeClients / totalClients) * 100).toFixed(1) : "0.0"
-    const collectionRate = totalRevenue > 0 ? (((totalRevenue - totalOutstanding) / totalRevenue) * 100).toFixed(1) : "0.0"
-    const avgRevenue = activeClients > 0 ? (totalRevenue / activeClients).toFixed(0) : "0"
-    const outstandingPct = totalRevenue > 0 ? ((totalOutstanding / totalRevenue) * 100).toFixed(1) : "0.0"
+  const handleEdit = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsEditDialogOpen(true);
+  };
 
-    const getStatusColor = (status: Client["status"]) => {
-        switch (status) {
-            case "active": return "default"
-            case "inactive": return "secondary"
-            case "archived": return "outline"
-            default: return "outline"
-        }
-    }
+  const handleViewDetails = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsDetailsDialogOpen(true);
+  };
 
-    return (
-        <div className="flex flex-col gap-6">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">Clients</h1>
-                    <p className="text-muted-foreground mt-2">
-                        Manage your client relationships and contacts
-                    </p>
-                </div>
-                <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Client
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>Add New Client</DialogTitle>
-                            <DialogDescription>
-                                Add a new client to your accounting system
-                            </DialogDescription>
-                        </DialogHeader>
-                        <ClientForm onSuccess={() => setIsDialogOpen(false)} />
-                    </DialogContent>
-                </Dialog>
-            </div>
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false);
+    setSelectedCustomer(null);
+  };
 
-            {/* Summary Cards */}
-            <div className="grid gap-4 md:grid-cols-4">
-                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
-                    <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Clients</CardTitle>
-                        <div className="rounded-full bg-blue-500/10 p-2.5 group-hover:bg-blue-500/20 transition-colors duration-300 group-hover:scale-110">
-                            <Users className="h-4 w-4 text-blue-600" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-blue-600">{totalClients}</div>
-                        <div className="flex items-center gap-1 text-xs text-blue-600 bg-blue-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
-                            <TrendingUp className="h-3 w-3" />
-                            <span>{activePct}% active</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
-                    <div className="absolute inset-0 bg-linear-to-br from-green-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Active Clients</CardTitle>
-                        <div className="rounded-full bg-green-500/10 p-2.5 group-hover:bg-green-500/20 transition-colors duration-300 group-hover:scale-110">
-                            <Users className="h-4 w-4 text-green-600" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">{activeClients}</div>
-                        <div className="flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
-                            <TrendingUp className="h-3 w-3" />
-                            <span>{avgRevenue} avg value</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
-                    <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <div className="rounded-full bg-purple-500/10 p-2.5 group-hover:bg-purple-500/20 transition-colors duration-300 group-hover:scale-110">
-                            <Building2 className="h-4 w-4 text-purple-600" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-purple-600">
-                            {formatCurrency(totalRevenue)}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-purple-600 bg-purple-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
-                            <TrendingUp className="h-3 w-3" />
-                            <span>{collectionRate}% collected</span>
-                        </div>
-                    </CardContent>
-                </Card>
-                <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
-                    <div className="absolute inset-0 bg-linear-to-br from-orange-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
-                        <div className="rounded-full bg-orange-500/10 p-2.5 group-hover:bg-orange-500/20 transition-colors duration-300 group-hover:scale-110">
-                            <Building2 className="h-4 w-4 text-orange-600" />
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-orange-600">
-                            {formatCurrency(totalOutstanding)}
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-orange-600 bg-orange-500/10 px-2 py-0.5 rounded-full w-fit mt-1">
-                            <TrendingUp className="h-3 w-3" />
-                            <span>{outstandingPct}% pending</span>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
+  const handleDetailsClose = () => {
+    setIsDetailsDialogOpen(false);
+    setSelectedCustomer(null);
+  };
 
-            {/* Clients Table */}
-            <Card className="border border-border/50">
-                <CardHeader>
-                    <CardTitle>All Clients</CardTitle>
-                    <CardDescription>
-                        View and manage your client information
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex flex-col gap-4 mb-4">
-                        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-                            <div className="relative md:col-span-2">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search clients..."
-                                    className="pl-8"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
-                            </div>
-                            <Select value={filterStatus} onValueChange={setFilterStatus}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Status" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all">All Status</SelectItem>
-                                    <SelectItem value="active">Active</SelectItem>
-                                    <SelectItem value="inactive">Inactive</SelectItem>
-                                    <SelectItem value="archived">Archived</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <Input
-                                type="date"
-                                placeholder="Start Date"
-                                value={startDate}
-                                onChange={(e) => setStartDate(e.target.value)}
-                            />
-                            <Input
-                                type="date"
-                                placeholder="End Date"
-                                value={endDate}
-                                onChange={(e) => setEndDate(e.target.value)}
-                            />
-                            <Button variant="outline" onClick={handleExportCSV}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Export CSV
-                            </Button>
-                        </div>
-                        {(startDate || endDate) && (
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => { setStartDate(""); setEndDate(""); }}
-                                className="w-fit"
-                            >
-                                Clear Dates
-                            </Button>
-                        )}
-                    </div>
+  // Calculate stats
+  const stats = {
+    total: customers.length,
+    active: customers.filter((c) => c.isActive).length,
+    totalBalance: customers.reduce((sum, c) => sum + c.currentBalance, 0),
+    totalCredit: customers.reduce((sum, c) => sum + c.creditLimit, 0),
+  };
 
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Client</TableHead>
-                                    <TableHead>Contact</TableHead>
-                                    <TableHead>Company</TableHead>
-                                    <TableHead>Total Invoiced</TableHead>
-                                    <TableHead>Outstanding</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredClients.map((client) => (
-                                    <TableRow key={client.id}>
-                                        <TableCell>
-                                            <div className="flex flex-col">
-                                                <span className="font-medium">{client.displayName}</span>
-                                                <span className="text-xs text-muted-foreground">{client.customerCode}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex flex-col gap-1">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Mail className="h-3 w-3 text-muted-foreground" />
-                                                    <span className="text-xs">{client.email}</span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Phone className="h-3 w-3 text-muted-foreground" />
-                                                    <span className="text-xs">{client.phone}</span>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                <span>{client.billingAddress.city}, {client.billingAddress.state}</span>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="font-semibold">
-                                            {formatCurrency(client.totalInvoiced)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className={client.currentBalance > 0 ? "text-orange-600 font-semibold" : "text-muted-foreground"}>
-                                                {formatCurrency(client.currentBalance)}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={getStatusColor(client.status)}>
-                                                {client.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                    <DropdownMenuItem>
-                                                        <Eye className="mr-2 h-4 w-4" />
-                                                        View Details
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem>
-                                                        <Edit className="mr-2 h-4 w-4" />
-                                                        Edit Client
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem>
-                                                        View Invoices
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem>
-                                                        Create Invoice
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem>
-                                                        {client.status === "active" ? "Mark as Inactive" : "Mark as Active"}
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem>
-                                                        Archive Client
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="text-destructive">
-                                                        Delete Client
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
-                </CardContent>
-            </Card>
+  // Define columns
+  const columns = useMemo<ColumnDef<Customer>[]>(
+    () => [
+      {
+        id: "customerCode",
+        accessorKey: "customerCode",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Code" />
+        ),
+        cell: ({ row }) => (
+          <div className="font-medium">{row.getValue("customerCode")}</div>
+        ),
+        meta: {
+          label: "Customer Code",
+          placeholder: "Search codes...",
+          variant: "text",
+          icon: FileText,
+        },
+        enableColumnFilter: true,
+      },
+      {
+        id: "customerName",
+        accessorKey: "customerName",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Customer Name" />
+        ),
+        cell: ({ row }) => (
+          <div>
+            <div className="font-medium">{row.getValue("customerName")}</div>
+            {row.original.displayName && (
+              <div className="text-sm text-muted-foreground">
+                {row.original.displayName}
+              </div>
+            )}
+          </div>
+        ),
+        meta: {
+          label: "Customer Name",
+          placeholder: "Search names...",
+          variant: "text",
+          icon: Users,
+        },
+        enableColumnFilter: true,
+      },
+      {
+        id: "email",
+        accessorKey: "email",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Email" />
+        ),
+        cell: ({ row }) => row.getValue("email"),
+        meta: {
+          label: "Email",
+          placeholder: "Search emails...",
+          variant: "text",
+          icon: Mail,
+        },
+        enableColumnFilter: true,
+      },
+      {
+        id: "phone",
+        accessorKey: "phone",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Phone" />
+        ),
+        cell: ({ row }) => row.getValue("phone"),
+        meta: {
+          label: "Phone",
+          placeholder: "Search phones...",
+          variant: "text",
+          icon: Phone,
+        },
+        enableColumnFilter: true,
+      },
+      {
+        id: "paymentTerms",
+        accessorKey: "paymentTerms",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Payment Terms" />
+        ),
+        cell: ({ row }) => row.getValue("paymentTerms"),
+        meta: {
+          label: "Payment Terms",
+          variant: "select",
+          options: [
+            { label: "Due on Receipt", value: "Due on Receipt" },
+            { label: "Net 15", value: "Net 15" },
+            { label: "Net 30", value: "Net 30" },
+            { label: "Net 60", value: "Net 60" },
+            { label: "Net 90", value: "Net 90" },
+          ],
+        },
+        enableColumnFilter: true,
+      },
+      {
+        id: "currentBalance",
+        accessorKey: "currentBalance",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Balance" />
+        ),
+        cell: ({ row }) => (
+          <div className="text-right font-medium">
+            {formatCurrency(row.getValue("currentBalance"))}
+          </div>
+        ),
+        meta: {
+          label: "Balance",
+          variant: "number",
+          icon: DollarSign,
+        },
+        enableColumnFilter: true,
+      },
+      {
+        id: "creditLimit",
+        accessorKey: "creditLimit",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Credit Limit" />
+        ),
+        cell: ({ row }) => (
+          <div className="text-right font-medium">
+            {formatCurrency(row.getValue("creditLimit"))}
+          </div>
+        ),
+        meta: {
+          label: "Credit Limit",
+          variant: "number",
+          icon: CreditCard,
+        },
+        enableColumnFilter: true,
+      },
+      {
+        id: "isActive",
+        accessorKey: "isActive",
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Status" />
+        ),
+        cell: ({ row }) => (
+          <Badge variant={row.getValue("isActive") ? "default" : "secondary"}>
+            {row.getValue("isActive") ? "Active" : "Inactive"}
+          </Badge>
+        ),
+        meta: {
+          label: "Status",
+          variant: "select",
+          options: [
+            { label: "Active", value: "true" },
+            { label: "Inactive", value: "false" },
+          ],
+        },
+        enableColumnFilter: true,
+        filterFn: (row, id, value) => {
+          return value.includes(String(row.getValue(id)));
+        },
+      },
+      {
+        id: "actions",
+        header: "Actions",
+        cell: ({ row }) => (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleViewDetails(row.original)}>
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleEdit(row.original)}>
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleToggleStatus(row.original._id)}
+              >
+                {row.original.isActive ? "Deactivate" : "Activate"}
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDelete(row.original._id)}
+                className="text-destructive"
+              >
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ),
+        enableSorting: false,
+        enableHiding: false,
+      },
+    ],
+    [handleDelete, handleToggleStatus, handleEdit, handleViewDetails]
+  );
+
+  const { table } = useDataTable({
+    data: customers,
+    columns,
+    pageCount: Math.ceil(customers.length / 10),
+    initialState: {
+      pagination: { pageIndex: 0, pageSize: 10 },
+      sorting: [{ id: "customerName", desc: false }],
+    },
+    getRowId: (row) => row._id,
+    manualFiltering: false,
+    manualSorting: false,
+    manualPagination: false,
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
+          <p className="text-muted-foreground">
+            Manage your customer accounts and track balances
+          </p>
         </div>
-    )
-}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Button onClick={() => setIsDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Customer
+          </Button>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Add New Customer</DialogTitle>
+              <DialogDescription>
+                Enter the customer details below to create a new customer
+                account.
+              </DialogDescription>
+            </DialogHeader>
+            <ClientForm onSuccess={() => setIsDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
+      </div>
 
+      {/* Edit Customer Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogDescription>
+              Update the customer details below.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCustomer && (
+            <ClientForm
+              onSuccess={handleEditSuccess}
+              initialData={selectedCustomer}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* View Customer Details Dialog */}
+      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Customer Details</DialogTitle>
+            <DialogDescription>
+              Viewing details for {selectedCustomer?.customerName}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedCustomer && (
+            <div className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Basic Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Customer Code
+                    </label>
+                    <p className="mt-1">{selectedCustomer.customerCode}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Customer Name
+                    </label>
+                    <p className="mt-1">{selectedCustomer.customerName}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Display Name
+                    </label>
+                    <p className="mt-1">
+                      {selectedCustomer.displayName || "—"}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Status
+                    </label>
+                    <div className="mt-1">
+                      <Badge
+                        variant={
+                          selectedCustomer.isActive ? "default" : "secondary"
+                        }
+                      >
+                        {selectedCustomer.isActive ? "Active" : "Inactive"}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Contact Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Email
+                    </label>
+                    <p className="mt-1">{selectedCustomer.email}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Phone
+                    </label>
+                    <p className="mt-1">{selectedCustomer.phone}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Website
+                    </label>
+                    <p className="mt-1">{selectedCustomer.website || "—"}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Tax ID
+                    </label>
+                    <p className="mt-1">{selectedCustomer.taxId}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Billing Address */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Billing Address</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="col-span-2">
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Street
+                    </label>
+                    <p className="mt-1">
+                      {selectedCustomer.billingAddress.street}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      City
+                    </label>
+                    <p className="mt-1">
+                      {selectedCustomer.billingAddress.city}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      State
+                    </label>
+                    <p className="mt-1">
+                      {selectedCustomer.billingAddress.state}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Zip Code
+                    </label>
+                    <p className="mt-1">
+                      {selectedCustomer.billingAddress.zipCode}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Country
+                    </label>
+                    <p className="mt-1">
+                      {selectedCustomer.billingAddress.country}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Information */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Financial Information</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Payment Terms
+                    </label>
+                    <p className="mt-1">{selectedCustomer.paymentTerms}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Credit Limit
+                    </label>
+                    <p className="mt-1 font-semibold">
+                      {formatCurrency(selectedCustomer.creditLimit)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Current Balance
+                    </label>
+                    <p className="mt-1 font-semibold">
+                      {formatCurrency(selectedCustomer.currentBalance)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">
+                      Available Credit
+                    </label>
+                    <p className="mt-1 font-semibold text-green-600">
+                      {formatCurrency(
+                        selectedCustomer.creditLimit -
+                          selectedCustomer.currentBalance
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedCustomer.notes && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Notes</h3>
+                  <p className="text-sm">{selectedCustomer.notes}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button variant="outline" onClick={handleDetailsClose}>
+                  Close
+                </Button>
+                <Button
+                  onClick={() => {
+                    handleDetailsClose();
+                    handleEdit(selectedCustomer);
+                  }}
+                >
+                  Edit Customer
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-4">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Customers
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.total}</div>
+            <p className="text-xs text-muted-foreground">
+              {stats.active} active
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Receivables
+            </CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(stats.totalBalance)}
+            </div>
+            <p className="text-xs text-muted-foreground">Outstanding balance</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Total Credit Limit
+            </CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">
+              {formatCurrency(stats.totalCredit)}
+            </div>
+            <p className="text-xs text-muted-foreground">Available credit</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Overdue Accounts
+            </CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">0</div>
+            <p className="text-xs text-muted-foreground">Need attention</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Customers Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>All Customers</CardTitle>
+              <CardDescription>
+                View and manage all customer accounts
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              Loading customers...
+            </div>
+          ) : customers.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              No customers found. Add your first customer to get started.
+            </div>
+          ) : (
+            <DataTable table={table}>
+              <DataTableToolbar table={table} />
+            </DataTable>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

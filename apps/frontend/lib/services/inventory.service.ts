@@ -40,7 +40,7 @@ class InventoryService {
    * Get inventory items by category
    */
   async getItemsByCategory(
-    category: "Food" | "Non-Food"
+    category: "Food" | "Non-Food",
   ): Promise<InventoryListResponse> {
     return apiFetch<InventoryListResponse>(`/inventory/category/${category}`);
   }
@@ -57,7 +57,7 @@ class InventoryService {
    */
   async searchItems(query: string): Promise<InventoryListResponse> {
     return apiFetch<InventoryListResponse>(
-      `/inventory/search?q=${encodeURIComponent(query)}`
+      `/inventory/search?q=${encodeURIComponent(query)}`,
     );
   }
 
@@ -85,7 +85,7 @@ class InventoryService {
    */
   async updateItem(
     id: string,
-    updateData: Partial<InventoryItemForm>
+    updateData: Partial<InventoryItemForm>,
   ): Promise<InventoryResponse> {
     // Convert Date objects to ISO strings for API
     const payload = {
@@ -117,7 +117,7 @@ class InventoryService {
   async adjustQuantity(
     id: string,
     adjustment: number,
-    reason: string
+    reason: string,
   ): Promise<InventoryResponse> {
     return apiFetch<InventoryResponse>(`/inventory/${id}/adjust`, {
       method: "POST",
@@ -144,6 +144,13 @@ class InventoryService {
    */
   async getItemTransactions(id: string): Promise<any> {
     return apiFetch<any>(`/inventory/${id}/transactions`);
+  }
+
+  /**
+   * Get all inventory transactions for the company
+   */
+  async getAllTransactions(): Promise<any> {
+    return apiFetch<any>("/inventory/transactions/all");
   }
 }
 

@@ -17,7 +17,7 @@ const inventoryController = {
   getAllItems: async (req: Request, res: Response) => {
     try {
       const companyId = getCompanyId(req);
-
+      console.log("Fetched companyId:", companyId);
       if (!companyId) {
         return res.status(401).json({
           success: false,
@@ -180,7 +180,7 @@ const inventoryController = {
 
       const items = await inventoryService.getItemsByCategory(
         companyId,
-        category
+        category,
       );
 
       return res.status(200).json({
@@ -215,9 +215,7 @@ const inventoryController = {
         });
       }
 
-      const items = await inventoryService.getItemsNeedingReorder(
-        companyId
-      );
+      const items = await inventoryService.getItemsNeedingReorder(companyId);
 
       return res.status(200).json({
         success: true,
@@ -306,7 +304,7 @@ const inventoryController = {
 
       const item = await inventoryService.createItem(
         companyId,
-        validationResult.data
+        validationResult.data,
       );
 
       return res.status(201).json({
@@ -366,7 +364,7 @@ const inventoryController = {
       const item = await inventoryService.updateItem(
         companyId,
         id,
-        validationResult.data
+        validationResult.data,
       );
 
       return res.status(200).json({
@@ -467,7 +465,7 @@ const inventoryController = {
         id,
         adjustment,
         reason,
-        userId
+        userId,
       );
 
       return res.status(200).json({
@@ -517,9 +515,8 @@ const inventoryController = {
         });
       }
 
-      const totalValue = await inventoryService.getTotalInventoryValue(
-        companyId
-      );
+      const totalValue =
+        await inventoryService.getTotalInventoryValue(companyId);
 
       return res.status(200).json({
         success: true,
@@ -555,7 +552,7 @@ const inventoryController = {
 
       const transactions = await inventoryService.getItemTransactions(
         companyId,
-        id
+        id,
       );
 
       return res.status(200).json({
@@ -570,6 +567,40 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch item transactions",
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  /**
+   * GET /api/v1/inventory/transactions/all
+   * Get all inventory transactions for the company
+   */
+  getAllTransactions: async (req: Request, res: Response) => {
+    try {
+      const companyId = getCompanyId(req);
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          message: "Organization ID is required",
+        });
+      }
+
+      const transactions = await inventoryService.getAllTransactions(companyId);
+
+      return res.status(200).json({
+        success: true,
+        data: transactions,
+        count: transactions.length,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "get-all-transactions-controller",
+      });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch transactions",
         error: (error as Error).message,
       });
     }
@@ -602,7 +633,7 @@ const inventoryController = {
       const summary = await inventoryService.getMovementSummary(
         id,
         new Date(startDate as string),
-        new Date(endDate as string)
+        new Date(endDate as string),
       );
 
       return res.status(200).json({
@@ -648,7 +679,7 @@ const inventoryController = {
       const cogs = await inventoryService.calculateCOGS(
         id,
         new Date(startDate as string),
-        new Date(endDate as string)
+        new Date(endDate as string),
       );
 
       return res.status(200).json({
@@ -682,9 +713,7 @@ const inventoryController = {
         });
       }
 
-      const valuation = await inventoryService.getInventoryValuation(
-        companyId
-      );
+      const valuation = await inventoryService.getInventoryValuation(companyId);
 
       return res.status(200).json({
         success: true,
