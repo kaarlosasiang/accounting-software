@@ -1,7 +1,11 @@
 import express, { Router } from "express";
 import customerController from "./customerController.js";
+import { requireAuth } from "../../shared/middleware/auth.middleware.js";
 
 const customerRoutes: Router = express.Router();
+
+// Apply auth middleware to all routes
+customerRoutes.use(requireAuth);
 
 // Create a new customer
 customerRoutes.post("/", customerController.createCustomer);

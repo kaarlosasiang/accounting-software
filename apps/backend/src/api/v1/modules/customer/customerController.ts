@@ -16,7 +16,7 @@ const customerController = {
   getAllCustomers: async (req: Request, res: Response) => {
     try {
       const companyId = getCompanyId(req);
-
+      console.log("Fetched companyId:", companyId);
       if (!companyId) {
         return res.status(401).json({
           success: false,

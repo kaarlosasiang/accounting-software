@@ -17,7 +17,7 @@ const inventoryController = {
   getAllItems: async (req: Request, res: Response) => {
     try {
       const companyId = getCompanyId(req);
-
+      console.log("Fetched companyId:", companyId);
       if (!companyId) {
         return res.status(401).json({
           success: false,
@@ -215,9 +215,7 @@ const inventoryController = {
         });
       }
 
-      const items = await inventoryService.getItemsNeedingReorder(
-        companyId
-      );
+      const items = await inventoryService.getItemsNeedingReorder(companyId);
 
       return res.status(200).json({
         success: true,
@@ -682,9 +680,7 @@ const inventoryController = {
         });
       }
 
-      const valuation = await inventoryService.getInventoryValuation(
-        companyId
-      );
+      const valuation = await inventoryService.getInventoryValuation(companyId);
 
       return res.status(200).json({
         success: true,

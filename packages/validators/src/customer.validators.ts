@@ -17,7 +17,11 @@ const addressSchema = z.object({
 export const customerSchema = z.object({
   customerCode: z.string().min(1, "Customer code is required").trim(),
   customerName: z.string().min(1, "Customer name is required").trim(),
-  displayName: z.string().min(1, "Display name is required").trim().optional(),
+  displayName: z
+    .string()
+    .trim()
+    .optional()
+    .transform((val) => val || undefined),
   email: z.string().email("Please enter a valid email").trim().toLowerCase(),
   phone: z.string().min(1, "Phone is required").trim(),
   website: z

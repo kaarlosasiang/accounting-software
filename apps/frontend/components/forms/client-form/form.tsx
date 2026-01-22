@@ -42,23 +42,23 @@ export function ClientForm({ onSuccess, initialData }: ClientFormProps) {
     defaultValues: initialData || {
       customerCode: "",
       customerName: "",
-      displayName: "",
+      displayName: undefined,
       email: "",
-      phone: "",
-      website: "",
+      phone: "+63",
+      website: null,
       billingAddress: {
         street: "",
-        city: "",
-        state: "",
-        zipCode: "",
-        country: "US",
+        city: "Manila",
+        state: "Metro Manila",
+        zipCode: "1000",
+        country: "PH",
       },
       shippingAddress: null,
       taxId: "",
       paymentTerms: "Net 30",
-      creditLimit: 0,
+      creditLimit: 10000,
       openingBalance: 0,
-      notes: "",
+      notes: null,
       isActive: true,
     },
   });
@@ -66,10 +66,10 @@ export function ClientForm({ onSuccess, initialData }: ClientFormProps) {
   async function onSubmit(data: ClientFormValues) {
     setIsSubmitting(true);
     try {
-      // Auto-generate display name if not provided
+      // Auto-generate display name if not provided (convert empty string to undefined)
       const formData = {
         ...data,
-        displayName: data.displayName || data.customerName,
+        displayName: data.displayName?.trim() || data.customerName,
       };
 
       if (isEditing && initialData?._id) {
@@ -81,7 +81,11 @@ export function ClientForm({ onSuccess, initialData }: ClientFormProps) {
       form.reset();
       onSuccess?.();
     } catch (error) {
-      console.error(error);
+      console.error("Form submission error:", error);
+      // Show error to user
+      if (error instanceof Error) {
+        alert(`Error: ${error.message}`);
+      }
     } finally {
       setIsSubmitting(false);
     }

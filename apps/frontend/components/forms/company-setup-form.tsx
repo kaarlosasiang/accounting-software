@@ -76,7 +76,7 @@ const BUSINESS_TYPES: { value: BusinessType; label: string }[] = [
 ];
 
 const CURRENCIES = [
-  { value: "PHP", label: "PHP - Philippine Peso" },
+  { value: "PESO", label: "PHP - Philippine Peso" },
   { value: "USD", label: "USD - US Dollar" },
   { value: "EUR", label: "EUR - Euro" },
   { value: "GBP", label: "GBP - British Pound" },
@@ -95,9 +95,9 @@ const COMPANY_SIZES = [
 
 const companySetupSchema = z.object({
   companyName: z.string().min(2, "Company name must be at least 2 characters"),
-  companyId: z
+  companySlug: z
     .string()
-    .min(3, "Company ID must be at least 3 characters")
+    .min(3, "Company slug must be at least 3 characters")
     .regex(
       /^[a-z0-9-]+$/,
       "Only lowercase letters, numbers, and hyphens allowed"
@@ -133,7 +133,7 @@ type FormValues = z.infer<typeof companySetupSchema>;
 
 const defaultValues: FormValues = {
   companyName: "",
-  companyId: "",
+  companySlug: "",
   businessType: "corporation",
   industry: "",
   companySize: "",
@@ -145,7 +145,7 @@ const defaultValues: FormValues = {
   postalCode: "",
   taxId: "",
   registrationNumber: "",
-  currency: "PHP",
+  currency: "PESO",
   fiscalYearStart: new Date().toISOString().split("T")[0], // Current date
   website: "",
   phone: "",
@@ -200,7 +200,7 @@ export function CompanySetupForm({
     if (step === 1) {
       fieldsToValidate = [
         "companyName",
-        "companyId",
+        "companySlug",
         "businessType",
         "industry",
         "companySize",
@@ -270,12 +270,16 @@ export function CompanySetupForm({
         industry: values.industry,
         companySize: values.companySize,
         description: values.description || undefined,
+        // Store registration number in metadata since it's not a scalar field in backend
+        ...(values.registrationNumber && {
+          registrationNumber: values.registrationNumber,
+        }),
       };
 
       // Create organization (company) via better-auth
       const result = await organization.create({
         name: values.companyName,
-        slug: values.companyId,
+        slug: values.companySlug, // URL-friendly identifier (not used for DB references)
         logo: values.logo || undefined,
         metadata,
         // Company-specific scalar fields (additionalFields)
@@ -291,8 +295,18 @@ export function CompanySetupForm({
         throw new Error(result.error.message || "Failed to create company");
       }
 
-      // Force refresh the session to get updated user data
-      console.log("Fetching updated session...");
+      if (!result?.data?.id) {
+        throw new Error("Organization created but ID not returned");
+      }
+
+      // Store organization ID in user.companyId for quick reference
+      // Note: Organization membership is tracked in better-auth's member table
+      // but user.companyId provides a direct reference for data scoping
+      const organizationId = result.data.id;
+
+      // Force refresh the session to get updated user data and set active organization
+      console.log("Setting active organization and refreshing session...");
+      await organization.setActive({ organizationId });
       await refetchSession();
       console.log("Session updated successfully");
 
@@ -423,21 +437,22 @@ export function CompanySetupForm({
               </Field>
 
               <Field>
-                <FieldLabel htmlFor="companyId">
-                  Company ID <span className="text-destructive">*</span>
+                <FieldLabel htmlFor="companySlug">
+                  Company Slug <span className="text-destructive">*</span>
                 </FieldLabel>
                 <Input
-                  id="companyId"
+                  id="companySlug"
                   placeholder="e.g., acme-corp"
-                  className={cn(errors.companyId && "border-destructive")}
-                  {...register("companyId")}
+                  className={cn(errors.companySlug && "border-destructive")}
+                  {...register("companySlug")}
                 />
                 <FieldDescription>
-                  A unique identifier (lowercase, numbers, and hyphens only)
+                  A unique URL-friendly identifier (lowercase, numbers, and
+                  hyphens only)
                 </FieldDescription>
-                {errors.companyId && (
+                {errors.companySlug && (
                   <p className="text-sm text-destructive">
-                    {errors.companyId.message}
+                    {errors.companySlug.message}
                   </p>
                 )}
               </Field>

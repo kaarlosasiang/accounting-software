@@ -9,6 +9,11 @@ import type {
  */
 export interface User extends BetterAuthUser {
   // Additional user fields from backend configuration
+  /**
+   * Reference to the user's primary organization (stores organization.id, NOT slug)
+   * This is used for quick data scoping - organization membership is tracked
+   * in better-auth's member table, but this provides direct reference.
+   */
   companyId?: string;
   role?: string;
   first_name?: string;
@@ -130,11 +135,28 @@ export interface CompanyMetadata {
   industry?: string;
   companySize?: string;
   description?: string;
+  registrationNumber?: string; // Company registration/business license number
+  [key: string]: any; // Allow additional dynamic fields
 }
 
+/**
+ * Organization (Company) type from better-auth organization plugin
+ * Maps to 'company' collection in MongoDB (via dbProxy in betterAuth.ts)
+ */
 export interface Organization {
+  /**
+   * Auto-generated organization ID (MongoDB ObjectId as string)
+   * This is used for all database references and relationships
+   */
   id: string;
+  /**
+   * Human-readable organization name
+   */
   name: string;
+  /**
+   * URL-friendly identifier (e.g., "acme-corp")
+   * Used in URLs but NOT for database references - use id instead
+   */
   slug: string;
   logo?: string;
   metadata?: CompanyMetadata;
