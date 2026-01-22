@@ -199,8 +199,8 @@ export const columns: ColumnDef<InventoryItem>[] = [
         status === "in-stock"
           ? "default"
           : status === "low-stock"
-          ? "secondary"
-          : "destructive";
+            ? "secondary"
+            : "destructive";
       return <Badge variant={variant as any}>{status}</Badge>;
     },
     meta: {
@@ -244,7 +244,13 @@ export const columns: ColumnDef<InventoryItem>[] = [
             >
               Edit Item
             </DropdownMenuItem>
-            <DropdownMenuItem>Adjust Stock</DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                (table.options.meta as any)?.onAdjust?.(row.original)
+              }
+            >
+              Adjust Stock
+            </DropdownMenuItem>
             <DropdownMenuItem>View Transactions</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Reorder Stock</DropdownMenuItem>

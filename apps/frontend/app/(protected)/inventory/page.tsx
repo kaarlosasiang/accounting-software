@@ -25,6 +25,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 import { InventoryItemForm } from "@/components/forms";
 import { inventoryService } from "@/lib/services/inventory.service";
@@ -46,11 +55,14 @@ import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
 import type { InventoryItem as ColumnsInventoryItem } from "./columns";
 import type { RowData, TableMeta } from "@tanstack/react-table";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {
     onEdit?: (item: TData) => void;
     onView?: (item: TData) => void;
+    onAdjust?: (item: TData) => void;
   }
 }
 
@@ -61,16 +73,23 @@ export default function InventoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ColumnsInventoryItem | null>(
-    null
+    null,
   );
   const [editingFormData, setEditingFormData] = useState<
     Partial<InventoryItemFormType & { _id: string }> | undefined
   >(undefined);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [viewingItem, setViewingItem] = useState<InventoryItem | null>(null);
+  const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
+  const [adjustingItem, setAdjustingItem] =
+    useState<ColumnsInventoryItem | null>(null);
+  const [adjustmentQuantity, setAdjustmentQuantity] = useState<number>(0);
+  const [adjustmentReason, setAdjustmentReason] = useState("");
   const filteredInventory = inventory; // DataTable handles filters client-side
 
   // Transform API inventory item to table format
   const transformInventoryItem = (
-    item: InventoryItem
+    item: InventoryItem,
   ): ColumnsInventoryItem => {
     // Determine status based on quantity
     let status: "in-stock" | "low-stock" | "out-of-stock" = "in-stock";
@@ -142,15 +161,15 @@ export default function InventoryPage() {
   const inStock = inventory.filter((i) => i.status === "in-stock").length;
   const lowStock = inventory.filter((i) => i.status === "low-stock").length;
   const outOfStock = inventory.filter(
-    (i) => i.status === "out-of-stock"
+    (i) => i.status === "out-of-stock",
   ).length;
   const totalValue = inventory.reduce(
     (sum, i) => sum + i.quantityOnHand * i.unitCost,
-    0
+    0,
   );
   const potentialRevenue = inventory.reduce(
     (sum, i) => sum + i.quantityOnHand * i.sellingPrice,
-    0
+    0,
   );
 
   const inStockPct =
@@ -211,9 +230,47 @@ export default function InventoryPage() {
     setEditingFormData(undefined);
   };
 
+  const handleAdjustStock = async () => {
+    if (!adjustingItem) return;
+
+    if (adjustmentQuantity === 0) {
+      toast.error("Adjustment quantity cannot be zero");
+      return;
+    }
+
+    if (!adjustmentReason.trim()) {
+      toast.error("Please provide a reason for the adjustment");
+      return;
+    }
+
+    try {
+      const result = await inventoryService.adjustQuantity(
+        adjustingItem.id,
+        adjustmentQuantity,
+        adjustmentReason,
+      );
+
+      if (result.success) {
+        toast.success("Stock adjusted successfully");
+        await fetchInventory();
+        setIsAdjustDialogOpen(false);
+        setAdjustingItem(null);
+        setAdjustmentQuantity(0);
+        setAdjustmentReason("");
+      } else {
+        throw new Error(result.error || "Failed to adjust stock");
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to adjust stock";
+      toast.error(message);
+      console.error("Error adjusting stock:", error);
+    }
+  };
+
   // Transform table item back to form format for editing
   const getFormInitialData = (
-    item: ColumnsInventoryItem
+    item: ColumnsInventoryItem,
   ): Partial<InventoryItemFormType & { _id: string }> | undefined => {
     if (!item) return undefined;
 
@@ -307,9 +364,29 @@ export default function InventoryPage() {
           console.error("Error fetching item:", error);
         }
       },
-      onView: (item: ColumnsInventoryItem) => {
-        // TODO: route to details or open a view dialog
-        console.log("View item", item);
+      onView: async (item: ColumnsInventoryItem) => {
+        try {
+          const result = await inventoryService.getItemById(item.id);
+          if (result.success && result.data) {
+            setViewingItem(result.data);
+            setIsViewDialogOpen(true);
+          } else {
+            throw new Error(result.error || "Failed to fetch item details");
+          }
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : "Failed to load item details";
+          toast.error(message);
+          console.error("Error fetching item:", error);
+        }
+      },
+      onAdjust: (item: ColumnsInventoryItem) => {
+        setAdjustingItem(item);
+        setAdjustmentQuantity(0);
+        setAdjustmentReason("");
+        setIsAdjustDialogOpen(true);
       },
     },
   });
@@ -378,6 +455,324 @@ export default function InventoryPage() {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* View Details Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              {viewingItem?.itemName || "Item Details"}
+            </DialogTitle>
+            <DialogDescription>
+              Complete inventory item information
+            </DialogDescription>
+          </DialogHeader>
+
+          {viewingItem && (
+            <div className="space-y-6 py-4">
+              {/* Header with Status */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-muted-foreground">SKU</p>
+                  <p className="text-lg font-semibold">{viewingItem.sku}</p>
+                </div>
+                <Badge variant={viewingItem.isActive ? "default" : "secondary"}>
+                  {viewingItem.isActive ? "Active" : "Inactive"}
+                </Badge>
+              </div>
+
+              <Separator />
+
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm uppercase text-muted-foreground">
+                  Basic Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Item Name</p>
+                    <p className="font-medium">{viewingItem.itemName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Category</p>
+                    <p className="font-medium">{viewingItem.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Unit</p>
+                    <p className="font-medium">{viewingItem.unit}</p>
+                  </div>
+                  {viewingItem.description && (
+                    <div className="col-span-2">
+                      <p className="text-sm text-muted-foreground">
+                        Description
+                      </p>
+                      <p className="font-medium">{viewingItem.description}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Stock Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm uppercase text-muted-foreground">
+                  Stock Information
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Quantity on Hand
+                    </p>
+                    <p className="text-2xl font-bold text-primary">
+                      {viewingItem.quantityOnHand}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Reorder Level
+                    </p>
+                    <p className="text-2xl font-bold text-orange-600">
+                      {viewingItem.reorderLevel}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">As of Date</p>
+                    <p className="font-medium">
+                      {new Date(
+                        viewingItem.quantityAsOfDate,
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Stock Value</p>
+                    <p className="text-lg font-semibold">
+                      {formatCurrency(
+                        viewingItem.quantityOnHand * viewingItem.unitCost,
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Pricing Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm uppercase text-muted-foreground">
+                  Pricing & Profitability
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Unit Cost</p>
+                    <p className="text-lg font-semibold">
+                      {formatCurrency(viewingItem.unitCost)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Selling Price
+                    </p>
+                    <p className="text-lg font-semibold">
+                      {formatCurrency(viewingItem.sellingPrice)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Profit Margin
+                    </p>
+                    <p className="text-lg font-semibold text-green-600">
+                      {viewingItem.sellingPrice > 0
+                        ? `${(
+                            ((viewingItem.sellingPrice - viewingItem.unitCost) /
+                              viewingItem.sellingPrice) *
+                            100
+                          ).toFixed(2)}%`
+                        : "0%"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Potential Revenue
+                    </p>
+                    <p className="text-lg font-semibold text-blue-600">
+                      {formatCurrency(
+                        viewingItem.quantityOnHand * viewingItem.sellingPrice,
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Tax Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm uppercase text-muted-foreground">
+                  Tax Configuration
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Sales Tax</p>
+                    <p className="font-medium">
+                      {viewingItem.salesTaxEnabled
+                        ? `${viewingItem.salesTaxRate || 0}%`
+                        : "Not Applicable"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Purchase Tax
+                    </p>
+                    <p className="font-medium">
+                      {viewingItem.purchaseTaxRate
+                        ? `${viewingItem.purchaseTaxRate}%`
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Accounting Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-sm uppercase text-muted-foreground">
+                  Accounting Setup
+                </h3>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Inventory Account
+                    </p>
+                    <p className="font-medium">
+                      {typeof viewingItem.inventoryAccountId === "string"
+                        ? viewingItem.inventoryAccountId
+                        : viewingItem.inventoryAccountId?.accountName || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      COGS Account
+                    </p>
+                    <p className="font-medium">
+                      {typeof viewingItem.cogsAccountId === "string"
+                        ? viewingItem.cogsAccountId
+                        : viewingItem.cogsAccountId?.accountName || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Income Account
+                    </p>
+                    <p className="font-medium">
+                      {typeof viewingItem.incomeAccountId === "string"
+                        ? viewingItem.incomeAccountId
+                        : viewingItem.incomeAccountId?.accountName || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Adjust Stock Dialog */}
+      <Dialog open={isAdjustDialogOpen} onOpenChange={setIsAdjustDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Adjust Stock - {adjustingItem?.itemName}
+            </DialogTitle>
+            <DialogDescription>
+              Increase or decrease inventory quantity
+            </DialogDescription>
+          </DialogHeader>
+
+          {adjustingItem && (
+            <div className="space-y-4 py-4">
+              {/* Current Stock Info */}
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">
+                      Current Stock
+                    </p>
+                    <p className="text-2xl font-bold text-primary">
+                      {adjustingItem.quantityOnHand}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">New Stock</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {adjustingItem.quantityOnHand + adjustmentQuantity}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Adjustment Input */}
+              <div className="space-y-2">
+                <Label htmlFor="adjustment">Adjustment Quantity</Label>
+                <Input
+                  id="adjustment"
+                  type="number"
+                  placeholder="Enter quantity (positive to add, negative to reduce)"
+                  value={adjustmentQuantity}
+                  onChange={(e) =>
+                    setAdjustmentQuantity(Number(e.target.value))
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  Positive numbers increase stock, negative numbers decrease
+                  stock
+                </p>
+              </div>
+
+              {/* Reason Input */}
+              <div className="space-y-2">
+                <Label htmlFor="reason">Reason for Adjustment</Label>
+                <Textarea
+                  id="reason"
+                  placeholder="E.g., Physical count correction, Damaged goods, etc."
+                  value={adjustmentReason}
+                  onChange={(e) => setAdjustmentReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+
+              {/* Warning for negative adjustment */}
+              {adjustmentQuantity < 0 &&
+                adjustingItem.quantityOnHand + adjustmentQuantity < 0 && (
+                  <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                    <p className="text-sm text-destructive font-medium">
+                      ⚠️ Warning: This adjustment will result in negative stock!
+                    </p>
+                  </div>
+                )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 justify-end pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsAdjustDialogOpen(false);
+                    setAdjustingItem(null);
+                    setAdjustmentQuantity(0);
+                    setAdjustmentReason("");
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleAdjustStock}>Adjust Stock</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
