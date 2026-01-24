@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { DataTable } from "@/components/common/data-table/data-table";
 import { DataTableAdvancedToolbar } from "@/components/common/data-table/data-table-advanced-toolbar";
@@ -31,6 +32,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -50,6 +52,7 @@ import {
   TrendingDown,
   AlertTriangle,
   Download,
+  Settings,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "sonner";
@@ -69,8 +72,14 @@ declare module "@tanstack/react-table" {
 export default function InventoryPage() {
   const [inventory, setInventory] = useState<ColumnsInventoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [itemTypeFilter, setItemTypeFilter] = useState<
+    "all" | "Product" | "Service"
+  >("all");
   // Keep lightweight search input wired to hidden column "search"
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedItemType, setSelectedItemType] = useState<
+    "Product" | "Service" | null
+  >(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ColumnsInventoryItem | null>(
     null,
@@ -85,18 +94,25 @@ export default function InventoryPage() {
     useState<ColumnsInventoryItem | null>(null);
   const [adjustmentQuantity, setAdjustmentQuantity] = useState<number>(0);
   const [adjustmentReason, setAdjustmentReason] = useState("");
-  const filteredInventory = inventory; // DataTable handles filters client-side
+
+  // Filter inventory based on item type
+  const filteredInventory =
+    itemTypeFilter === "all"
+      ? inventory
+      : inventory.filter((item) => item.itemType === itemTypeFilter);
 
   // Transform API inventory item to table format
   const transformInventoryItem = (
     item: InventoryItem,
   ): ColumnsInventoryItem => {
-    // Determine status based on quantity
+    // Determine status based on quantity (only for products)
     let status: "in-stock" | "low-stock" | "out-of-stock" = "in-stock";
-    if (item.quantityOnHand === 0) {
-      status = "out-of-stock";
-    } else if (item.quantityOnHand <= item.reorderLevel) {
-      status = "low-stock";
+    if (item.itemType === "Product") {
+      if (item.quantityOnHand === 0) {
+        status = "out-of-stock";
+      } else if (item.quantityOnHand <= item.reorderLevel) {
+        status = "low-stock";
+      }
     }
 
     // Extract account IDs (handle both string and object formats)
@@ -115,13 +131,14 @@ export default function InventoryPage() {
 
     return {
       id: item._id,
+      itemType: item.itemType,
       itemCode: item.sku,
       itemName: item.itemName,
       category: item.category,
       unit: item.unit,
-      quantityOnHand: item.quantityOnHand,
-      reorderLevel: item.reorderLevel,
-      unitCost: item.unitCost,
+      quantityOnHand: item.quantityOnHand || 0,
+      reorderLevel: item.reorderLevel || 0,
+      unitCost: item.unitCost || 0,
       sellingPrice: item.sellingPrice,
       status,
       lastRestocked: item.quantityAsOfDate
@@ -228,6 +245,7 @@ export default function InventoryPage() {
     setIsSheetOpen(false);
     setEditingItem(null);
     setEditingFormData(undefined);
+    setSelectedItemType(null);
   };
 
   const handleAdjustStock = async () => {
@@ -410,6 +428,7 @@ export default function InventoryPage() {
             if (!open) {
               setEditingItem(null);
               setEditingFormData(undefined);
+              setSelectedItemType(null);
             }
           }}
         >
@@ -418,6 +437,7 @@ export default function InventoryPage() {
               onClick={() => {
                 setEditingItem(null);
                 setEditingFormData(undefined);
+                setSelectedItemType(null);
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -427,30 +447,84 @@ export default function InventoryPage() {
           <SheetContent className="min-w-1/3">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <span>📦</span>{" "}
+                {selectedItemType ? (
+                  selectedItemType === "Product" ? (
+                    <Package className="h-5 w-5" />
+                  ) : (
+                    <Settings className="h-5 w-5" />
+                  )
+                ) : (
+                  <span>📦</span>
+                )}
                 <span>
-                  {editingItem ? "Edit Inventory Item" : "Add Inventory Item"}
+                  {editingItem
+                    ? `Edit ${editingItem.itemType}`
+                    : selectedItemType
+                      ? `Add ${selectedItemType}`
+                      : "Add New Item"}
                 </span>
               </SheetTitle>
               <SheetDescription>
                 {editingItem
-                  ? "Update inventory item details"
-                  : "Create a new inventory item with stock details"}
+                  ? `Update ${editingItem.itemType.toLowerCase()} details`
+                  : selectedItemType
+                    ? selectedItemType === "Product"
+                      ? "Create a new product with inventory tracking"
+                      : "Create a new service without inventory tracking"
+                    : "Choose whether to add a product or service"}
               </SheetDescription>
             </SheetHeader>
-            {/* Inventory form */}
+
+            {/* Item Type Selection or Form */}
             <div className="overflow-y-scroll pb-10 no-scrollbar">
-              <InventoryItemForm
-                key={editingItem?.id || "new"} // Force re-render when editing different items
-                initialData={editingFormData}
-                onSubmit={handleAddOrEditItem}
-                onCancel={() => {
-                  setIsSheetOpen(false);
-                  setEditingItem(null);
-                  setEditingFormData(undefined);
-                }}
-                submitButtonText={editingItem ? "Update Item" : "Save Item"}
-              />
+              {!selectedItemType && !editingItem ? (
+                // Step 1: Item Type Selection
+                <div className="px-4 py-6">
+                  <div className="flex flex-col gap-4">
+                    <Button
+                      variant="outline"
+                      className="h-32 flex flex-col gap-3 hover:border-primary hover:bg-primary/5"
+                      onClick={() => setSelectedItemType("Product")}
+                    >
+                      <Package className="h-10 w-10" />
+                      <div className="text-center">
+                        <p className="font-semibold text-base">Product</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Physical items with inventory tracking
+                        </p>
+                      </div>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-32 flex flex-col gap-3 hover:border-primary hover:bg-primary/5"
+                      onClick={() => setSelectedItemType("Service")}
+                    >
+                      <Settings className="h-10 w-10" />
+                      <div className="text-center">
+                        <p className="font-semibold text-base">Service</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Services without inventory tracking
+                        </p>
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                // Step 2: Inventory Form
+                <InventoryItemForm
+                  key={editingItem?.id || `new-${selectedItemType}`}
+                  initialData={editingFormData}
+                  itemType={editingItem?.itemType || selectedItemType!}
+                  onSubmit={handleAddOrEditItem}
+                  onCancel={() => {
+                    setIsSheetOpen(false);
+                    setEditingItem(null);
+                    setEditingFormData(undefined);
+                    setSelectedItemType(null);
+                  }}
+                  submitButtonText={editingItem ? "Update Item" : "Save Item"}
+                />
+              )}
             </div>
           </SheetContent>
         </Sheet>
@@ -846,11 +920,31 @@ export default function InventoryPage() {
 
       {/* Inventory Table */}
       <Card className="border border-border/50 gap-2">
-        {/* <CardHeader>
-          <CardTitle>Inventory Items</CardTitle>
-          <CardDescription>View and manage all inventory items</CardDescription>
-        </CardHeader> */}
-        <CardContent>
+        <CardContent className="pt-6">
+          {/* Item Type Filter Tabs */}
+          <div className="mb-4">
+            <Tabs
+              value={itemTypeFilter}
+              onValueChange={(value) =>
+                setItemTypeFilter(value as "all" | "Product" | "Service")
+              }
+            >
+              <TabsList>
+                <TabsTrigger value="all">
+                  All Items ({inventory.length})
+                </TabsTrigger>
+                <TabsTrigger value="Product">
+                  Products (
+                  {inventory.filter((i) => i.itemType === "Product").length})
+                </TabsTrigger>
+                <TabsTrigger value="Service">
+                  Services (
+                  {inventory.filter((i) => i.itemType === "Service").length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
           <DataTable table={table}>
             <DataTableAdvancedToolbar table={table}>
               <div className="relative">

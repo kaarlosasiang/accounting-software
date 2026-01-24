@@ -43,7 +43,7 @@ export interface IInvoice {
   discount: number;
   totalAmount: number;
   amountPaid: number;
-  balanceDue: Date;
+  balanceDue: number;
   notes?: string;
   terms?: string;
   journalEntryId: Types.ObjectId;
@@ -55,4 +55,7 @@ export interface IInvoice {
 /**
  * Invoice Document (Mongoose)
  */
-export interface IInvoiceDocument extends Omit<IInvoice, "_id">, Document {}
+export interface IInvoiceDocument extends Omit<IInvoice, "_id">, Document {
+  recordPayment(amount: number): Promise<IInvoiceDocument>;
+  void(): Promise<IInvoiceDocument>;
+}

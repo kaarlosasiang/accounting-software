@@ -35,3 +35,22 @@ export const getCompanyId = (req: Request): string | undefined => {
 
   return companyId;
 };
+
+/**
+ * Helper to resolve the user ID from the request.
+ */
+export const getUserId = (req: Request): string | undefined => {
+  const authUser = req.authUser as Record<string, unknown> | undefined;
+
+  // Get user ID from authUser
+  const userId = authUser?.id as string | undefined;
+
+  if (!userId) {
+    logger.logError(new Error("No user ID found in request"), {
+      operation: "get-user-id",
+      hasAuthUser: !!authUser,
+    });
+  }
+
+  return userId;
+};

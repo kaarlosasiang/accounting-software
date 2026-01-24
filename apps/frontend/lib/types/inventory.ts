@@ -1,9 +1,10 @@
 export interface InventoryItem {
   _id: string;
+  itemType: "Product" | "Service";
   sku: string;
   itemName: string;
   description?: string;
-  category: "Food" | "Non-Food";
+  category: "Food" | "Non-Food" | "Service";
   unit:
     | "pcs"
     | "kg"
@@ -14,7 +15,10 @@ export interface InventoryItem {
     | "can"
     | "set"
     | "bundle"
-    | "liter";
+    | "liter"
+    | "service"
+    | "hour"
+    | "session";
   quantityOnHand: number;
   quantityAsOfDate: Date | string;
   reorderLevel: number;
@@ -37,6 +41,48 @@ export interface InventoryItem {
   createdAt?: Date | string;
   updatedAt?: Date | string;
 }
+
+/**
+ * Discriminated union types for better type safety
+ */
+export type ProductItem = InventoryItem & {
+  itemType: "Product";
+  category: "Food" | "Non-Food";
+  unit:
+    | "pcs"
+    | "kg"
+    | "sack"
+    | "box"
+    | "pack"
+    | "bottle"
+    | "can"
+    | "set"
+    | "bundle"
+    | "liter";
+  quantityOnHand: number;
+  reorderLevel: number;
+  unitCost: number;
+  inventoryAccountId:
+    | string
+    | { _id: string; accountCode: string; accountName: string };
+  cogsAccountId:
+    | string
+    | { _id: string; accountCode: string; accountName: string };
+};
+
+export type ServiceItem = InventoryItem & {
+  itemType: "Service";
+  category: "Service";
+  unit: "service" | "hour" | "session";
+  quantityOnHand: 0;
+  reorderLevel: 0;
+  unitCost: 0;
+};
+
+/**
+ * Union type that ensures correct properties based on itemType
+ */
+export type InventoryItemUnion = ProductItem | ServiceItem;
 
 /**
  * Form-specific type for inventory items
@@ -67,6 +113,7 @@ export interface InventoryItemFormProps {
   onSubmit?: (data: InventoryItemForm) => void | Promise<void>;
   onCancel?: () => void;
   initialData?: Partial<InventoryItemForm & { _id?: string }>;
+  itemType?: "Product" | "Service";
   submitButtonText?: string;
   cancelButtonText?: string;
 }

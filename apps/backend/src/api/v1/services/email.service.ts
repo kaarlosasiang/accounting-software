@@ -55,7 +55,7 @@ export class EmailService {
 
   private static async sendSignInOTP(
     email: string,
-    otp: string
+    otp: string,
   ): Promise<void> {
     // TODO: Replace with actual email sending
     console.log(`
@@ -75,7 +75,7 @@ export class EmailService {
 
   private static async sendEmailVerificationOTP(
     email: string,
-    otp: string
+    otp: string,
   ): Promise<void> {
     // TODO: Replace with actual email sending
     console.log(`
@@ -94,9 +94,79 @@ export class EmailService {
     `);
   }
 
+  /**
+   * Send invoice to customer
+   * @param params - Invoice email parameters
+   */
+  static async sendInvoice(params: {
+    customerEmail: string;
+    customerName: string;
+    invoiceNumber: string;
+    totalAmount: number;
+    dueDate: string;
+    companyName: string;
+    invoiceUrl?: string;
+  }): Promise<void> {
+    const {
+      customerEmail,
+      customerName,
+      invoiceNumber,
+      totalAmount,
+      dueDate,
+      companyName,
+      invoiceUrl,
+    } = params;
+
+    logger.info(`[Email Service] Sending invoice to ${customerEmail}`, {
+      invoiceNumber,
+      totalAmount,
+    });
+
+    try {
+      // TODO: Replace with actual email sending service
+      console.log(`
+╔════════════════════════════════════════╗
+║         INVOICE NOTIFICATION           ║
+╠════════════════════════════════════════╣
+║ To: ${customerEmail.padEnd(38)}║
+║ Customer: ${customerName.padEnd(32)}║
+║ Invoice #: ${invoiceNumber.padEnd(31)}║
+║ Amount: $${totalAmount.toFixed(2).padEnd(31)}║
+║ Due Date: ${dueDate.padEnd(31)}║
+║                                        ║
+║ Dear ${customerName},                   
+║                                        ║
+║ ${companyName} has sent you an invoice.
+║                                        ║
+║ Please review and submit payment by    ║
+║ the due date.                          ║
+${
+  invoiceUrl
+    ? `║                                        ║
+║ View Invoice: ${invoiceUrl.substring(0, 25)}...║`
+    : ""
+}
+╚════════════════════════════════════════╝
+      `);
+
+      logger.info(
+        `[Email Service] Invoice sent successfully to ${customerEmail}`,
+      );
+    } catch (error) {
+      logger.error(
+        `[Email Service] Failed to send invoice to ${customerEmail}`,
+        {
+          error: error instanceof Error ? error.message : String(error),
+          invoiceNumber,
+        },
+      );
+      throw error;
+    }
+  }
+
   private static async sendPasswordResetOTP(
     email: string,
-    otp: string
+    otp: string,
   ): Promise<void> {
     // TODO: Replace with actual email sending
     console.log(`
@@ -157,7 +227,7 @@ export class EmailService {
         `[Email Service] Failed to send company invitation to ${email}`,
         {
           error: error instanceof Error ? error.message : String(error),
-        }
+        },
       );
     }
   }
