@@ -213,7 +213,10 @@ export default function InvoiceViewPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={getStatusColor(invoice.status)} className="px-2.5 py-0.5 text-xs">
+          <Badge
+            variant={getStatusColor(invoice.status)}
+            className="px-2.5 py-0.5 text-xs"
+          >
             {invoice.status}
           </Badge>
         </div>
@@ -282,7 +285,9 @@ export default function InvoiceViewPage() {
                   <FileText className="h-3.5 w-3.5" />
                   <span>Invoice Number</span>
                 </div>
-                <p className="text-base font-semibold">{invoice.invoiceNumber}</p>
+                <p className="text-base font-semibold">
+                  {invoice.invoiceNumber}
+                </p>
               </div>
               <div>
                 <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-0.5">
@@ -303,7 +308,9 @@ export default function InvoiceViewPage() {
                 </p>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-0.5">Status</div>
+                <div className="text-xs text-muted-foreground mb-0.5">
+                  Status
+                </div>
                 <Badge
                   variant={getStatusColor(invoice.status)}
                   className="px-2.5 py-0.5 text-xs"
@@ -322,10 +329,18 @@ export default function InvoiceViewPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead className="w-[50%] text-xs">Description</TableHead>
-                      <TableHead className="text-right text-xs">Quantity</TableHead>
-                      <TableHead className="text-right text-xs">Unit Price</TableHead>
-                      <TableHead className="text-right text-xs">Amount</TableHead>
+                      <TableHead className="w-[50%] text-xs">
+                        Description
+                      </TableHead>
+                      <TableHead className="text-right text-xs">
+                        Quantity
+                      </TableHead>
+                      <TableHead className="text-right text-xs">
+                        Unit Price
+                      </TableHead>
+                      <TableHead className="text-right text-xs">
+                        Amount
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -348,7 +363,10 @@ export default function InvoiceViewPage() {
                   </TableBody>
                   <TableFooter>
                     <TableRow>
-                      <TableCell colSpan={3} className="text-right font-medium text-sm py-2">
+                      <TableCell
+                        colSpan={3}
+                        className="text-right font-medium text-sm py-2"
+                      >
                         Subtotal
                       </TableCell>
                       <TableCell className="text-right font-semibold text-sm py-2">
@@ -438,7 +456,9 @@ export default function InvoiceViewPage() {
                   )}
                   {invoice.terms && (
                     <div>
-                      <h3 className="text-sm font-semibold mb-1">Terms & Conditions</h3>
+                      <h3 className="text-sm font-semibold mb-1">
+                        Terms & Conditions
+                      </h3>
                       <p className="text-xs text-muted-foreground whitespace-pre-wrap">
                         {invoice.terms}
                       </p>
