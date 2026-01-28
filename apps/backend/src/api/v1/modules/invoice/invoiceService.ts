@@ -9,6 +9,7 @@ import {
 } from "../../shared/interface/IInvoice.js";
 import logger from "../../config/logger.js";
 import { EmailService } from "../../services/email.service.js";
+import { generateDocumentNumber } from "../../utils/documentNumberGenerator.js";
 
 /**
  * Invoice Service
@@ -78,16 +79,13 @@ export const invoiceService = {
         throw new Error("Customer not found");
       }
 
-      // Generate invoice number (you might want to use CompanySettings for prefix)
-      const lastInvoice = await Invoice.findOne({ companyId })
-        .sort({ createdAt: -1 })
-        .session(session);
-
-      let invoiceNumber = "INV-0001";
-      if (lastInvoice) {
-        const lastNumber = parseInt(lastInvoice.invoiceNumber.split("-")[1]);
-        invoiceNumber = `INV-${String(lastNumber + 1).padStart(4, "0")}`;
-      }
+      // Generate invoice number using the document number generator
+      // Format: INV-2025-0001 (company-scoped, with year)
+      const invoiceNumber = await generateDocumentNumber({
+        companyId,
+        documentType: "INVOICE",
+        session,
+      });
 
       // Create invoice
       const invoice = new Invoice({

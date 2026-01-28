@@ -94,6 +94,12 @@ const InvoicingSettingsSchema = new Schema<IInvoicingSettings>(
       default: 1,
       min: [1, "Invoice start number must be at least 1"],
     },
+    nextSequenceNumber: {
+      type: Number,
+      required: false,
+      default: 1,
+      min: [1, "Sequence number must be at least 1"],
+    },
     defaultPaymentTerms: {
       type: String,
       required: [true, "Default payment terms is required"],
@@ -132,6 +138,39 @@ const BillingSettingsSchema = new Schema<IBillingSettings>(
       required: [true, "Bill start number is required"],
       default: 1,
       min: [1, "Bill start number must be at least 1"],
+    },
+    nextSequenceNumber: {
+      type: Number,
+      required: false,
+      default: 1,
+      min: [1, "Sequence number must be at least 1"],
+    },
+  },
+  { _id: false },
+);
+
+/**
+ * Payment Settings Schema
+ */
+const PaymentSettingsSchema = new Schema<any>(
+  {
+    paymentPrefix: {
+      type: String,
+      required: false,
+      default: "PAY",
+      trim: true,
+    },
+    paymentStartNumber: {
+      type: Number,
+      required: false,
+      default: 1,
+      min: [1, "Payment start number must be at least 1"],
+    },
+    nextSequenceNumber: {
+      type: Number,
+      required: false,
+      default: 1,
+      min: [1, "Sequence number must be at least 1"],
     },
   },
   { _id: false },
@@ -228,6 +267,11 @@ const CompanySettingsSchema = new Schema<ICompanySettings>(
     billing: {
       type: BillingSettingsSchema,
       required: [true, "Billing settings is required"],
+      default: () => ({}),
+    },
+    payment: {
+      type: PaymentSettingsSchema,
+      required: false,
       default: () => ({}),
     },
     reporting: {
