@@ -146,9 +146,9 @@ export const paymentService = {
         if (!invoice) continue;
 
         // Update invoice with payment
-        invoice.amountPaid = (invoice.amountPaid || 0) + allocation.allocatedAmount;
-        invoice.balanceDue =
-          invoice.totalAmount - invoice.amountPaid;
+        invoice.amountPaid =
+          (invoice.amountPaid || 0) + allocation.allocatedAmount;
+        invoice.balanceDue = invoice.totalAmount - invoice.amountPaid;
 
         // Auto-update status based on balance
         if (Math.abs(invoice.balanceDue) < 0.01) {
@@ -205,8 +205,7 @@ export const paymentService = {
       await payment.save({ session });
 
       // 9. Update customer balance
-      const customerNewBalance =
-        customer.currentBalance - paymentData.amount;
+      const customerNewBalance = customer.currentBalance - paymentData.amount;
       customer.currentBalance = customerNewBalance;
       await customer.save({ session });
 
@@ -359,7 +358,8 @@ export const paymentService = {
       for (const invoice of invoices) {
         if (remainingAmount <= 0) break;
 
-        const invoiceBalance = invoice.balanceDue || invoice.totalAmount - (invoice.amountPaid || 0);
+        const invoiceBalance =
+          invoice.balanceDue || invoice.totalAmount - (invoice.amountPaid || 0);
         const allocationAmount = Math.min(remainingAmount, invoiceBalance);
 
         if (allocationAmount > 0) {

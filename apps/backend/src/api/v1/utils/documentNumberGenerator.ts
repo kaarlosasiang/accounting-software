@@ -26,7 +26,9 @@ export async function generateDocumentNumber(
 
   try {
     // Get company settings to get prefix and start number
-    const settings = await CompanySettings.findOne({ companyId }).session(session);
+    const settings = await CompanySettings.findOne({ companyId }).session(
+      session,
+    );
 
     if (!settings) {
       throw new Error("Company settings not found");
@@ -116,7 +118,9 @@ export async function initializeDocumentNumbers(
   session?: mongoose.ClientSession,
 ): Promise<void> {
   try {
-    const settings = await CompanySettings.findOne({ companyId }).session(session);
+    const settings = await CompanySettings.findOne({ companyId }).session(
+      session,
+    );
 
     if (!settings) {
       throw new Error("Company settings not found");
@@ -126,14 +130,14 @@ export async function initializeDocumentNumbers(
     if (!settings.invoicingSettings?.nextSequenceNumber) {
       settings.invoicingSettings = {
         ...settings.invoicingSettings,
-        nextSequenceNumber: (settings.invoicingSettings?.invoiceStartNumber || 1),
+        nextSequenceNumber: settings.invoicingSettings?.invoiceStartNumber || 1,
       };
     }
 
     if (!settings.billingSettings?.nextSequenceNumber) {
       settings.billingSettings = {
         ...settings.billingSettings,
-        nextSequenceNumber: (settings.billingSettings?.billStartNumber || 1),
+        nextSequenceNumber: settings.billingSettings?.billStartNumber || 1,
       };
     }
 

@@ -6,7 +6,7 @@ import {
   IPaymentAllocation,
   PaymentMethod,
   PaymentType,
-} from '../shared/interface/IPayment.js';
+} from "../shared/interface/IPayment.js";
 
 /**
  * Payment Allocation Schema
@@ -183,10 +183,14 @@ PaymentSchema.pre("save", function () {
       throw new Error("Customer ID is required for received payments");
     }
     if (!this.allocations || this.allocations.length === 0) {
-      throw new Error("At least one allocation is required for received payments");
+      throw new Error(
+        "At least one allocation is required for received payments",
+      );
     }
     // Validate all allocations are for invoices
-    const allInvoices = this.allocations.every((alloc) => alloc.documentType === "INVOICE");
+    const allInvoices = this.allocations.every(
+      (alloc) => alloc.documentType === "INVOICE",
+    );
     if (!allInvoices) {
       throw new Error("Received payments can only be allocated to invoices");
     }
@@ -199,7 +203,9 @@ PaymentSchema.pre("save", function () {
       throw new Error("At least one allocation is required for made payments");
     }
     // Validate all allocations are for bills
-    const allBills = this.allocations.every((alloc) => alloc.documentType === "BILL");
+    const allBills = this.allocations.every(
+      (alloc) => alloc.documentType === "BILL",
+    );
     if (!allBills) {
       throw new Error("Made payments can only be allocated to bills");
     }

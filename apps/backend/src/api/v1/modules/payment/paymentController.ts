@@ -51,7 +51,8 @@ export const getPaymentsReceived = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId = req.query.companyId as string || (req as any).user?.companyId;
+    const companyId =
+      (req.query.companyId as string) || (req as any).user?.companyId;
 
     if (!companyId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -79,7 +80,8 @@ export const getCustomerPayments = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId = req.query.companyId as string || (req as any).user?.companyId;
+    const companyId =
+      (req.query.companyId as string) || (req as any).user?.companyId;
     const { customerId } = req.params;
 
     if (!companyId) {
@@ -111,7 +113,8 @@ export const getPaymentById = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId = req.query.companyId as string || (req as any).user?.companyId;
+    const companyId =
+      (req.query.companyId as string) || (req as any).user?.companyId;
     const { paymentId } = req.params;
 
     if (!companyId) {

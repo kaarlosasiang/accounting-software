@@ -10,7 +10,7 @@ import {
   IInvoicingSettings,
   INotificationsSettings,
   IReportingSettings,
-} from '../shared/interface/ICompanySettings.js';
+} from "../shared/interface/ICompanySettings.js";
 
 /**
  * General Settings Schema
