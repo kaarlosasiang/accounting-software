@@ -5,7 +5,7 @@ import {
   IBill,
   IBillDocument,
   IBillLineItem,
-} from '../shared/interface/IBill.js';
+} from "../shared/interface/IBill.js";
 
 /**
  * Bill Line Item Schema
@@ -122,8 +122,9 @@ const BillSchema = new Schema<IBill>(
       default: 0,
     },
     balanceDue: {
-      type: Date,
+      type: Number,
       required: [true, "Balance due is required"],
+      min: [0, "Balance due cannot be negative"],
     },
     notes: {
       type: String,
@@ -173,7 +174,7 @@ BillSchema.pre("save", function () {
   this.totalAmount = this.subtotal + this.taxAmount;
 
   // Calculate balance due
-  this.balanceDue = new Date(this.totalAmount - this.amountPaid);
+  this.balanceDue = this.totalAmount - this.amountPaid;
 });
 
 /**
@@ -184,11 +185,11 @@ BillSchema.pre("save", function () {
 
   const tolerance = 0.01;
 
-  if (Math.abs(this.balanceDue.getTime()) < tolerance) {
+  if (Math.abs(this.balanceDue) < tolerance) {
     this.status = BillStatus.PAID;
   } else if (this.amountPaid > 0 && this.amountPaid < this.totalAmount) {
     this.status = BillStatus.PARTIAL;
-  } else if (this.dueDate < new Date() && this.balanceDue.getTime() > 0) {
+  } else if (this.dueDate < new Date() && this.balanceDue > 0) {
     this.status = BillStatus.OVERDUE;
   }
 });

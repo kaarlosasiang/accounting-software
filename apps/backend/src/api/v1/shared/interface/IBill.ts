@@ -41,7 +41,7 @@ export interface IBill {
   taxAmount: number;
   totalAmount: number;
   amountPaid: number;
-  balanceDue: Date;
+  balanceDue: number;
   notes?: string;
   journalEntryId: Types.ObjectId;
   createdBy: Types.ObjectId;
@@ -52,4 +52,7 @@ export interface IBill {
 /**
  * Bill Document (Mongoose)
  */
-export interface IBillDocument extends Omit<IBill, "_id">, Document {}
+export interface IBillDocument extends Omit<IBill, "_id">, Document {
+  recordPayment(amount: number): Promise<IBillDocument>;
+  void(): Promise<IBillDocument>;
+}
