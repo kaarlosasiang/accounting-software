@@ -79,20 +79,23 @@ export const billService = {
       const timestamp = Date.now();
       const year = new Date().getFullYear();
       const sequence = timestamp % 10000;
-      const billNumber = `BILL-${year}-${sequence.toString().padStart(4, '0')}`;
+      const billNumber = `BILL-${year}-${sequence.toString().padStart(4, "0")}`;
 
       // Calculate amounts if not provided
-      const subtotal = billData.subtotal ?? billData.lineItems.reduce(
-        (sum: number, item: any) => sum + (item.quantity * item.unitPrice),
-        0
-      );
-      
+      const subtotal =
+        billData.subtotal ??
+        billData.lineItems.reduce(
+          (sum: number, item: any) => sum + item.quantity * item.unitPrice,
+          0,
+        );
+
       const taxRate = billData.taxRate ?? 0;
       const taxAmount = subtotal * (taxRate / 100);
       const discount = billData.discount ?? 0;
-      const totalAmount = billData.totalAmount ?? (subtotal + taxAmount - discount);
+      const totalAmount =
+        billData.totalAmount ?? subtotal + taxAmount - discount;
       const amountPaid = billData.amountPaid ?? 0;
-      const balanceDue = billData.balanceDue ?? (totalAmount - amountPaid);
+      const balanceDue = billData.balanceDue ?? totalAmount - amountPaid;
 
       // Create bill
       const bill = new Bill({
@@ -115,11 +118,11 @@ export const billService = {
       if (billData.status && billData.status !== BillStatus.DRAFT) {
         await this.processBillItems(bill, session);
         await this.updateSupplierBalance(supplier, bill.totalAmount, session);
-        
+
         // Create automatic journal entry
         const journalEntryId = await JournalEntryService.createBillJournalEntry(
           bill,
-          new mongoose.Types.ObjectId(userId)
+          new mongoose.Types.ObjectId(userId),
         );
         bill.journalEntryId = journalEntryId;
         await bill.save({ session });
@@ -169,17 +172,20 @@ export const billService = {
 
       // Calculate amounts if line items are being updated
       if (updateData.lineItems) {
-        const subtotal = updateData.subtotal ?? updateData.lineItems.reduce(
-          (sum: number, item: any) => sum + (item.quantity * item.unitPrice),
-          0
-        );
-        
+        const subtotal =
+          updateData.subtotal ??
+          updateData.lineItems.reduce(
+            (sum: number, item: any) => sum + item.quantity * item.unitPrice,
+            0,
+          );
+
         const taxRate = updateData.taxRate ?? bill.taxRate ?? 0;
         const taxAmount = subtotal * (taxRate / 100);
         const discount = updateData.discount ?? bill.discount ?? 0;
-        const totalAmount = updateData.totalAmount ?? (subtotal + taxAmount - discount);
+        const totalAmount =
+          updateData.totalAmount ?? subtotal + taxAmount - discount;
         const amountPaid = updateData.amountPaid ?? bill.amountPaid ?? 0;
-        const balanceDue = updateData.balanceDue ?? (totalAmount - amountPaid);
+        const balanceDue = updateData.balanceDue ?? totalAmount - amountPaid;
 
         updateData.subtotal = subtotal;
         updateData.taxAmount = taxAmount;
@@ -200,11 +206,11 @@ export const billService = {
         if (supplier) {
           await this.updateSupplierBalance(supplier, bill.totalAmount, session);
         }
-        
+
         // Create automatic journal entry
         const journalEntryId = await JournalEntryService.createBillJournalEntry(
           bill,
-          bill.createdBy
+          bill.createdBy,
         );
         bill.journalEntryId = journalEntryId;
         await bill.save({ session });
@@ -518,10 +524,7 @@ export const billService = {
         _id: billId,
         companyId,
       })
-        .populate(
-          "supplierId",
-          "supplierName displayName email phone address",
-        )
+        .populate("supplierId", "supplierName displayName email phone address")
         .session(session);
 
       if (!bill) {
@@ -548,16 +551,12 @@ export const billService = {
 
         // Process inventory and update supplier balance for newly approved bills
         await this.processBillItems(bill, session);
-        await this.updateSupplierBalance(
-          supplier,
-          bill.totalAmount,
-          session,
-        );
-        
+        await this.updateSupplierBalance(supplier, bill.totalAmount, session);
+
         // Create automatic journal entry for newly approved bill
         const journalEntryId = await JournalEntryService.createBillJournalEntry(
           bill,
-          bill.createdBy
+          bill.createdBy,
         );
         bill.journalEntryId = journalEntryId;
         await bill.save({ session });
@@ -586,7 +585,7 @@ export const billService = {
   async getBillPayments(companyId: string, billId: string) {
     try {
       const { Payment } = await import("../../models/Payment.js");
-      
+
       const payments = await Payment.find({
         companyId,
         "allocations.documentId": billId,
