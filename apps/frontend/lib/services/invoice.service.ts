@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/config/api-client";
+import { Payment, PaymentFormData, PaymentSummary } from "@/lib/types/payment";
 
 export interface InvoiceLineItem {
   description: string;
@@ -23,7 +24,7 @@ export interface Invoice {
   };
   invoiceNumber: string;
   invoiceDate?: Date;
-  dueDate: number;
+  dueDate: Date;
   status: "Draft" | "Sent" | "Partial" | "Paid" | "Overdue" | "Void";
   lineItems: InvoiceLineItem[];
   subtotal: number;
@@ -49,7 +50,7 @@ export interface Invoice {
 export interface InvoiceFormData {
   customerId: string;
   invoiceDate?: Date;
-  dueDate: number;
+  dueDate: Date;
   status?: string;
   lineItems: InvoiceLineItem[];
   taxRate?: number;
@@ -165,13 +166,30 @@ class InvoiceService {
   }
 
   /**
-   * Send invoice to customer
-   */
+    * Send invoice to customer
+    */
   async sendInvoice(id: string, companyName: string): Promise<InvoiceResponse> {
     return apiFetch<InvoiceResponse>(`/invoices/${id}/send`, {
       method: "POST",
       body: JSON.stringify({ companyName }),
     });
+  }
+
+  /**
+   * Record payment for an invoice
+   */
+  async recordPayment(invoiceId: string, paymentData: PaymentFormData): Promise<PaymentSummary> {
+    return apiFetch<PaymentSummary>(`/invoices/${invoiceId}/payments`, {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    });
+  }
+
+  /**
+   * Get payment history for an invoice
+   */
+  async getInvoicePayments(invoiceId: string): Promise<Payment[]> {
+    return apiFetch<Payment[]>(`/invoices/${invoiceId}/payments`);
   }
 }
 

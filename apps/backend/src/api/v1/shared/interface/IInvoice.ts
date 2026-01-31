@@ -34,7 +34,7 @@ export interface IInvoice {
   customerId: Types.ObjectId;
   invoiceNumber: string;
   invoiceDate?: Date;
-  dueDate: number;
+  dueDate: Date;
   status: InvoiceStatus;
   lineItems: IInvoiceLineItem[];
   subtotal: number;
@@ -46,7 +46,7 @@ export interface IInvoice {
   balanceDue: number;
   notes?: string;
   terms?: string;
-  journalEntryId: Types.ObjectId;
+  journalEntryId?: Types.ObjectId;
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;

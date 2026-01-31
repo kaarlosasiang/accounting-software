@@ -86,6 +86,7 @@ export interface ICompanySettings {
   accounting: IAccountingSettings;
   invoicing: IInvoicingSettings;
   billing: IBillingSettings;
+  payment: IPaymentSettings;
   reporting: IReportingSettings;
   notifications: INotificationsSettings;
   updatedAt: Date;

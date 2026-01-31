@@ -22,11 +22,30 @@ export const createBillSchema = z
       .min(1, "At least one line item is required"),
     taxRate: z.number().min(0).max(100).optional().default(0),
     notes: z.string().optional(),
-    status: z.enum(["Draft", "Open"]).optional().default("Draft"),
+    status: z.enum(["Draft", "Sent", "Partial", "Paid", "Overdue", "Void"]).optional().default("Draft"),
+    // Allow frontend to provide calculated amounts directly
+    subtotal: z.number().min(0).optional(),
+    totalAmount: z.number().min(0).optional(),
+    balanceDue: z.number().min(0).optional(),
+    amountPaid: z.number().min(0).optional().default(0),
+    discount: z.number().min(0).optional().default(0),
   })
   .refine((data) => data.dueDate >= data.billDate, {
     message: "Due date must be on or after bill date",
     path: ["dueDate"],
+  })
+  .refine((data) => {
+    // If providing subtotal, ensure line items total matches
+    if (data.subtotal && data.lineItems.length > 0) {
+      const calculatedSubtotal = data.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      if (Math.abs(calculatedSubtotal - data.subtotal) > 0.01) {
+        return false;
+      }
+    }
+    return true;
+  }, {
+    message: "Subtotal must match line items total",
+    path: ["subtotal"],
   });
 
 // Update bill schema
@@ -42,8 +61,14 @@ export const updateBillSchema = z
     taxRate: z.number().min(0).max(100).optional(),
     notes: z.string().optional(),
     status: z
-      .enum(["Draft", "Open", "Partial", "Paid", "Overdue", "Void"])
+      .enum(["Draft", "Sent", "Partial", "Paid", "Overdue", "Void"])
       .optional(),
+    // Allow frontend to update calculated amounts
+    subtotal: z.number().min(0).optional(),
+    totalAmount: z.number().min(0).optional(),
+    balanceDue: z.number().min(0).optional(),
+    amountPaid: z.number().min(0).optional(),
+    discount: z.number().min(0).optional(),
   })
   .refine(
     (data) => {
@@ -56,7 +81,20 @@ export const updateBillSchema = z
       message: "Due date must be on or after bill date",
       path: ["dueDate"],
     },
-  );
+  )
+  .refine((data) => {
+    // If updating subtotal, ensure line items total matches
+    if (data.subtotal && data.lineItems && data.lineItems.length > 0) {
+      const calculatedSubtotal = data.lineItems.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+      if (Math.abs(calculatedSubtotal - data.subtotal) > 0.01) {
+        return false;
+      }
+    }
+    return true;
+  }, {
+    message: "Subtotal must match line items total",
+    path: ["subtotal"],
+  });
 
 // Record payment schema
 export const recordBillPaymentSchema = z.object({

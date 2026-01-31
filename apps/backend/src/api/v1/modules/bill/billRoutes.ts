@@ -33,4 +33,11 @@ billRoutes.delete("/:id", billController.deleteBill);
 // Void bill
 billRoutes.post("/:id/void", billController.voidBill);
 
+// Approve bill
+billRoutes.post("/:id/approve", billController.approveBill);
+
+// Payment operations
+billRoutes.post("/:id/payments", billController.recordPayment);
+billRoutes.get("/:id/payments", billController.getBillPayments);
+
 export { billRoutes };

@@ -58,10 +58,10 @@ export default function PendingBillsPage() {
       setLoading(true);
       const response = await billService.getAllBills();
       if (response.success) {
-        // Filter for pending bills (Open, Partial, Overdue)
+        // Filter for pending bills (Sent, Partial, Overdue)
         const pendingBills = response.data.filter(
           (bill) =>
-            bill.status === "Open" ||
+            bill.status === "Sent" ||
             bill.status === "Partial" ||
             bill.status === "Overdue",
         );
@@ -99,12 +99,12 @@ export default function PendingBillsPage() {
     .filter((bill) => bill.status === "Overdue")
     .reduce((sum, bill) => sum + bill.balanceDue, 0);
   const openAmount = bills
-    .filter((bill) => bill.status === "Open")
+    .filter((bill) => bill.status === "Sent")
     .reduce((sum, bill) => sum + bill.balanceDue, 0);
 
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
-      Open: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+      Sent: "bg-blue-500/10 text-blue-600 border-blue-500/20",
       Partial: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
       Overdue: "bg-red-500/10 text-red-600 border-red-500/20",
     };
@@ -180,8 +180,8 @@ export default function PendingBillsPage() {
             <div className="text-2xl font-bold">
               {formatCurrency(openAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              {bills.filter((b) => b.status === "Open").length} open bills
+              <p className="text-xs text-muted-foreground">
+              {bills.filter((b) => b.status === "Sent").length} open bills
             </p>
           </CardContent>
         </Card>

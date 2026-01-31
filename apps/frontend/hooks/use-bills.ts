@@ -151,6 +151,35 @@ export function useBills() {
     }
   };
 
+  const approveBill = async (id: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await billService.approveBill(id);
+      if (response.success) {
+        toast.success("Bill approved successfully");
+        await fetchBills();
+        return true;
+      } else {
+        setError(response.error || "Failed to approve bill");
+        toast.error(response.error || "Failed to approve bill");
+        return false;
+      }
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to approve bill";
+      setError(errorMessage);
+      toast.error(errorMessage);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshBills = async () => {
+    await fetchBills();
+  };
+
   const searchBills = async (searchTerm: string) => {
     try {
       setLoading(true);
@@ -173,7 +202,7 @@ export function useBills() {
   };
 
   const getBillsByStatus = async (
-    status: "Draft" | "Open" | "Partial" | "Paid" | "Overdue" | "Void",
+    status: "Draft" | "Sent" | "Partial" | "Paid" | "Overdue" | "Void",
   ) => {
     try {
       setLoading(true);
@@ -221,17 +250,19 @@ export function useBills() {
   }, []);
 
   return {
-    bills,
-    loading,
-    error,
-    fetchBills,
-    getBillById,
-    createBill,
-    updateBill,
-    deleteBill,
-    voidBill,
-    searchBills,
-    getBillsByStatus,
-    getOverdueBills,
-  };
+      bills,
+      loading,
+      error,
+      fetchBills,
+      getBillById,
+      createBill,
+      updateBill,
+      deleteBill,
+      voidBill,
+      approveBill,
+      refreshBills,
+      searchBills,
+      getBillsByStatus,
+      getOverdueBills,
+    };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -38,7 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 import { InventoryItemForm } from "@/components/forms";
-import { inventoryService } from "@/lib/services/inventory.service";
+import { useInventory } from "@/hooks/use-inventory";
 import type {
   InventoryItem,
   InventoryItemForm as InventoryItemFormType,
@@ -55,7 +55,6 @@ import {
   Settings,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
 import type { InventoryItem as ColumnsInventoryItem } from "./columns";
 import type { RowData, TableMeta } from "@tanstack/react-table";
 import { Label } from "@/components/ui/label";
@@ -70,8 +69,8 @@ declare module "@tanstack/react-table" {
 }
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState<ColumnsInventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { items, isLoading, createItem, updateItem, adjustQuantity, refetch } =
+    useInventory();
   const [itemTypeFilter, setItemTypeFilter] = useState<
     "all" | "Product" | "Service"
   >("all");
@@ -94,12 +93,6 @@ export default function InventoryPage() {
     useState<ColumnsInventoryItem | null>(null);
   const [adjustmentQuantity, setAdjustmentQuantity] = useState<number>(0);
   const [adjustmentReason, setAdjustmentReason] = useState("");
-
-  // Filter inventory based on item type
-  const filteredInventory =
-    itemTypeFilter === "all"
-      ? inventory
-      : inventory.filter((item) => item.itemType === itemTypeFilter);
 
   // Transform API inventory item to table format
   const transformInventoryItem = (
@@ -147,32 +140,16 @@ export default function InventoryPage() {
     };
   };
 
-  // Fetch inventory items
-  const fetchInventory = async () => {
-    setIsLoading(true);
-    try {
-      const result = await inventoryService.getAllItems();
-      if (result.success && result.data) {
-        const transformed = result.data.map(transformInventoryItem);
-        setInventory(transformed);
-      } else {
-        throw new Error(result.error || "Failed to fetch inventory items");
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch inventory items";
-      toast.error(message);
-      console.error("Error fetching inventory:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Transform items using useMemo
+  const inventory = useMemo(() => {
+    return items.map(transformInventoryItem);
+  }, [items]);
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
+  // Filter inventory based on item type
+  const filteredInventory =
+    itemTypeFilter === "all"
+      ? inventory
+      : inventory.filter((item) => item.itemType === itemTypeFilter);
 
   const totalItems = inventory.length;
   const inStock = inventory.filter((i) => i.status === "in-stock").length;
@@ -239,7 +216,7 @@ export default function InventoryPage() {
 
   const handleAddOrEditItem = async () => {
     // Refresh inventory after successful save
-    await fetchInventory();
+    await refetch();
 
     // Close the sheet after successful save
     setIsSheetOpen(false);
@@ -261,28 +238,17 @@ export default function InventoryPage() {
       return;
     }
 
-    try {
-      const result = await inventoryService.adjustQuantity(
-        adjustingItem.id,
-        adjustmentQuantity,
-        adjustmentReason,
-      );
+    const success = await adjustQuantity(
+      adjustingItem.id,
+      adjustmentQuantity,
+      adjustmentReason,
+    );
 
-      if (result.success) {
-        toast.success("Stock adjusted successfully");
-        await fetchInventory();
-        setIsAdjustDialogOpen(false);
-        setAdjustingItem(null);
-        setAdjustmentQuantity(0);
-        setAdjustmentReason("");
-      } else {
-        throw new Error(result.error || "Failed to adjust stock");
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to adjust stock";
-      toast.error(message);
-      console.error("Error adjusting stock:", error);
+    if (success) {
+      setIsAdjustDialogOpen(false);
+      setAdjustingItem(null);
+      setAdjustmentQuantity(0);
+      setAdjustmentReason("");
     }
   };
 

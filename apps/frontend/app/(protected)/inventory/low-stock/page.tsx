@@ -28,6 +28,7 @@ import {
     ShoppingCart,
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { useInventory } from "@/hooks/use-inventory"
 
 interface LowStockItem {
     id: string
@@ -43,51 +44,35 @@ interface LowStockItem {
     daysUntilOut: number
 }
 
-const mockLowStock: LowStockItem[] = [
-    {
-        id: "INV-002",
-        itemCode: "FOOD-002",
-        itemName: "Cooking Oil (1L)",
-        category: "Food",
-        unit: "bottle",
-        quantityOnHand: 35,
-        reorderLevel: 40,
-        deficit: 5,
-        unitCost: 85.00,
-        reorderCost: 425.00,
-        daysUntilOut: 12
-    },
-    {
-        id: "INV-003",
-        itemCode: "FOOD-003",
-        itemName: "Canned Goods Assorted",
-        category: "Food",
-        unit: "can",
-        quantityOnHand: 0,
-        reorderLevel: 30,
-        deficit: 30,
-        unitCost: 45.00,
-        reorderCost: 1350.00,
-        daysUntilOut: 0
-    },
-    {
-        id: "INV-005",
-        itemCode: "NONFOOD-002",
-        itemName: "Office Supplies Pack",
-        category: "Non-Food",
-        unit: "pack",
-        quantityOnHand: 85,
-        reorderLevel: 100,
-        deficit: 15,
-        unitCost: 250.00,
-        reorderCost: 3750.00,
-        daysUntilOut: 18
-    },
-]
-
 export default function LowStockPage() {
-    const [items] = useState<LowStockItem[]>(mockLowStock)
+    const { items: inventoryItems, isLoading } = useInventory({ lowStockOnly: true, activeOnly: true })
     const [searchQuery, setSearchQuery] = useState("")
+
+    // Transform inventory items to low stock format
+    const items: LowStockItem[] = inventoryItems
+        .filter(item => item.itemType === "Product")
+        .map(item => {
+            const deficit = Math.max(0, (item.reorderLevel || 0) - (item.quantityOnHand || 0))
+            const reorderQuantity = deficit
+            const reorderCost = reorderQuantity * (item.unitCost || 0)
+            // Simple estimation: assume 30 days average sales if we had tracking
+            const daysUntilOut = item.quantityOnHand === 0 ? 0 : 
+                Math.floor((item.quantityOnHand || 0) / ((deficit || 1) / 7)) // Rough estimate
+
+            return {
+                id: item._id,
+                itemCode: item.sku,
+                itemName: item.itemName,
+                category: item.category,
+                unit: item.unit,
+                quantityOnHand: item.quantityOnHand || 0,
+                reorderLevel: item.reorderLevel || 0,
+                deficit,
+                unitCost: item.unitCost || 0,
+                reorderCost,
+                daysUntilOut: Math.min(daysUntilOut, 90) // Cap at 90 days
+            }
+        })
 
     const filteredItems = items.filter(item =>
         item.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -202,39 +187,56 @@ export default function LowStockPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col gap-4 mb-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="relative">
-                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search items..."
-                                    className="pl-8"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-center">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4" />
+                                <p className="text-muted-foreground">Loading low stock items...</p>
                             </div>
-                            <Button variant="outline" onClick={handleExportCSV}>
-                                <Download className="mr-2 h-4 w-4" />
-                                Export Report
-                            </Button>
                         </div>
-                    </div>
+                    ) : items.length === 0 ? (
+                        <div className="flex items-center justify-center py-12">
+                            <div className="text-center">
+                                <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                                <p className="text-lg font-medium">No low stock items</p>
+                                <p className="text-muted-foreground">All items are well stocked!</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="flex flex-col gap-4 mb-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="relative">
+                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                        <Input
+                                            placeholder="Search items..."
+                                            className="pl-8"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                        />
+                                    </div>
+                                    <Button variant="outline" onClick={handleExportCSV}>
+                                        <Download className="mr-2 h-4 w-4" />
+                                        Export Report
+                                    </Button>
+                                </div>
+                            </div>
 
-                    <div className="rounded-md border">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Item</TableHead>
-                                    <TableHead>Category</TableHead>
-                                    <TableHead>Current Stock</TableHead>
-                                    <TableHead>Reorder Level</TableHead>
-                                    <TableHead>Deficit</TableHead>
-                                    <TableHead>Reorder Cost</TableHead>
-                                    <TableHead>Days Until Out</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Item</TableHead>
+                                            <TableHead>Category</TableHead>
+                                            <TableHead>Current Stock</TableHead>
+                                            <TableHead>Reorder Level</TableHead>
+                                            <TableHead>Deficit</TableHead>
+                                            <TableHead>Reorder Cost</TableHead>
+                                            <TableHead>Days Until Out</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
                                 {filteredItems.map((item) => (
                                     <TableRow key={item.id} className={item.quantityOnHand === 0 ? "bg-red-50 dark:bg-red-950/20" : ""}>
                                         <TableCell>
@@ -288,8 +290,11 @@ export default function LowStockPage() {
                             </TableBody>
                         </Table>
                     </div>
+                        </>
+                    )}
                 </CardContent>
             </Card>
         </div>
     )
+}
 }

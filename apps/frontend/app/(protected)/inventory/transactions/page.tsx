@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { inventoryService } from "@/lib/services/inventory.service";
-import { toast } from "sonner";
+import { useState } from "react";
+import { useInventoryTransactions } from "@/hooks/use-inventory";
 import {
   Card,
   CardContent,
@@ -61,37 +60,11 @@ interface InventoryTransaction {
 }
 
 export default function InventoryTransactionsPage() {
-  const [transactions, setTransactions] = useState<InventoryTransaction[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { transactions, isLoading } = useInventoryTransactions();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
-  // Fetch transactions from API
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setIsLoading(true);
-      try {
-        const result = await inventoryService.getAllTransactions();
-        if (result.success && result.data) {
-          setTransactions(result.data);
-        } else {
-          throw new Error(result.error || "Failed to fetch transactions");
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error
-            ? error.message
-            : "Failed to fetch transactions";
-        toast.error(message);
-        console.error("Error fetching transactions:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchTransactions();
-  }, []);
 
   const filteredTransactions = transactions.filter((txn) => {
     const itemName = txn.inventoryItemId?.itemName || "";

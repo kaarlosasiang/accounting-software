@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
+import { createBillSchema } from "@rrd10-sas/validators/bill";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -88,8 +89,8 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
       lineItems: [
         {
           description: "",
-          quantity: 1,
-          unitPrice: 0,
+          quantity: 0,
+          unitPrice: 1, // Changed to 1 to avoid validation error
           amount: 0,
           accountId: "",
           taxRate: 0,

@@ -9,7 +9,8 @@ import {
 } from "../../shared/interface/IInvoice.js";
 import logger from "../../config/logger.js";
 import { EmailService } from "../../services/email.service.js";
-import { generateDocumentNumber } from "../../utils/documentNumberGenerator.js";
+// import { generateDocumentNumber } from "../../utils/documentNumberGenerator.js";
+import { JournalEntryService } from "../../services/journalEntryService.js";
 
 /**
  * Invoice Service
@@ -98,7 +99,7 @@ export const invoiceService = {
 
       await invoice.save({ session });
 
-      // If status is not DRAFT, process inventory and update customer balance
+      // If status is not DRAFT, process inventory, update customer balance, and create journal entry
       if (invoiceData.status && invoiceData.status !== InvoiceStatus.DRAFT) {
         await this.processInvoiceItems(invoice, session);
         await this.updateCustomerBalance(
@@ -106,6 +107,14 @@ export const invoiceService = {
           invoice.totalAmount,
           session,
         );
+        
+        // Create automatic journal entry
+        const journalEntryId = await JournalEntryService.createInvoiceJournalEntry(
+          invoice,
+          new mongoose.Types.ObjectId(userId)
+        );
+        invoice.journalEntryId = journalEntryId;
+        await invoice.save({ session });
       }
 
       await session.commitTransaction();
@@ -159,7 +168,7 @@ export const invoiceService = {
       Object.assign(invoice, updateData);
       await invoice.save({ session });
 
-      // If status changed from DRAFT to active, process inventory
+      // If status changed from DRAFT to active, process inventory and create journal entry
       if (
         oldStatus === InvoiceStatus.DRAFT &&
         invoice.status !== InvoiceStatus.DRAFT
@@ -175,6 +184,14 @@ export const invoiceService = {
             session,
           );
         }
+        
+        // Create automatic journal entry
+        const journalEntryId = await JournalEntryService.createInvoiceJournalEntry(
+          invoice,
+          invoice.createdBy
+        );
+        invoice.journalEntryId = journalEntryId;
+        await invoice.save({ session });
       }
 
       // If total amount changed, update customer balance
@@ -530,11 +547,18 @@ export const invoiceService = {
           invoice.totalAmount,
           session,
         );
+        
+        // Create automatic journal entry for newly sent invoice
+        const journalEntryId = await JournalEntryService.createInvoiceJournalEntry(
+          invoice,
+          invoice.createdBy
+        );
+        invoice.journalEntryId = journalEntryId;
+        await invoice.save({ session });
       }
 
-      // Calculate due date
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + invoice.dueDate);
+      // Calculate due date (invoice.dueDate is now a Date after our fix)
+      const dueDate = new Date(invoice.dueDate);
 
       // Send email
       await EmailService.sendInvoice({
@@ -580,6 +604,34 @@ export const invoiceService = {
       await customer.save({ session });
     } catch (error) {
       logger.logError(error as Error, { operation: "updateCustomerBalance" });
+      throw error;
+    }
+  },
+
+  /**
+   * Get payment history for an invoice
+   */
+  async getInvoicePayments(companyId: string, invoiceId: string) {
+    try {
+      const { Payment } = await import("../../models/Payment.js");
+      
+      const payments = await Payment.find({
+        companyId,
+        "allocations.documentId": invoiceId,
+        "allocations.documentType": "INVOICE",
+      })
+        .populate("customerId", "customerName displayName email")
+        .populate("bankAccountId", "accountCode accountName")
+        .populate("createdBy", "first_name last_name email")
+        .sort({ paymentDate: -1 });
+
+      return payments;
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "getInvoicePayments",
+        companyId,
+        invoiceId,
+      });
       throw error;
     }
   },

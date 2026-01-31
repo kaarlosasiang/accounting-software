@@ -39,4 +39,8 @@ invoiceRoutes.post("/:id/void", invoiceController.voidInvoice);
 // Send invoice
 invoiceRoutes.post("/:id/send", invoiceController.sendInvoice);
 
+// Payment operations
+invoiceRoutes.post("/:id/payments", invoiceController.recordPayment);
+invoiceRoutes.get("/:id/payments", invoiceController.getInvoicePayments);
+
 export { invoiceRoutes };

@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useInvoices } from "@/hooks/use-invoices";
 import { useOrganization } from "@/hooks/use-organization";
 import type { Invoice } from "@/lib/services/invoice.service";
+import { paymentService } from "@/lib/services/payment.service";
+import { PaymentFormData } from "@/lib/types/payment";
 import {
   Card,
   CardContent,
@@ -137,6 +139,13 @@ export default function InvoiceViewPage() {
     generateInvoicePDF(invoice, companyInfo);
   };
 
+  const handleRecordPayment = () => {
+    if (!invoice) return;
+    
+    // Navigate to payment page with invoice data pre-filled
+    router.push(`/payments/create?invoiceId=${invoiceId}&amount=${invoice.balanceDue}`);
+  };
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "paid":
@@ -232,9 +241,9 @@ export default function InvoiceViewPage() {
                   <Send className="mr-2 h-4 w-4" />
                   Send to Customer
                 </Button>
-                <Button variant="outline">
+                <Button variant="outline" onClick={handleRecordPayment}>
                   <CheckCircle2 className="mr-2 h-4 w-4" />
-                  Mark as Paid
+                  Record Payment
                 </Button>
               </>
             )}

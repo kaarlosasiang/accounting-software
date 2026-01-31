@@ -1,4 +1,5 @@
 import { apiFetch } from "@/lib/config/api-client";
+import { Payment, PaymentFormData, PaymentSummary } from "@/lib/types/payment";
 
 export interface BillLineItem {
   description: string;
@@ -21,17 +22,19 @@ export interface Bill {
     address?: any;
     currentBalance?: number;
   };
-  billNumber: number;
+  billNumber: string;
   dueDate: Date;
-  status: "Draft" | "Open" | "Partial" | "Paid" | "Overdue" | "Void";
+  status: "Draft" | "Sent" | "Partial" | "Paid" | "Overdue" | "Void";
   lineItems: BillLineItem[];
   subtotal: number;
   taxRate: number;
   taxAmount: number;
   totalAmount: number;
+  discount: number;
   amountPaid: number;
   balanceDue: number;
   notes?: string;
+  terms?: string;
   journalEntryId?: string;
   createdBy: {
     _id: string;
@@ -123,6 +126,15 @@ class BillService {
   }
 
   /**
+   * Approve a bill (activate it and create journal entries)
+   */
+  async approveBill(id: string): Promise<BillResponse> {
+    return apiFetch<BillResponse>(`/bills/${id}/approve`, {
+      method: "POST",
+    });
+  }
+
+  /**
    * Get bills by supplier
    */
   async getBillsBySupplier(supplierId: string): Promise<BillListResponse> {
@@ -146,12 +158,29 @@ class BillService {
   }
 
   /**
-   * Search bills
-   */
+    * Search bills
+    */
   async searchBills(searchTerm: string): Promise<BillListResponse> {
     return apiFetch<BillListResponse>(
       `/bills/search?q=${encodeURIComponent(searchTerm)}`,
     );
+  }
+
+  /**
+   * Record payment for a bill
+   */
+  async recordPayment(billId: string, paymentData: PaymentFormData): Promise<PaymentSummary> {
+    return apiFetch<PaymentSummary>(`/bills/${billId}/payments`, {
+      method: "POST",
+      body: JSON.stringify(paymentData),
+    });
+  }
+
+  /**
+   * Get payment history for a bill
+   */
+  async getBillPayments(billId: string): Promise<Payment[]> {
+    return apiFetch<Payment[]>(`/bills/${billId}/payments`);
   }
 }
 

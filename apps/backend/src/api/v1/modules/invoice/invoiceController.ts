@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { invoiceService } from "./invoiceService.js";
+import { paymentService } from "../payment/paymentService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
@@ -397,6 +398,83 @@ export const invoiceController = {
         success: false,
         error:
           error instanceof Error ? error.message : "Failed to send invoice",
+      });
+    }
+  },
+
+  /**
+   * Record payment for an invoice
+   * POST /api/v1/invoices/:id/payments
+   */
+  async recordPayment(req: Request, res: Response) {
+    try {
+      const companyId = getCompanyId(req);
+      const userId = getUserId(req);
+      const { id } = req.params;
+
+      if (!companyId || !userId) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized - Company ID or User ID not found",
+        });
+      }
+
+      const paymentData = {
+        ...req.body,
+        invoiceId: id,
+        companyId,
+      };
+
+      const result = await paymentService.recordPaymentReceived(
+        companyId,
+        userId,
+        paymentData,
+      );
+
+      return res.status(201).json({
+        success: true,
+        data: result,
+        message: "Payment recorded successfully",
+      });
+    } catch (error) {
+      logger.logError(error as Error, { operation: "recordPayment" });
+      return res.status(400).json({
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to record payment",
+      });
+    }
+  },
+
+  /**
+   * Get payment history for an invoice
+   * GET /api/v1/invoices/:id/payments
+   */
+  async getInvoicePayments(req: Request, res: Response) {
+    try {
+      const companyId = getCompanyId(req);
+      const { id } = req.params;
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized - Company ID not found",
+        });
+      }
+
+      const payments = await invoiceService.getInvoicePayments(companyId, id);
+
+      return res.status(200).json({
+        success: true,
+        data: payments,
+        count: payments.length,
+      });
+    } catch (error) {
+      logger.logError(error as Error, { operation: "getInvoicePayments" });
+      return res.status(500).json({
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to get payments",
       });
     }
   },

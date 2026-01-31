@@ -64,8 +64,10 @@ const BillSchema = new Schema<IBill>(
       index: true,
     },
     billNumber: {
-      type: Number,
+      type: String,
       required: [true, "Bill number is required"],
+      trim: true,
+      unique: true,
       index: true,
     },
     dueDate: {
@@ -115,6 +117,12 @@ const BillSchema = new Schema<IBill>(
       required: [true, "Total amount is required"],
       min: [0, "Total amount cannot be negative"],
     },
+    discount: {
+      type: Number,
+      required: [true, "Discount is required"],
+      min: [0, "Discount cannot be negative"],
+      default: 0,
+    },
     amountPaid: {
       type: Number,
       required: [true, "Amount paid is required"],
@@ -131,10 +139,16 @@ const BillSchema = new Schema<IBill>(
       trim: true,
       default: null,
     },
+    terms: {
+      type: String,
+      trim: true,
+      default: null,
+    },
     journalEntryId: {
       type: Schema.Types.ObjectId,
       ref: "JournalEntry",
-      required: [true, "Journal entry ID is required"],
+      required: false,
+      default: null,
       index: true,
     },
     createdBy: {
@@ -157,25 +171,28 @@ BillSchema.index({ companyId: 1, status: 1 });
 BillSchema.index({ companyId: 1, dueDate: 1 });
 BillSchema.index({ companyId: 1, billNumber: 1 }, { unique: true });
 
-/**
- * Pre-save: Calculate amounts from line items
- */
-BillSchema.pre("save", function () {
-  // Calculate subtotal from line items
-  this.subtotal = this.lineItems.reduce((sum, item) => {
-    item.amount = item.quantity * item.unitPrice;
-    return sum + item.amount;
-  }, 0);
-
-  // Calculate tax amount
-  this.taxAmount = (this.subtotal * this.taxRate) / 100;
-
-  // Calculate total amount
-  this.totalAmount = this.subtotal + this.taxAmount;
-
-  // Calculate balance due
-  this.balanceDue = this.totalAmount - this.amountPaid;
-});
+  /**
+   * Pre-save: Calculate amounts from line items or use provided amounts
+   */
+  BillSchema.pre("save", function () {
+    // Only calculate amounts if not already provided
+    if (this.isNew || !this.subtotal) {
+      // Calculate subtotal from line items
+      this.subtotal = this.lineItems.reduce((sum, item) => {
+        item.amount = item.quantity * item.unitPrice;
+        return sum + item.amount;
+      }, 0);
+      
+      // Calculate tax amount
+      this.taxAmount = (this.subtotal * this.taxRate) / 100;
+      
+      // Calculate total amount
+      this.totalAmount = this.subtotal + this.taxAmount - (this.discount || 0);
+      
+      // Calculate balance due
+      this.balanceDue = this.totalAmount - this.amountPaid;
+    }
+  });
 
 /**
  * Pre-save: Auto-update status based on payment
@@ -245,9 +262,9 @@ BillSchema.statics.findByStatus = function (
  * Static method: Find overdue bills
  */
 BillSchema.statics.findOverdue = function (companyId: mongoose.Types.ObjectId) {
-  return this.find({
+    return this.find({
     companyId,
-    status: { $in: [BillStatus.OPEN, BillStatus.PARTIAL] },
+    status: { $in: [BillStatus.SENT, BillStatus.PARTIAL] },
     dueDate: { $lt: new Date() },
   }).sort({ dueDate: 1 });
 };

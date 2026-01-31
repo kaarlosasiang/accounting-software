@@ -75,8 +75,9 @@ const InvoiceSchema = new Schema<IInvoice>(
       default: null,
     },
     dueDate: {
-      type: Number,
+      type: Date,
       required: [true, "Due date is required"],
+      index: true,
     },
     status: {
       type: String,
@@ -209,7 +210,7 @@ InvoiceSchema.pre("save", function () {
     this.status = InvoiceStatus.PAID;
   } else if (this.amountPaid > 0 && this.amountPaid < this.totalAmount) {
     this.status = InvoiceStatus.PARTIAL;
-  } else if (this.dueDate < Date.now() && this.balanceDue > 0) {
+  } else if (this.dueDate < new Date() && this.balanceDue > 0) {
     this.status = InvoiceStatus.OVERDUE;
   }
 });

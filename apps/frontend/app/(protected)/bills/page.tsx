@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   MoreHorizontal,
   Plus,
@@ -53,6 +54,7 @@ import { formatCurrency } from "@/lib/utils";
 import { billService, Bill } from "@/lib/services/bill.service";
 
 export default function BillsPage() {
+  const router = useRouter();
   const [bills, setBills] = useState<Bill[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -380,9 +382,11 @@ export default function BillsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => router.push(`/bills/${bill._id}`)}
+                            >
                               <Eye className="mr-2 h-4 w-4" />
-                              View
+                              View Details
                             </DropdownMenuItem>
                             {bill.status === "Draft" && (
                               <DropdownMenuItem>

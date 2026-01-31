@@ -111,7 +111,7 @@ export const paymentService = {
       const timestamp = Date.now();
       const year = new Date().getFullYear();
       const sequence = timestamp % 10000;
-      const paymentNumber = `PAY-${year}-${sequence.toString().padStart(4, "0")}`;
+      const paymentNumber = `PAY-${year}-${sequence.toString().padStart(4, '0)}`;/
 
       // 6. Create payment record with allocations
       const payment = new Payment({
@@ -160,22 +160,20 @@ export const paymentService = {
       }
 
       // 8. Create journal entry using the JournalEntryService
-      const arAccountId =
-        await JournalEntryService.getAccountsReceivableAccount(
-          new mongoose.Types.ObjectId(companyId),
-        );
-
-      const journalEntryId =
-        await JournalEntryService.createPaymentJournalEntry(
-          paymentData.amount,
-          paymentNumber,
-          `Payment received from ${customer.customerName}`,
-          bankAccount._id,
-          arAccountId,
-          new mongoose.Types.ObjectId(companyId),
-          new mongoose.Types.ObjectId(userId),
-          true, // isInvoicePayment
-        );
+      const arAccountId = await JournalEntryService.getAccountsReceivableAccount(
+        new mongoose.Types.ObjectId(companyId)
+      );
+      
+      const journalEntryId = await JournalEntryService.createPaymentJournalEntry(
+        paymentData.amount,
+        paymentNumber,
+        `Payment received from ${customer.customerName}`,
+        bankAccount._id,
+        arAccountId,
+        new mongoose.Types.ObjectId(companyId),
+        new mongoose.Types.ObjectId(userId),
+        true // isInvoicePayment
+      );
 
       // Link payment to journal entry
       payment.journalEntryId = journalEntryId;
@@ -372,7 +370,11 @@ export const paymentService = {
    * Record a payment made to a supplier
    * Supports partial payments and multi-bill allocations
    */
-  async recordPaymentMade(companyId: string, userId: string, paymentData: any) {
+  async recordPaymentMade(
+    companyId: string,
+    userId: string,
+    paymentData: any,
+  ) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -436,7 +438,7 @@ export const paymentService = {
       const timestamp = Date.now();
       const year = new Date().getFullYear();
       const sequence = timestamp % 10000;
-      const paymentNumber = `PAY-${year}-${sequence.toString().padStart(4, "0")}`;
+      const paymentNumber = `PAY-${year}-${sequence.toString().padStart(4, '0)}`;/
 
       // 6. Create payment record with allocations
       const payment = new Payment({
@@ -470,7 +472,8 @@ export const paymentService = {
         if (!bill) continue;
 
         // Update bill with payment
-        bill.amountPaid = (bill.amountPaid || 0) + allocation.allocatedAmount;
+        bill.amountPaid =
+          (bill.amountPaid || 0) + allocation.allocatedAmount;
         bill.balanceDue = bill.totalAmount - bill.amountPaid;
 
         // Auto-update status based on balance
@@ -485,28 +488,26 @@ export const paymentService = {
 
       // 8. Create journal entry using the JournalEntryService
       const apAccountId = await JournalEntryService.getAccountsPayableAccount(
-        new mongoose.Types.ObjectId(companyId),
+        new mongoose.Types.ObjectId(companyId)
       );
-
-      const journalEntryId =
-        await JournalEntryService.createPaymentJournalEntry(
-          paymentData.amount,
-          paymentNumber,
-          `Payment made to ${supplier.supplierName}`,
-          bankAccount._id,
-          apAccountId,
-          new mongoose.Types.ObjectId(companyId),
-          new mongoose.Types.ObjectId(userId),
-          false, // isInvoicePayment (this is a bill payment)
-        );
+      
+      const journalEntryId = await JournalEntryService.createPaymentJournalEntry(
+        paymentData.amount,
+        paymentNumber,
+        `Payment made to ${supplier.supplierName}`,
+        bankAccount._id,
+        apAccountId,
+        new mongoose.Types.ObjectId(companyId),
+        new mongoose.Types.ObjectId(userId),
+        false // isInvoicePayment (this is a bill payment)
+      );
 
       // Link payment to journal entry
       payment.journalEntryId = journalEntryId;
       await payment.save({ session });
 
       // 9. Update supplier balance
-      const supplierNewBalance =
-        (supplier.currentBalance || 0) - paymentData.amount;
+      const supplierNewBalance = (supplier.currentBalance || 0) - paymentData.amount;
       supplier.currentBalance = supplierNewBalance;
       await supplier.save({ session });
 

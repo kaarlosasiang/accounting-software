@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
 import { billService } from "./billService.js";
+import { paymentService } from "../payment/paymentService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
+import { createBillSchema, updateBillSchema } from "@rrd10-sas/validators";
 
 /**
  * Bill Controller
@@ -93,6 +95,16 @@ export const billController = {
         });
       }
 
+      // Validate request data
+      const validationResult = createBillSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          details: validationResult.error.errors,
+        });
+      }
+
       const bill = await billService.createBill(companyId, userId, req.body);
 
       return res.status(201).json({
@@ -122,6 +134,16 @@ export const billController = {
         return res.status(401).json({
           success: false,
           error: "Unauthorized - Company ID not found",
+        });
+      }
+
+      // Validate request data
+      const validationResult = updateBillSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: "Validation failed",
+          details: validationResult.error.errors,
         });
       }
 
@@ -337,6 +359,116 @@ export const billController = {
       return res.status(500).json({
         success: false,
         error: error instanceof Error ? error.message : "Internal server error",
+      });
+    }
+  },
+
+  /**
+   * Record payment for a bill
+   * POST /api/v1/bills/:id/payments
+   */
+  async recordPayment(req: Request, res: Response) {
+    try {
+      const companyId = getCompanyId(req);
+      const userId = getUserId(req);
+      const { id } = req.params;
+
+      if (!companyId || !userId) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized - Company ID or User ID not found",
+        });
+      }
+
+      const paymentData = {
+        ...req.body,
+        billId: id,
+        companyId,
+      };
+
+      const result = await paymentService.recordPaymentMade(
+        companyId,
+        userId,
+        paymentData,
+      );
+
+      return res.status(201).json({
+        success: true,
+        data: result,
+        message: "Payment recorded successfully",
+      });
+    } catch (error) {
+      logger.logError(error as Error, { operation: "recordPayment" });
+      return res.status(400).json({
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to record payment",
+      });
+    }
+  },
+
+  /**
+   * Approve bill
+   * POST /api/v1/bills/:id/approve
+   */
+  async approveBill(req: Request, res: Response) {
+    try {
+      const companyId = getCompanyId(req);
+      const { id } = req.params;
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized - Company ID not found",
+        });
+      }
+
+      const bill = await billService.approveBill(companyId, id);
+
+      return res.status(200).json({
+        success: true,
+        data: bill,
+        message: "Bill approved successfully",
+      });
+    } catch (error) {
+      logger.logError(error as Error, { operation: "approveBill" });
+      return res.status(400).json({
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to approve bill",
+      });
+    }
+  },
+
+  /**
+   * Get payment history for a bill
+   * GET /api/v1/bills/:id/payments
+   */
+  async getBillPayments(req: Request, res: Response) {
+    try {
+      const companyId = getCompanyId(req);
+      const { id } = req.params;
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          error: "Unauthorized - Company ID not found",
+        });
+      }
+
+      const payments = await billService.getBillPayments(companyId, id);
+
+      return res.status(200).json({
+        success: true,
+        data: payments,
+        count: payments.length,
+      });
+    } catch (error) {
+      logger.logError(error as Error, { operation: "getBillPayments" });
+      return res.status(500).json({
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Failed to get payments",
       });
     }
   },

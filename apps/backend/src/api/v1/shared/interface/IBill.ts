@@ -18,7 +18,7 @@ export interface IBillLineItem {
  */
 export enum BillStatus {
   DRAFT = "Draft",
-  OPEN = "Open",
+  SENT = "Sent",
   PARTIAL = "Partial",
   PAID = "Paid",
   OVERDUE = "Overdue",
@@ -32,7 +32,7 @@ export interface IBill {
   _id: Types.ObjectId;
   companyId: Types.ObjectId;
   supplierId: Types.ObjectId;
-  billNumber: number;
+  billNumber: string;
   dueDate: Date;
   status: BillStatus;
   lineItems: IBillLineItem[];
@@ -40,10 +40,12 @@ export interface IBill {
   taxRate: number;
   taxAmount: number;
   totalAmount: number;
+  discount: number;
   amountPaid: number;
   balanceDue: number;
   notes?: string;
-  journalEntryId: Types.ObjectId;
+  terms?: string;
+  journalEntryId?: Types.ObjectId;
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;

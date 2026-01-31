@@ -5,7 +5,7 @@ import { InventoryItem } from "../../models/InventoryItem.js";
 import { InventoryTransaction } from "../../models/InventoryTransaction.js";
 import { BillStatus, IBillDocument } from "../../shared/interface/IBill.js";
 import logger from "../../config/logger.js";
-import { generateDocumentNumber } from "../../utils/documentNumberGenerator.js";
+import { JournalEntryService } from "../../services/journalEntryService.js";
 
 /**
  * Bill Service
@@ -75,13 +75,24 @@ export const billService = {
         throw new Error("Supplier not found");
       }
 
-      // Generate bill number using the document number generator
-      // Format: BILL-2025-0001 (company-scoped, with year)
-      const billNumber = await generateDocumentNumber({
-        companyId,
-        documentType: "BILL",
-        session,
-      });
+      // Generate simple bill number (temporary solution)
+      const timestamp = Date.now();
+      const year = new Date().getFullYear();
+      const sequence = timestamp % 10000;
+      const billNumber = `BILL-${year}-${sequence.toString().padStart(4, '0')}`;
+
+      // Calculate amounts if not provided
+      const subtotal = billData.subtotal ?? billData.lineItems.reduce(
+        (sum: number, item: any) => sum + (item.quantity * item.unitPrice),
+        0
+      );
+      
+      const taxRate = billData.taxRate ?? 0;
+      const taxAmount = subtotal * (taxRate / 100);
+      const discount = billData.discount ?? 0;
+      const totalAmount = billData.totalAmount ?? (subtotal + taxAmount - discount);
+      const amountPaid = billData.amountPaid ?? 0;
+      const balanceDue = billData.balanceDue ?? (totalAmount - amountPaid);
 
       // Create bill
       const bill = new Bill({
@@ -90,14 +101,28 @@ export const billService = {
         billNumber,
         createdBy: userId,
         status: BillStatus.DRAFT,
+        subtotal,
+        taxAmount,
+        totalAmount,
+        balanceDue,
+        amountPaid,
+        discount,
       });
 
       await bill.save({ session });
 
-      // If status is not DRAFT, process inventory and update supplier balance
+      // If status is not DRAFT, process inventory, update supplier balance, and create journal entry
       if (billData.status && billData.status !== BillStatus.DRAFT) {
         await this.processBillItems(bill, session);
         await this.updateSupplierBalance(supplier, bill.totalAmount, session);
+        
+        // Create automatic journal entry
+        const journalEntryId = await JournalEntryService.createBillJournalEntry(
+          bill,
+          new mongoose.Types.ObjectId(userId)
+        );
+        bill.journalEntryId = journalEntryId;
+        await bill.save({ session });
       }
 
       await session.commitTransaction();
@@ -142,11 +167,31 @@ export const billService = {
       const oldStatus = bill.status;
       const oldTotal = bill.totalAmount;
 
+      // Calculate amounts if line items are being updated
+      if (updateData.lineItems) {
+        const subtotal = updateData.subtotal ?? updateData.lineItems.reduce(
+          (sum: number, item: any) => sum + (item.quantity * item.unitPrice),
+          0
+        );
+        
+        const taxRate = updateData.taxRate ?? bill.taxRate ?? 0;
+        const taxAmount = subtotal * (taxRate / 100);
+        const discount = updateData.discount ?? bill.discount ?? 0;
+        const totalAmount = updateData.totalAmount ?? (subtotal + taxAmount - discount);
+        const amountPaid = updateData.amountPaid ?? bill.amountPaid ?? 0;
+        const balanceDue = updateData.balanceDue ?? (totalAmount - amountPaid);
+
+        updateData.subtotal = subtotal;
+        updateData.taxAmount = taxAmount;
+        updateData.totalAmount = totalAmount;
+        updateData.balanceDue = balanceDue;
+      }
+
       // Update bill fields
       Object.assign(bill, updateData);
       await bill.save({ session });
 
-      // If status changed from DRAFT to active, process inventory
+      // If status changed from DRAFT to active, process inventory and create journal entry
       if (oldStatus === BillStatus.DRAFT && bill.status !== BillStatus.DRAFT) {
         await this.processBillItems(bill, session);
         const supplier = await Supplier.findById(bill.supplierId).session(
@@ -155,6 +200,14 @@ export const billService = {
         if (supplier) {
           await this.updateSupplierBalance(supplier, bill.totalAmount, session);
         }
+        
+        // Create automatic journal entry
+        const journalEntryId = await JournalEntryService.createBillJournalEntry(
+          bill,
+          bill.createdBy
+        );
+        bill.journalEntryId = journalEntryId;
+        await bill.save({ session });
       }
 
       // If total amount changed, update supplier balance
@@ -302,7 +355,7 @@ export const billService = {
     try {
       const bills = await Bill.find({
         companyId,
-        status: { $in: [BillStatus.OPEN, BillStatus.PARTIAL] },
+        status: { $in: [BillStatus.SENT, BillStatus.PARTIAL] },
         dueDate: { $lt: new Date() },
       })
         .populate("supplierId", "supplierName displayName email")
@@ -449,6 +502,108 @@ export const billService = {
       await supplier.save({ session });
     } catch (error) {
       logger.logError(error as Error, { operation: "updateSupplierBalance" });
+      throw error;
+    }
+  },
+
+  /**
+   * Approve bill (similar to invoice send - activates the bill and creates journal entry)
+   */
+  async approveBill(companyId: string, billId: string) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      const bill = await Bill.findOne({
+        _id: billId,
+        companyId,
+      })
+        .populate(
+          "supplierId",
+          "supplierName displayName email phone address",
+        )
+        .session(session);
+
+      if (!bill) {
+        throw new Error("Bill not found");
+      }
+
+      // Cannot approve void bills
+      if (bill.status === BillStatus.VOID) {
+        throw new Error("Cannot approve voided bill");
+      }
+
+      // Cannot approve already paid bills
+      if (bill.status === BillStatus.PAID) {
+        throw new Error("Bill is already paid");
+      }
+
+      const supplier = bill.supplierId as any;
+      const oldStatus = bill.status;
+
+      // Update status to SENT if it's currently DRAFT
+      if (bill.status === BillStatus.DRAFT) {
+        bill.status = BillStatus.SENT;
+        await bill.save({ session });
+
+        // Process inventory and update supplier balance for newly approved bills
+        await this.processBillItems(bill, session);
+        await this.updateSupplierBalance(
+          supplier,
+          bill.totalAmount,
+          session,
+        );
+        
+        // Create automatic journal entry for newly approved bill
+        const journalEntryId = await JournalEntryService.createBillJournalEntry(
+          bill,
+          bill.createdBy
+        );
+        bill.journalEntryId = journalEntryId;
+        await bill.save({ session });
+      }
+
+      await session.commitTransaction();
+
+      // Populate and return the updated bill
+      const populatedBill = await Bill.findById(bill._id)
+        .populate("supplierId", "supplierName displayName email")
+        .populate("createdBy", "first_name last_name email");
+
+      return populatedBill;
+    } catch (error) {
+      await session.abortTransaction();
+      logger.logError(error as Error, { operation: "approveBill" });
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  },
+
+  /**
+   * Get payment history for a bill
+   */
+  async getBillPayments(companyId: string, billId: string) {
+    try {
+      const { Payment } = await import("../../models/Payment.js");
+      
+      const payments = await Payment.find({
+        companyId,
+        "allocations.documentId": billId,
+        "allocations.documentType": "BILL",
+      })
+        .populate("supplierId", "supplierName email")
+        .populate("bankAccountId", "accountCode accountName")
+        .populate("createdBy", "first_name last_name email")
+        .sort({ paymentDate: -1 });
+
+      return payments;
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "getBillPayments",
+        companyId,
+        billId,
+      });
       throw error;
     }
   },
