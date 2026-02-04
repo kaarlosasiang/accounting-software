@@ -38,10 +38,10 @@ import {
     TrendingUp,
     Download,
 } from "lucide-react"
-import { ClientForm } from "@/components/forms/client-form/form"
+import { CustomerForm } from "@/components/forms/customer-form/form"
 import { formatCurrency } from "@/lib/utils"
 
-interface Client {
+interface CustomerDisplay {
     id: string
     name: string
     email: string
@@ -51,7 +51,7 @@ interface Client {
     outstandingBalance: number
 }
 
-const activeClients: Client[] = [
+const activeClients: CustomerDisplay[] = [
     {
         id: "CLI-001",
         name: "John Smith",
@@ -90,8 +90,8 @@ const activeClients: Client[] = [
     },
 ]
 
-export default function ActiveClientsPage() {
-    const [clients] = useState<Client[]>(activeClients)
+export default function ActiveCustomersPage() {
+    const [clients] = useState<CustomerDisplay[]>(activeClients)
     const [searchQuery, setSearchQuery] = useState("")
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [startDate, setStartDate] = useState("")
@@ -144,7 +144,7 @@ export default function ActiveClientsPage() {
                                 Add a new active client to your system
                             </DialogDescription>
                         </DialogHeader>
-                        <ClientForm onSuccess={() => setIsDialogOpen(false)} />
+                        <CustomerForm onSuccess={() => setIsDialogOpen(false)} />
                     </DialogContent>
                 </Dialog>
             </div>

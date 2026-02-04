@@ -36,7 +36,7 @@ import {
   CreditCard,
   FileText,
 } from "lucide-react";
-import { ClientForm } from "@/components/forms/client-form/form";
+import { CustomerForm } from "@/components/forms/customer-form/form";
 import { formatCurrency } from "@/lib/utils";
 import { useCustomers } from "@/hooks/use-customers";
 import { DataTable } from "@/components/common/data-table/data-table";
@@ -45,7 +45,7 @@ import { DataTableToolbar } from "@/components/common/data-table/data-table-tool
 import { useDataTable } from "@/hooks/use-data-table";
 import type { Customer } from "@/lib/types/customer";
 
-export default function ClientsPage() {
+export default function CustomersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
@@ -322,7 +322,7 @@ export default function ClientsPage() {
                 account.
               </DialogDescription>
             </DialogHeader>
-            <ClientForm onSuccess={() => setIsDialogOpen(false)} />
+            <CustomerForm onSuccess={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
@@ -337,7 +337,7 @@ export default function ClientsPage() {
             </DialogDescription>
           </DialogHeader>
           {selectedCustomer && (
-            <ClientForm
+            <CustomerForm
               onSuccess={handleEditSuccess}
               initialData={selectedCustomer}
             />

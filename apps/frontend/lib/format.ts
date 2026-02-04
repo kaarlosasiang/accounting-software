@@ -15,3 +15,20 @@ export function formatDate(
     return "";
   }
 }
+
+export function formatCurrency(
+  amount: number | undefined | null,
+  currency: string = "USD",
+  locale: string = "en-US",
+) {
+  if (amount === undefined || amount === null) return "$0.00";
+
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: "currency",
+      currency,
+    }).format(amount);
+  } catch (_err) {
+    return `$${amount.toFixed(2)}`;
+  }
+}
