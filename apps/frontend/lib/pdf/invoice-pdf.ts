@@ -111,17 +111,17 @@ export const generateInvoicePDF = (
   yPos = 60;
   doc.setTextColor(...darkGray);
   doc.setFontSize(11);
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   doc.text("BILL TO:", 20, yPos);
 
   yPos += 6;
-  doc.setFont(undefined, "normal");
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
   doc.text(invoice.customerId.customerName, 20, yPos);
 
-  if (invoice.customerId.companyName) {
+  if (invoice.customerId.displayName && invoice.customerId.displayName !== invoice.customerId.customerName) {
     yPos += 5;
-    doc.text(invoice.customerId.companyName, 20, yPos);
+    doc.text(invoice.customerId.displayName, 20, yPos);
   }
 
   if (invoice.customerId.email) {
@@ -229,7 +229,7 @@ export const generateInvoicePDF = (
   doc.line(totalsX, totalsY - 2, 190, totalsY - 2);
 
   doc.setFontSize(12);
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   doc.setTextColor(...darkGray);
   doc.text("Total Amount:", totalsX, totalsY + 5);
   doc.text(`$${invoice.totalAmount.toFixed(2)}`, 190, totalsY + 5, {
@@ -239,7 +239,7 @@ export const generateInvoicePDF = (
   // Amount Paid
   if (invoice.amountPaid > 0) {
     totalsY += 10;
-    doc.setFont(undefined, "normal");
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(10);
     doc.setTextColor(34, 197, 94); // green
     doc.text("Amount Paid:", totalsX, totalsY);
@@ -250,7 +250,7 @@ export const generateInvoicePDF = (
     // Balance Due
     totalsY += 8;
     doc.line(totalsX, totalsY - 2, 190, totalsY - 2);
-    doc.setFont(undefined, "bold");
+    doc.setFont("helvetica", "bold");
     doc.setFontSize(12);
     doc.setTextColor(239, 68, 68); // red
     doc.text("Balance Due:", totalsX, totalsY + 5);
@@ -263,12 +263,12 @@ export const generateInvoicePDF = (
   let notesY = totalsY + 20;
   if (invoice.notes) {
     doc.setFontSize(10);
-    doc.setFont(undefined, "bold");
+    doc.setFont("helvetica", "bold");
     doc.setTextColor(...darkGray);
     doc.text("Notes:", 20, notesY);
 
     notesY += 6;
-    doc.setFont(undefined, "normal");
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     const noteLines = doc.splitTextToSize(invoice.notes, 170);
     doc.text(noteLines, 20, notesY);
@@ -283,12 +283,12 @@ export const generateInvoicePDF = (
     }
 
     doc.setFontSize(10);
-    doc.setFont(undefined, "bold");
+    doc.setFont("helvetica", "bold");
     doc.setTextColor(...darkGray);
     doc.text("Terms & Conditions:", 20, notesY);
 
     notesY += 6;
-    doc.setFont(undefined, "normal");
+    doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     const termLines = doc.splitTextToSize(invoice.terms, 170);
     doc.text(termLines, 20, notesY);

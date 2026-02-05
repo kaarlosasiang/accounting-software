@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -38,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 import { InventoryItemForm } from "@/components/forms";
+import { inventoryService } from "@/lib/services/inventory.service";
 import { useInventory } from "@/hooks/use-inventory";
 import type {
   InventoryItem,

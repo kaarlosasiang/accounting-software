@@ -142,7 +142,7 @@ export default function BillsPage() {
     .filter((bill) => bill.status === "Paid")
     .reduce((sum, bill) => sum + bill.totalAmount, 0);
   const pendingAmount = bills
-    .filter((bill) => bill.status === "Open" || bill.status === "Partial")
+    .filter((bill) => bill.status === "Sent" || bill.status === "Partial")
     .reduce((sum, bill) => sum + bill.balanceDue, 0);
   const overdueAmount = bills
     .filter((bill) => bill.status === "Overdue")
@@ -151,7 +151,7 @@ export default function BillsPage() {
   const getStatusBadge = (status: string) => {
     const variants: Record<string, string> = {
       Draft: "bg-gray-500/10 text-gray-600 border-gray-500/20",
-      Open: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+      Sent: "bg-blue-500/10 text-blue-600 border-blue-500/20",
       Partial: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
       Paid: "bg-green-500/10 text-green-600 border-green-500/20",
       Overdue: "bg-red-500/10 text-red-600 border-red-500/20",

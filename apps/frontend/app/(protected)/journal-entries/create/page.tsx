@@ -88,7 +88,7 @@ interface JournalLine {
 
 export default function CreateJournalEntryPage() {
   const router = useRouter();
-  const { data: accounts } = useAccounts();
+  const { accounts } = useAccounts();
   const createMutation = useCreateJournalEntry();
 
   const [lines, setLines] = useState<JournalLine[]>([

@@ -32,9 +32,21 @@ import { toast } from "sonner";
 import { z } from "zod";
 
 // Service-specific schema
-const serviceSchema = inventoryItemSchema.extend({
+const serviceSchema = inventoryItemSchema.pick({
+  sku: true,
+  itemName: true,
+  description: true,
+  unit: true,
+  sellingPrice: true,
+  incomeAccountId: true,
+  salesTaxEnabled: true,
+  salesTaxRate: true,
+  purchaseTaxRate: true,
+  isActive: true,
+}).extend({
   itemType: z.literal("Service"),
   category: z.literal("Service"),
+  unit: z.enum(["service", "hour", "session"]),
 });
 
 type ServiceFormData = z.infer<typeof serviceSchema>;
@@ -77,14 +89,25 @@ export function ServiceForm({
       isActive: true,
     };
 
-    if (initialData) {
-      return {
-        ...baseData,
-        ...initialData,
-        itemType: "Service",
-        category: "Service",
-      };
-    }
+if (initialData) {
+        return {
+          ...baseData,
+          sku: initialData.sku || "",
+          itemName: initialData.itemName || "",
+          description: initialData.description || "",
+          unit: initialData.unit === "service" || initialData.unit === "hour" || initialData.unit === "session" 
+            ? initialData.unit 
+            : "service",
+          sellingPrice: initialData.sellingPrice || 0,
+          incomeAccountId: (initialData.incomeAccountId as any)?._id || initialData.incomeAccountId || "",
+          salesTaxEnabled: initialData.salesTaxEnabled || false,
+          salesTaxRate: initialData.salesTaxRate,
+          purchaseTaxRate: initialData.purchaseTaxRate,
+          isActive: initialData.isActive !== undefined ? initialData.isActive : true,
+          itemType: "Service",
+          category: "Service",
+        };
+      }
 
     return baseData;
   };
@@ -115,22 +138,28 @@ export function ServiceForm({
     try {
       let response;
 
-      // Ensure it's a service
+      // Ensure it's a service and add required fields for InventoryItemForm
       const serviceData = {
         ...data,
         itemType: "Service" as const,
         category: "Service" as const,
+        quantityOnHand: 0,
+        reorderLevel: 0,
+        unitCost: 0,
+        quantityAsOfDate: new Date(),
+        inventoryAccountId: "",
+        cogsAccountId: "",
       };
 
       if (itemId) {
         // Update existing service
-        response = await inventoryService.updateInventoryItem(
+        response = await inventoryService.updateItem(
           itemId,
           serviceData,
         );
       } else {
         // Create new service
-        response = await inventoryService.createInventoryItem(serviceData);
+        response = await inventoryService.createItem(serviceData);
       }
 
       if (response.success) {

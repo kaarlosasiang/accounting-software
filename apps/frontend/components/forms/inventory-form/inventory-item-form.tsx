@@ -91,8 +91,8 @@ export function InventoryItemForm({
       reorderLevel: defaultItemType === "Service" ? 0 : 0,
       unitCost: defaultItemType === "Service" ? 0 : 0,
       sellingPrice: 0,
-      inventoryAccountId: defaultItemType === "Service" ? undefined : "",
-      cogsAccountId: defaultItemType === "Service" ? undefined : "",
+      inventoryAccountId: "",
+      cogsAccountId: "",
       incomeAccountId: "",
       supplierId: undefined,
       salesTaxEnabled: false,
@@ -181,11 +181,11 @@ export function InventoryItemForm({
   const isService = itemType === "Service";
 
   const profitMargin =
-    sellingPrice > 0
+    sellingPrice > 0 && unitCost !== undefined
       ? (((sellingPrice - unitCost) / sellingPrice) * 100).toFixed(2)
       : "0.00";
 
-  const totalValue = formatCurrency(quantityOnHand * unitCost);
+  const totalValue = formatCurrency((quantityOnHand || 0) * (unitCost || 0));
 
   const handleSubmit = async (data: InventoryItem) => {
     setIsSubmitting(true);
@@ -193,19 +193,29 @@ export function InventoryItemForm({
       console.log("Form submit - itemId:", itemId);
       console.log("Raw form data:", data);
 
-      // Clean data for services - remove inventory-specific fields
-      let cleanedData = { ...data };
+      // Clean data and ensure it matches InventoryItemForm type
+      let cleanedData: InventoryItemForm = {
+        ...data,
+        quantityOnHand: data.quantityOnHand || 0,
+        reorderLevel: data.reorderLevel || 0,
+        unitCost: data.unitCost || 0,
+        sellingPrice: data.sellingPrice || 0,
+        quantityAsOfDate: data.quantityAsOfDate || new Date(),
+        inventoryAccountId: data.inventoryAccountId || "",
+        cogsAccountId: data.cogsAccountId || "",
+        incomeAccountId: data.incomeAccountId || "",
+        salesTaxEnabled: data.salesTaxEnabled || false,
+        isActive: data.isActive !== undefined ? data.isActive : true,
+      };
+
+      // Override service-specific fields
       if (data.itemType === "Service") {
-        // For services, set inventory fields to undefined or default values
         cleanedData = {
-          ...data,
+          ...cleanedData,
           quantityOnHand: 0,
           reorderLevel: 0,
           unitCost: 0,
-          inventoryAccountId: undefined,
-          cogsAccountId: undefined,
           supplierId: undefined,
-          quantityAsOfDate: undefined,
         };
       }
 

@@ -95,7 +95,7 @@ interface SuggestedAllocation {
 export default function RecordPaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { organization } = useOrganization();
+  const { organizationId } = useOrganization();
   const { customers } = useCustomers();
   const { suppliers } = useSuppliers();
 
@@ -148,7 +148,7 @@ export default function RecordPaymentPage() {
     const fetchBankAccounts = async () => {
       try {
         const response = await fetch(
-          `/api/v1/accounts?companyId=${organization?._id}&type=Asset&subType=Bank`,
+          `/api/v1/accounts?companyId=${organizationId}&type=Asset&subType=Bank`,
         );
         const data = await response.json();
         setBankAccounts(data.data || []);
@@ -157,10 +157,10 @@ export default function RecordPaymentPage() {
       }
     };
 
-    if (organization?._id) {
+    if (organizationId) {
       fetchBankAccounts();
     }
-  }, [organization?._id]);
+  }, [organizationId]);
 
   /**
    * Fetch suggested allocations when customer/supplier and amount change
@@ -170,7 +170,7 @@ export default function RecordPaymentPage() {
       const selectedParty =
         paymentType === "invoice" ? selectedCustomer : selectedSupplier;
 
-      if (!selectedParty || paymentAmount <= 0 || !organization?._id) {
+      if (!selectedParty || paymentAmount <= 0 || !organizationId) {
         setSuggestedAllocations([]);
         return;
       }
@@ -184,12 +184,12 @@ export default function RecordPaymentPage() {
         const payload =
           paymentType === "invoice"
             ? {
-                companyId: organization._id,
+                companyId: organizationId,
                 customerId: selectedCustomer,
                 paymentAmount,
               }
             : {
-                companyId: organization._id,
+                companyId: organizationId,
                 supplierId: selectedSupplier,
                 paymentAmount,
               };
@@ -216,7 +216,7 @@ export default function RecordPaymentPage() {
     selectedSupplier,
     paymentAmount,
     paymentType,
-    organization?._id,
+organizationId,
   ]);
 
   /**
@@ -317,7 +317,7 @@ export default function RecordPaymentPage() {
         ? "/api/v1/payments/received"
         : "/api/v1/payments/made";
       const payload = {
-        companyId: organization?._id,
+        companyId: organizationId,
         paymentDate: values.paymentDate,
         paymentMethod: values.paymentMethod,
         referenceNumber: values.referenceNumber,
@@ -330,13 +330,11 @@ export default function RecordPaymentPage() {
           documentType: isInvoicePayment ? "INVOICE" : "BILL",
         })),
         notes: values.notes,
+        ...(isInvoicePayment 
+          ? { customerId: values.customerId } 
+          : { supplierId: values.supplierId }
+        ),
       };
-
-      if (isInvoicePayment) {
-        payload.customerId = values.customerId;
-      } else {
-        payload.supplierId = values.supplierId;
-      }
 
       const response = await fetch(endpoint, {
         method: "POST",

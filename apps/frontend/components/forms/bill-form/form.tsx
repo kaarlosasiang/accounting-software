@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { createBillSchema } from "@rrd10-sas/validators/bill";
+
 
 import { Button } from "@/components/ui/button";
 import {

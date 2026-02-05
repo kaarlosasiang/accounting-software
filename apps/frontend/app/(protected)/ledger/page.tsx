@@ -54,7 +54,7 @@ export default function GeneralLedgerPage() {
     new Set(),
   );
 
-  const { data: accounts } = useAccounts();
+  const { accounts } = useAccounts();
   const { data: generalLedger, isLoading: isLoadingGL } = useGeneralLedger(
     startDate || undefined,
     endDate || undefined,

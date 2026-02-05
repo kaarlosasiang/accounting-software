@@ -202,8 +202,7 @@ export default function PendingInvoicesPage() {
                   </TableRow>
                 ) : (
                   filteredInvoices.map((invoice) => {
-                    const dueDate = new Date();
-                    dueDate.setDate(dueDate.getDate() + invoice.dueDate);
+                    const dueDate = new Date(invoice.dueDate);
 
                     return (
                       <TableRow key={invoice._id}>

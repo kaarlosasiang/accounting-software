@@ -63,7 +63,7 @@ export function useInventory(
 
       if (lowStockOnly) {
         response = await inventoryService.getItemsNeedingReorder();
-      } else if (category) {
+      } else if (category && category !== "Service") {
         response = await inventoryService.getItemsByCategory(category);
       } else if (activeOnly) {
         response = await inventoryService.getActiveItems();

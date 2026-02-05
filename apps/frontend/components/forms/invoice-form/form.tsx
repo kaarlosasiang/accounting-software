@@ -164,7 +164,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
       const invoiceData: InvoiceFormData = {
         customerId: data.client,
         invoiceDate: data.issueDate,
-        dueDate: data.dueDate.getTime(), // Convert to timestamp
+        dueDate: data.dueDate,
         lineItems: data.items.map((item) => ({
           description: item.description,
           quantity: parseFloat(item.quantity),

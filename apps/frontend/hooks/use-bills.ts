@@ -207,7 +207,9 @@ export function useBills() {
     try {
       setLoading(true);
       setError(null);
-      const response = await billService.getBillsByStatus(status);
+      // Map "Sent" status to "Open" for the API
+      const apiStatus = status === "Sent" ? "Open" : status;
+      const response = await billService.getBillsByStatus(apiStatus);
       if (response.success) {
         setBills(response.data);
       } else {

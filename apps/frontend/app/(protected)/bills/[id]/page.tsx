@@ -144,9 +144,9 @@ export default function BillViewPage() {
       case "Sent":
         return "default";
       case "Partial":
-        return "warning";
+        return "default";
       case "Paid":
-        return "success";
+        return "secondary";
       case "Overdue":
         return "destructive";
       case "Void":
