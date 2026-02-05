@@ -6,7 +6,9 @@ import { accountsService, type Account } from "@/lib/services/accounts.service";
  * Hook to fetch accounts from the API
  * Filters by account type to provide relevant selections for inventory
  */
-export function useAccounts(accountType?: "Asset" | "Expense" | "Revenue") {
+export function useAccounts(
+  accountType?: "Asset" | "Liability" | "Equity" | "Revenue" | "Expense",
+) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
