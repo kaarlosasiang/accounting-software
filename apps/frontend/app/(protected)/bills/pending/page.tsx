@@ -136,10 +136,12 @@ export default function PendingBillsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
             Pending Bills
           </h1>
-          <p className="text-muted-foreground">Bills awaiting payment</p>
+          <p className="text-muted-foreground text-sm">
+            Bills awaiting payment
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm">
@@ -180,7 +182,7 @@ export default function PendingBillsPage() {
             <div className="text-2xl font-bold">
               {formatCurrency(openAmount)}
             </div>
-              <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               {bills.filter((b) => b.status === "Sent").length} open bills
             </p>
           </CardContent>

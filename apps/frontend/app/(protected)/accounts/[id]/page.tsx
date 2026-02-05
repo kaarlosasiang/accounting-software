@@ -64,10 +64,10 @@ export default function AccountDetailsPage() {
           </Button>
         </Link>
         <div>
-          <h1 className="text-3xl font-bold">
+          <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
             {account.accountCode} - {account.accountName}
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             View and manage account details
           </p>
         </div>

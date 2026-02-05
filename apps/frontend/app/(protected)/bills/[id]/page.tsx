@@ -206,7 +206,7 @@ export default function BillViewPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">
+            <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
               Bill {bill.billNumber}
             </h1>
             <p className="text-sm text-muted-foreground">

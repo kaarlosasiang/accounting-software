@@ -195,7 +195,7 @@ export default function CreateJournalEntryPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
+          <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
             Create Journal Entry
           </h1>
           <p className="text-muted-foreground mt-1">

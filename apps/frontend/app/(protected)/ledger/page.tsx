@@ -83,12 +83,11 @@ export default function GeneralLedgerPage() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <BookOpen className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+            <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
               General Ledger
             </h1>
           </div>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground text-sm">
             Complete transaction history for all accounts
           </p>
         </div>

@@ -369,12 +369,12 @@ export default function RecordPaymentPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">
+        <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
           {paymentType === "invoice"
             ? "Record Payment Received"
             : "Record Payment Made"}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-sm">
           {paymentType === "invoice"
             ? "Record a payment from a customer and allocate it to invoices"
             : "Record a payment to a supplier and allocate it to bills"}

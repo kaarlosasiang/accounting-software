@@ -50,7 +50,7 @@ export default function CustomersPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
+    null,
   );
 
   const { customers, loading, deleteCustomer, toggleCustomerStatus } =
@@ -283,7 +283,7 @@ export default function CustomersPage() {
         enableHiding: false,
       },
     ],
-    [handleDelete, handleToggleStatus, handleEdit, handleViewDetails]
+    [handleDelete, handleToggleStatus, handleEdit, handleViewDetails],
   );
 
   const { table } = useDataTable({
@@ -304,8 +304,10 @@ export default function CustomersPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
+            Customers
+          </h1>
+          <p className="text-muted-foreground text-sm">
             Manage your customer accounts and track balances
           </p>
         </div>
@@ -508,7 +510,7 @@ export default function CustomersPage() {
                     <p className="mt-1 font-semibold text-green-600">
                       {formatCurrency(
                         selectedCustomer.creditLimit -
-                          selectedCustomer.currentBalance
+                          selectedCustomer.currentBalance,
                       )}
                     </p>
                   </div>

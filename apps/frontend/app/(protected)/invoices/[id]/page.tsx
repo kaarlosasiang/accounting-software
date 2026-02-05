@@ -141,9 +141,11 @@ export default function InvoiceViewPage() {
 
   const handleRecordPayment = () => {
     if (!invoice) return;
-    
+
     // Navigate to payment page with invoice data pre-filled
-    router.push(`/payments/create?invoiceId=${invoiceId}&amount=${invoice.balanceDue}`);
+    router.push(
+      `/payments/create?invoiceId=${invoiceId}&amount=${invoice.balanceDue}`,
+    );
   };
 
   const getStatusColor = (status: string) => {
@@ -213,7 +215,7 @@ export default function InvoiceViewPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">
+            <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
               Invoice {invoice.invoiceNumber}
             </h1>
             <p className="text-sm text-muted-foreground">

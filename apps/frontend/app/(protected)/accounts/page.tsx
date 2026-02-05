@@ -153,8 +153,10 @@ export default function ChartOfAccountsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Chart of Accounts</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
+            Chart of Accounts
+          </h1>
+          <p className="text-muted-foreground text-sm">
             Manage your organization&apos;s account structure
           </p>
         </div>

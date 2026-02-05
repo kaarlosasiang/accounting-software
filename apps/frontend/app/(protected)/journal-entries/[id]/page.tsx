@@ -159,13 +159,15 @@ export default function JournalEntryDetailPage() {
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold tracking-tight">
+              <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
                 {entry.entryNumber}
               </h1>
               {getStatusBadge(entry.status)}
               {getTypeBadge(entry.entryType)}
             </div>
-            <p className="text-muted-foreground mt-1">Journal Entry Details</p>
+            <p className="text-muted-foreground text-sm">
+              Journal Entry Details
+            </p>
           </div>
         </div>
 
