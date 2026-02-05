@@ -101,7 +101,7 @@ export const billController = {
         return res.status(400).json({
           success: false,
           error: "Validation failed",
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         });
       }
 
@@ -143,7 +143,7 @@ export const billController = {
         return res.status(400).json({
           success: false,
           error: "Validation failed",
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         });
       }
 

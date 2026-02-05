@@ -101,7 +101,8 @@ const PaymentSchema = new Schema<IPayment>(
             (sum, alloc) => sum + alloc.allocatedAmount,
             0,
           );
-          return Math.abs(totalAllocated - this.amount) < 0.01; // Allow for floating point rounding
+          const paymentAmount = this.get('amount') || 0;
+          return Math.abs(totalAllocated - paymentAmount) < 0.01; // Allow for floating point rounding
         },
         message: "Total allocated amount must equal payment amount",
       },

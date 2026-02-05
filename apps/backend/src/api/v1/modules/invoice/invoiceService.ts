@@ -80,13 +80,17 @@ export const invoiceService = {
         throw new Error("Customer not found");
       }
 
-      // Generate invoice number using the document number generator
+      // Generate invoice number
       // Format: INV-2025-0001 (company-scoped, with year)
-      const invoiceNumber = await generateDocumentNumber({
+      const year = new Date().getFullYear();
+      const count = await Invoice.countDocuments({
         companyId,
-        documentType: "INVOICE",
-        session,
+        invoiceDate: {
+          $gte: new Date(year, 0, 1),
+          $lt: new Date(year + 1, 0, 1),
+        },
       });
+      const invoiceNumber = `INV-${year}-${String(count + 1).padStart(4, "0")}`;
 
       // Create invoice
       const invoice = new Invoice({

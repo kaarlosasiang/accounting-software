@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { journalEntryService } from "./journalEntryService.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 import logger from "../../config/logger.js";
+import { Types } from "mongoose";
 import {
   JournalEntryType,
   JournalEntryStatus,
@@ -244,8 +245,8 @@ export const journalEntryController = {
       }
 
       const entry = await journalEntryService.createJournalEntry({
-        companyId,
-        userId,
+        companyId: new Types.ObjectId(companyId),
+        userId: new Types.ObjectId(userId),
         entryDate: new Date(entryDate),
         referenceNumber,
         description,

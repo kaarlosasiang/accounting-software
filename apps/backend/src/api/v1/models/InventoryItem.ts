@@ -175,22 +175,24 @@ InventoryItemSchema.index({ companyId: 1, supplierId: 1 });
  * Virtual: Inventory value
  */
 InventoryItemSchema.virtual("inventoryValue").get(function () {
-  return this.quantityOnHand * this.unitCost;
+  return (this.quantityOnHand || 0) * (this.unitCost || 0);
 });
 
 /**
  * Virtual: Profit margin
  */
 InventoryItemSchema.virtual("profitMargin").get(function () {
-  if (this.sellingPrice === 0) return 0;
-  return ((this.sellingPrice - this.unitCost) / this.sellingPrice) * 100;
+  const sellingPrice = this.sellingPrice || 0;
+  const unitCost = this.unitCost || 0;
+  if (sellingPrice === 0) return 0;
+  return ((sellingPrice - unitCost) / sellingPrice) * 100;
 });
 
 /**
  * Virtual: Needs reorder
  */
 InventoryItemSchema.virtual("needsReorder").get(function () {
-  return this.quantityOnHand <= this.reorderLevel;
+  return (this.quantityOnHand || 0) <= (this.reorderLevel || 0);
 });
 
 /**
