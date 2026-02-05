@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -9,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { DataTable } from "@/components/common/data-table/data-table";
 import { DataTableAdvancedToolbar } from "@/components/common/data-table/data-table-advanced-toolbar";
@@ -31,12 +33,14 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 import { InventoryItemForm } from "@/components/forms";
 import { inventoryService } from "@/lib/services/inventory.service";
+import { useInventory } from "@/hooks/use-inventory";
 import type {
   InventoryItem,
   InventoryItemForm as InventoryItemFormType,
@@ -50,9 +54,9 @@ import {
   TrendingDown,
   AlertTriangle,
   Download,
+  Settings,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { toast } from "sonner";
 import type { InventoryItem as ColumnsInventoryItem } from "./columns";
 import type { RowData, TableMeta } from "@tanstack/react-table";
 import { Label } from "@/components/ui/label";
@@ -67,10 +71,16 @@ declare module "@tanstack/react-table" {
 }
 
 export default function InventoryPage() {
-  const [inventory, setInventory] = useState<ColumnsInventoryItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { items, isLoading, createItem, updateItem, adjustQuantity, refetch } =
+    useInventory();
+  const [itemTypeFilter, setItemTypeFilter] = useState<
+    "all" | "Product" | "Service"
+  >("all");
   // Keep lightweight search input wired to hidden column "search"
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedItemType, setSelectedItemType] = useState<
+    "Product" | "Service" | null
+  >(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<ColumnsInventoryItem | null>(
     null,
@@ -85,18 +95,19 @@ export default function InventoryPage() {
     useState<ColumnsInventoryItem | null>(null);
   const [adjustmentQuantity, setAdjustmentQuantity] = useState<number>(0);
   const [adjustmentReason, setAdjustmentReason] = useState("");
-  const filteredInventory = inventory; // DataTable handles filters client-side
 
   // Transform API inventory item to table format
   const transformInventoryItem = (
     item: InventoryItem,
   ): ColumnsInventoryItem => {
-    // Determine status based on quantity
+    // Determine status based on quantity (only for products)
     let status: "in-stock" | "low-stock" | "out-of-stock" = "in-stock";
-    if (item.quantityOnHand === 0) {
-      status = "out-of-stock";
-    } else if (item.quantityOnHand <= item.reorderLevel) {
-      status = "low-stock";
+    if (item.itemType === "Product") {
+      if (item.quantityOnHand === 0) {
+        status = "out-of-stock";
+      } else if (item.quantityOnHand <= item.reorderLevel) {
+        status = "low-stock";
+      }
     }
 
     // Extract account IDs (handle both string and object formats)
@@ -115,13 +126,14 @@ export default function InventoryPage() {
 
     return {
       id: item._id,
+      itemType: item.itemType,
       itemCode: item.sku,
       itemName: item.itemName,
       category: item.category,
       unit: item.unit,
-      quantityOnHand: item.quantityOnHand,
-      reorderLevel: item.reorderLevel,
-      unitCost: item.unitCost,
+      quantityOnHand: item.quantityOnHand || 0,
+      reorderLevel: item.reorderLevel || 0,
+      unitCost: item.unitCost || 0,
       sellingPrice: item.sellingPrice,
       status,
       lastRestocked: item.quantityAsOfDate
@@ -130,32 +142,16 @@ export default function InventoryPage() {
     };
   };
 
-  // Fetch inventory items
-  const fetchInventory = async () => {
-    setIsLoading(true);
-    try {
-      const result = await inventoryService.getAllItems();
-      if (result.success && result.data) {
-        const transformed = result.data.map(transformInventoryItem);
-        setInventory(transformed);
-      } else {
-        throw new Error(result.error || "Failed to fetch inventory items");
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch inventory items";
-      toast.error(message);
-      console.error("Error fetching inventory:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Transform items using useMemo
+  const inventory = useMemo(() => {
+    return items.map(transformInventoryItem);
+  }, [items]);
 
-  useEffect(() => {
-    fetchInventory();
-  }, []);
+  // Filter inventory based on item type
+  const filteredInventory =
+    itemTypeFilter === "all"
+      ? inventory
+      : inventory.filter((item) => item.itemType === itemTypeFilter);
 
   const totalItems = inventory.length;
   const inStock = inventory.filter((i) => i.status === "in-stock").length;
@@ -222,12 +218,13 @@ export default function InventoryPage() {
 
   const handleAddOrEditItem = async () => {
     // Refresh inventory after successful save
-    await fetchInventory();
+    await refetch();
 
     // Close the sheet after successful save
     setIsSheetOpen(false);
     setEditingItem(null);
     setEditingFormData(undefined);
+    setSelectedItemType(null);
   };
 
   const handleAdjustStock = async () => {
@@ -243,28 +240,17 @@ export default function InventoryPage() {
       return;
     }
 
-    try {
-      const result = await inventoryService.adjustQuantity(
-        adjustingItem.id,
-        adjustmentQuantity,
-        adjustmentReason,
-      );
+    const success = await adjustQuantity(
+      adjustingItem.id,
+      adjustmentQuantity,
+      adjustmentReason,
+    );
 
-      if (result.success) {
-        toast.success("Stock adjusted successfully");
-        await fetchInventory();
-        setIsAdjustDialogOpen(false);
-        setAdjustingItem(null);
-        setAdjustmentQuantity(0);
-        setAdjustmentReason("");
-      } else {
-        throw new Error(result.error || "Failed to adjust stock");
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to adjust stock";
-      toast.error(message);
-      console.error("Error adjusting stock:", error);
+    if (success) {
+      setIsAdjustDialogOpen(false);
+      setAdjustingItem(null);
+      setAdjustmentQuantity(0);
+      setAdjustmentReason("");
     }
   };
 
@@ -395,10 +381,10 @@ export default function InventoryPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
             Inventory Management
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground text-sm">
             Track and manage your inventory items and stock levels
           </p>
         </div>
@@ -410,6 +396,7 @@ export default function InventoryPage() {
             if (!open) {
               setEditingItem(null);
               setEditingFormData(undefined);
+              setSelectedItemType(null);
             }
           }}
         >
@@ -418,6 +405,7 @@ export default function InventoryPage() {
               onClick={() => {
                 setEditingItem(null);
                 setEditingFormData(undefined);
+                setSelectedItemType(null);
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -427,30 +415,84 @@ export default function InventoryPage() {
           <SheetContent className="min-w-1/3">
             <SheetHeader>
               <SheetTitle className="flex items-center gap-2">
-                <span>📦</span>{" "}
+                {selectedItemType ? (
+                  selectedItemType === "Product" ? (
+                    <Package className="h-5 w-5" />
+                  ) : (
+                    <Settings className="h-5 w-5" />
+                  )
+                ) : (
+                  <span>📦</span>
+                )}
                 <span>
-                  {editingItem ? "Edit Inventory Item" : "Add Inventory Item"}
+                  {editingItem
+                    ? `Edit ${editingItem.itemType}`
+                    : selectedItemType
+                      ? `Add ${selectedItemType}`
+                      : "Add New Item"}
                 </span>
               </SheetTitle>
               <SheetDescription>
                 {editingItem
-                  ? "Update inventory item details"
-                  : "Create a new inventory item with stock details"}
+                  ? `Update ${editingItem.itemType.toLowerCase()} details`
+                  : selectedItemType
+                    ? selectedItemType === "Product"
+                      ? "Create a new product with inventory tracking"
+                      : "Create a new service without inventory tracking"
+                    : "Choose whether to add a product or service"}
               </SheetDescription>
             </SheetHeader>
-            {/* Inventory form */}
+
+            {/* Item Type Selection or Form */}
             <div className="overflow-y-scroll pb-10 no-scrollbar">
-              <InventoryItemForm
-                key={editingItem?.id || "new"} // Force re-render when editing different items
-                initialData={editingFormData}
-                onSubmit={handleAddOrEditItem}
-                onCancel={() => {
-                  setIsSheetOpen(false);
-                  setEditingItem(null);
-                  setEditingFormData(undefined);
-                }}
-                submitButtonText={editingItem ? "Update Item" : "Save Item"}
-              />
+              {!selectedItemType && !editingItem ? (
+                // Step 1: Item Type Selection
+                <div className="px-4 py-6">
+                  <div className="flex flex-col gap-4">
+                    <Button
+                      variant="outline"
+                      className="h-32 flex flex-col gap-3 hover:border-primary hover:bg-primary/5"
+                      onClick={() => setSelectedItemType("Product")}
+                    >
+                      <Package className="h-10 w-10" />
+                      <div className="text-center">
+                        <p className="font-semibold text-base">Product</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Physical items with inventory tracking
+                        </p>
+                      </div>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="h-32 flex flex-col gap-3 hover:border-primary hover:bg-primary/5"
+                      onClick={() => setSelectedItemType("Service")}
+                    >
+                      <Settings className="h-10 w-10" />
+                      <div className="text-center">
+                        <p className="font-semibold text-base">Service</p>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Services without inventory tracking
+                        </p>
+                      </div>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                // Step 2: Inventory Form
+                <InventoryItemForm
+                  key={editingItem?.id || `new-${selectedItemType}`}
+                  initialData={editingFormData}
+                  itemType={editingItem?.itemType || selectedItemType!}
+                  onSubmit={handleAddOrEditItem}
+                  onCancel={() => {
+                    setIsSheetOpen(false);
+                    setEditingItem(null);
+                    setEditingFormData(undefined);
+                    setSelectedItemType(null);
+                  }}
+                  submitButtonText={editingItem ? "Update Item" : "Save Item"}
+                />
+              )}
             </div>
           </SheetContent>
         </Sheet>
@@ -846,11 +888,31 @@ export default function InventoryPage() {
 
       {/* Inventory Table */}
       <Card className="border border-border/50 gap-2">
-        {/* <CardHeader>
-          <CardTitle>Inventory Items</CardTitle>
-          <CardDescription>View and manage all inventory items</CardDescription>
-        </CardHeader> */}
-        <CardContent>
+        <CardContent className="pt-6">
+          {/* Item Type Filter Tabs */}
+          <div className="mb-4">
+            <Tabs
+              value={itemTypeFilter}
+              onValueChange={(value) =>
+                setItemTypeFilter(value as "all" | "Product" | "Service")
+              }
+            >
+              <TabsList>
+                <TabsTrigger value="all">
+                  All Items ({inventory.length})
+                </TabsTrigger>
+                <TabsTrigger value="Product">
+                  Products (
+                  {inventory.filter((i) => i.itemType === "Product").length})
+                </TabsTrigger>
+                <TabsTrigger value="Service">
+                  Services (
+                  {inventory.filter((i) => i.itemType === "Service").length})
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+
           <DataTable table={table}>
             <DataTableAdvancedToolbar table={table}>
               <div className="relative">

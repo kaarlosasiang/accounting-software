@@ -18,6 +18,7 @@ import { formatCurrency } from "@/lib/utils";
 
 export interface InventoryItem {
   id: string;
+  itemType: "Product" | "Service";
   itemCode: string;
   itemName: string;
   category: string;

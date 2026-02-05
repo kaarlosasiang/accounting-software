@@ -23,7 +23,7 @@ import { Crown } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { useOrganization } from "@/hooks/use-organization";
 
-// This is sample data (nav only).
+// Accounting navigation structure
 const data = {
   navMain: [
     {
@@ -37,45 +37,53 @@ const data = {
           url: "/dashboard",
         },
         {
-          title: "Analytics",
+          title: "Financial Analytics",
           url: "/dashboard/analytics",
         },
         {
-          title: "Reports",
+          title: "Reports Center",
           url: "/dashboard/reports",
         },
       ],
     },
     {
-      title: "Transactions",
-      url: "/transactions",
-      icon: "💳",
+      title: "Chart of Accounts",
+      url: "/accounts",
+      icon: "📑",
       items: [
         {
-          title: "All Transactions",
-          url: "/transactions",
+          title: "All Accounts",
+          url: "/accounts",
         },
         {
-          title: "Income",
-          url: "/transactions/income",
+          title: "Assets",
+          url: "/accounts/assets",
+        },
+        {
+          title: "Liabilities",
+          url: "/accounts/liabilities",
+        },
+        {
+          title: "Equity",
+          url: "/accounts/equity",
+        },
+        {
+          title: "Revenue",
+          url: "/accounts/revenue",
         },
         {
           title: "Expenses",
-          url: "/transactions/expenses",
-        },
-        {
-          title: "Recurring",
-          url: "/transactions/recurring",
+          url: "/accounts/expenses",
         },
       ],
     },
     {
-      title: "Invoicing",
+      title: "Sales & Receivables",
       url: "/invoices",
       icon: "📄",
       items: [
         {
-          title: "All Invoices",
+          title: "Sales Invoices",
           url: "/invoices",
         },
         {
@@ -83,72 +91,73 @@ const data = {
           url: "/invoices/create",
         },
         {
-          title: "Pending",
-          url: "/invoices/pending",
+          title: "Customers",
+          url: "/customers",
         },
         {
-          title: "Paid",
-          url: "/invoices/paid",
+          title: "A/R Aging Report",
+          url: "/reports/ar-aging",
         },
       ],
     },
     {
-      title: "Clients",
-      url: "/clients",
-      icon: "👥",
-      items: [
-        {
-          title: "All Clients",
-          url: "/clients",
-        },
-        {
-          title: "Active",
-          url: "/clients/active",
-        },
-        {
-          title: "Archived",
-          url: "/clients/archived",
-        },
-      ],
-    },
-    {
-      title: "Suppliers",
-      url: "/suppliers",
-      icon: "🏢",
-      items: [
-        {
-          title: "All Suppliers",
-          url: "/suppliers",
-        },
-      ],
-    },
-    {
-      title: "Bills & Payables",
+      title: "Purchases & Payables",
       url: "/bills",
       icon: "📋",
       items: [
         {
-          title: "All Bills",
+          title: "Purchase Bills",
           url: "/bills",
         },
         {
-          title: "Pending",
-          url: "/bills/pending",
+          title: "Create Bill",
+          url: "/bills/create",
         },
         {
-          title: "Paid",
-          url: "/bills/paid",
+          title: "Vendors",
+          url: "/suppliers",
+        },
+        {
+          title: "A/P Aging Report",
+          url: "/reports/ap-aging",
         },
       ],
     },
     {
-      title: "Payments",
+      title: "Cash Management",
       url: "/payments",
       icon: "💰",
       items: [
         {
           title: "All Payments",
           url: "/payments",
+        },
+        {
+          title: "Record Payment",
+          url: "/payments/create",
+        },
+        {
+          title: "Bank Reconciliation",
+          url: "/banking/reconciliation",
+        },
+      ],
+    },
+    {
+      title: "General Ledger",
+      url: "/ledger",
+      icon: "📖",
+      items: [
+        {
+          title: "Ledger Entries",
+          url: "/ledger",
+        },
+        {
+          title: "Journal Entries",
+          url: "/journal-entries",
+        },
+        {
+          title: "Trial Balance",
+          url: "/ledger?tab=trial-balance",
         },
       ],
     },
@@ -158,39 +167,66 @@ const data = {
       icon: "📦",
       items: [
         {
-          title: "All Items",
+          title: "Items & Products",
           url: "/inventory",
         },
         {
-          title: "Low Stock",
-          url: "/inventory/low-stock",
+          title: "Stock Adjustments",
+          url: "/inventory/adjustments",
         },
         {
-          title: "Transactions",
+          title: "Stock Valuation",
+          url: "/inventory/valuation",
+        },
+        {
+          title: "Movement History",
           url: "/inventory/transactions",
         },
       ],
     },
     {
-      title: "Financial Reports",
+      title: "Financial Statements",
       url: "/reports",
       icon: "📈",
       items: [
         {
-          title: "Profit & Loss",
-          url: "/reports/profit-loss",
+          title: "Income Statement",
+          url: "/reports/income-statement",
         },
         {
           title: "Balance Sheet",
           url: "/reports/balance-sheet",
         },
         {
-          title: "Cash Flow",
+          title: "Cash Flow Statement",
           url: "/reports/cash-flow",
         },
         {
-          title: "Tax Summary",
-          url: "/reports/tax-summary",
+          title: "Statement of Changes in Equity",
+          url: "/reports/equity-changes",
+        },
+      ],
+    },
+    {
+      title: "Tax & Compliance",
+      url: "/tax",
+      icon: "🧾",
+      items: [
+        {
+          title: "VAT Returns",
+          url: "/tax/vat",
+        },
+        {
+          title: "Withholding Tax",
+          url: "/tax/withholding",
+        },
+        {
+          title: "BIR Forms",
+          url: "/tax/bir-forms",
+        },
+        {
+          title: "Tax Calendar",
+          url: "/tax/calendar",
         },
       ],
     },
@@ -200,15 +236,23 @@ const data = {
       icon: "⚙️",
       items: [
         {
-          title: "General",
-          url: "/settings/general",
-        },
-        {
-          title: "Company",
+          title: "Company Profile",
           url: "/settings/company",
         },
         {
-          title: "Billing",
+          title: "Fiscal Year",
+          url: "/settings/fiscal-year",
+        },
+        {
+          title: "Numbering Series",
+          url: "/settings/numbering",
+        },
+        {
+          title: "User Preferences",
+          url: "/settings/general",
+        },
+        {
+          title: "Subscription",
           url: "/settings/billing",
         },
       ],
@@ -226,8 +270,8 @@ const data = {
       icon: "📋",
     },
     {
-      name: "Payroll Management",
-      url: "/projects/payroll-management",
+      name: "Payroll Processing",
+      url: "/projects/payroll-processing",
       icon: "💰",
     },
   ],

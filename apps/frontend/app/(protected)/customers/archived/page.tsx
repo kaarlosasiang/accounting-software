@@ -30,7 +30,7 @@ import {
 } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 
-interface Client {
+interface CustomerDisplay {
     id: string
     name: string
     email: string
@@ -39,7 +39,7 @@ interface Client {
     archivedDate: string
 }
 
-const archivedClients: Client[] = [
+const archivedClients: CustomerDisplay[] = [
     {
         id: "CLI-005",
         name: "David Wilson",
@@ -50,8 +50,8 @@ const archivedClients: Client[] = [
     },
 ]
 
-export default function ArchivedClientsPage() {
-    const [clients] = useState<Client[]>(archivedClients)
+export default function ArchivedCustomersPage() {
+    const [clients] = useState<CustomerDisplay[]>(archivedClients)
     const [searchQuery, setSearchQuery] = useState("")
     const [startDate, setStartDate] = useState("")
     const [endDate, setEndDate] = useState("")

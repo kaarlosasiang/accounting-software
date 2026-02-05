@@ -25,19 +25,19 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useCustomers } from "@/hooks/use-customers";
 
-type ClientFormValues = CustomerForm;
+type CustomerFormValues = CustomerForm;
 
-interface ClientFormProps {
+interface CustomerFormProps {
   onSuccess?: () => void;
-  initialData?: Partial<ClientFormValues & { _id?: string }>;
+  initialData?: Partial<CustomerFormValues & { _id?: string }>;
 }
 
-export function ClientForm({ onSuccess, initialData }: ClientFormProps) {
+export function CustomerForm({ onSuccess, initialData }: CustomerFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { createCustomer, updateCustomer } = useCustomers();
   const isEditing = Boolean(initialData?._id);
 
-  const form = useForm<ClientFormValues>({
+  const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerSchema) as any,
     defaultValues: initialData || {
       customerCode: "",
@@ -63,7 +63,7 @@ export function ClientForm({ onSuccess, initialData }: ClientFormProps) {
     },
   });
 
-  async function onSubmit(data: ClientFormValues) {
+  async function onSubmit(data: CustomerFormValues) {
     setIsSubmitting(true);
     try {
       // Auto-generate display name if not provided (convert empty string to undefined)

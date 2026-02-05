@@ -5,7 +5,7 @@ import {
   IInvoiceDocument,
   IInvoiceLineItem,
   InvoiceStatus,
-} from '../shared/interface/IInvoice.js';
+} from "../shared/interface/IInvoice.js";
 
 /**
  * Invoice Line Item Schema
@@ -75,8 +75,9 @@ const InvoiceSchema = new Schema<IInvoice>(
       default: null,
     },
     dueDate: {
-      type: Number,
+      type: Date,
       required: [true, "Due date is required"],
+      index: true,
     },
     status: {
       type: String,
@@ -100,7 +101,8 @@ const InvoiceSchema = new Schema<IInvoice>(
     },
     subtotal: {
       type: Number,
-      required: [true, "Subtotal is required"],
+      required: false,
+      default: 0,
       min: [0, "Subtotal cannot be negative"],
     },
     taxRate: {
@@ -111,9 +113,9 @@ const InvoiceSchema = new Schema<IInvoice>(
     },
     taxAmount: {
       type: Number,
-      required: [true, "Tax amount is required"],
-      min: [0, "Tax amount cannot be negative"],
+      required: false,
       default: 0,
+      min: [0, "Tax amount cannot be negative"],
     },
     discount: {
       type: Number,
@@ -123,7 +125,8 @@ const InvoiceSchema = new Schema<IInvoice>(
     },
     totalAmount: {
       type: Number,
-      required: [true, "Total amount is required"],
+      required: false,
+      default: 0,
       min: [0, "Total amount cannot be negative"],
     },
     amountPaid: {
@@ -133,8 +136,10 @@ const InvoiceSchema = new Schema<IInvoice>(
       default: 0,
     },
     balanceDue: {
-      type: Date,
-      required: [true, "Balance due is required"],
+      type: Number,
+      required: false,
+      default: 0,
+      min: [0, "Balance due cannot be negative"],
     },
     notes: {
       type: String,
@@ -149,7 +154,8 @@ const InvoiceSchema = new Schema<IInvoice>(
     journalEntryId: {
       type: Schema.Types.ObjectId,
       ref: "JournalEntry",
-      required: [true, "Journal entry ID is required"],
+      required: false,
+      default: null,
       index: true,
     },
     createdBy: {
@@ -189,7 +195,7 @@ InvoiceSchema.pre("save", function () {
   this.totalAmount = this.subtotal + this.taxAmount - this.discount;
 
   // Calculate balance due
-  this.balanceDue = new Date(this.totalAmount - this.amountPaid);
+  this.balanceDue = this.totalAmount - this.amountPaid;
 });
 
 /**
@@ -200,11 +206,11 @@ InvoiceSchema.pre("save", function () {
 
   const tolerance = 0.01;
 
-  if (Math.abs(this.balanceDue.getTime()) < tolerance) {
+  if (Math.abs(this.balanceDue) < tolerance) {
     this.status = InvoiceStatus.PAID;
   } else if (this.amountPaid > 0 && this.amountPaid < this.totalAmount) {
     this.status = InvoiceStatus.PARTIAL;
-  } else if (this.dueDate < Date.now() && this.balanceDue.getTime() > 0) {
+  } else if (this.dueDate < new Date() && this.balanceDue > 0) {
     this.status = InvoiceStatus.OVERDUE;
   }
 });

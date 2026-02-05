@@ -33,6 +33,7 @@ export interface IAccountingSettings {
 export interface IInvoicingSettings {
   invoicePrefix: string; // e.g., 'INV'
   invoiceStartNumber: number;
+  nextSequenceNumber?: number; // Current sequence counter (internal use)
   defaultPaymentTerms: string; // e.g., 'Net 30', 'Due on Receipt'
   defaultTaxRate: number; // Percentage
   showCompanyLogo: boolean;
@@ -44,6 +45,16 @@ export interface IInvoicingSettings {
 export interface IBillingSettings {
   billPrefix: string;
   billStartNumber: number;
+  nextSequenceNumber?: number; // Current sequence counter (internal use)
+}
+
+/**
+ * Payment Settings Interface
+ */
+export interface IPaymentSettings {
+  paymentPrefix?: string; // e.g., 'PAY', default: 'PAY'
+  paymentStartNumber?: number; // default: 1
+  nextSequenceNumber?: number; // Current sequence counter (internal use)
 }
 
 /**
@@ -75,6 +86,7 @@ export interface ICompanySettings {
   accounting: IAccountingSettings;
   invoicing: IInvoicingSettings;
   billing: IBillingSettings;
+  payment: IPaymentSettings;
   reporting: IReportingSettings;
   notifications: INotificationsSettings;
   updatedAt: Date;
@@ -84,5 +96,4 @@ export interface ICompanySettings {
  * Company Settings Document (Mongoose)
  */
 export interface ICompanySettingsDocument
-  extends Omit<ICompanySettings, "_id">,
-    Document {}
+  extends Omit<ICompanySettings, "_id">, Document {}

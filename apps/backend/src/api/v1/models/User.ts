@@ -113,20 +113,19 @@ const userSchema = new Schema<IUser>(
     toObject: {
       virtuals: true,
     },
-  }
+  },
 );
 
 // Virtual for full name
 userSchema.virtual("fullName").get(function (this: IUser) {
   const parts = [this.first_name, this.middle_name, this.last_name].filter(
-    Boolean
+    Boolean,
   );
   return parts.join(" ");
 });
 
 // Index for faster queries
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Note: email and username already have indexes from unique: true
 userSchema.index({ companyId: 1 });
 userSchema.index({ createdAt: -1 });
 

@@ -34,7 +34,7 @@ export interface IInvoice {
   customerId: Types.ObjectId;
   invoiceNumber: string;
   invoiceDate?: Date;
-  dueDate: number;
+  dueDate: Date;
   status: InvoiceStatus;
   lineItems: IInvoiceLineItem[];
   subtotal: number;
@@ -43,10 +43,10 @@ export interface IInvoice {
   discount: number;
   totalAmount: number;
   amountPaid: number;
-  balanceDue: Date;
+  balanceDue: number;
   notes?: string;
   terms?: string;
-  journalEntryId: Types.ObjectId;
+  journalEntryId?: Types.ObjectId;
   createdBy: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
@@ -55,4 +55,7 @@ export interface IInvoice {
 /**
  * Invoice Document (Mongoose)
  */
-export interface IInvoiceDocument extends Omit<IInvoice, "_id">, Document {}
+export interface IInvoiceDocument extends Omit<IInvoice, "_id">, Document {
+  recordPayment(amount: number): Promise<IInvoiceDocument>;
+  void(): Promise<IInvoiceDocument>;
+}

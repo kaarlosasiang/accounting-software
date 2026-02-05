@@ -36,7 +36,7 @@ import {
   CreditCard,
   FileText,
 } from "lucide-react";
-import { ClientForm } from "@/components/forms/client-form/form";
+import { CustomerForm } from "@/components/forms/customer-form/form";
 import { formatCurrency } from "@/lib/utils";
 import { useCustomers } from "@/hooks/use-customers";
 import { DataTable } from "@/components/common/data-table/data-table";
@@ -45,12 +45,12 @@ import { DataTableToolbar } from "@/components/common/data-table/data-table-tool
 import { useDataTable } from "@/hooks/use-data-table";
 import type { Customer } from "@/lib/types/customer";
 
-export default function ClientsPage() {
+export default function CustomersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
+    null,
   );
 
   const { customers, loading, deleteCustomer, toggleCustomerStatus } =
@@ -283,7 +283,7 @@ export default function ClientsPage() {
         enableHiding: false,
       },
     ],
-    [handleDelete, handleToggleStatus, handleEdit, handleViewDetails]
+    [handleDelete, handleToggleStatus, handleEdit, handleViewDetails],
   );
 
   const { table } = useDataTable({
@@ -304,8 +304,10 @@ export default function ClientsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Customers</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
+            Customers
+          </h1>
+          <p className="text-muted-foreground text-sm">
             Manage your customer accounts and track balances
           </p>
         </div>
@@ -322,7 +324,7 @@ export default function ClientsPage() {
                 account.
               </DialogDescription>
             </DialogHeader>
-            <ClientForm onSuccess={() => setIsDialogOpen(false)} />
+            <CustomerForm onSuccess={() => setIsDialogOpen(false)} />
           </DialogContent>
         </Dialog>
       </div>
@@ -337,7 +339,7 @@ export default function ClientsPage() {
             </DialogDescription>
           </DialogHeader>
           {selectedCustomer && (
-            <ClientForm
+            <CustomerForm
               onSuccess={handleEditSuccess}
               initialData={selectedCustomer}
             />
@@ -508,7 +510,7 @@ export default function ClientsPage() {
                     <p className="mt-1 font-semibold text-green-600">
                       {formatCurrency(
                         selectedCustomer.creditLimit -
-                          selectedCustomer.currentBalance
+                          selectedCustomer.currentBalance,
                       )}
                     </p>
                   </div>

@@ -20,6 +20,17 @@ export enum PaymentMethod {
 }
 
 /**
+ * Payment Allocation Item
+ * Tracks how much of a payment is allocated to each invoice/bill
+ */
+export interface IPaymentAllocation {
+  documentId: Types.ObjectId; // Invoice or Bill ID
+  documentNumber: string; // Invoice or Bill number (denormalized)
+  allocatedAmount: number; // Amount allocated to this document
+  documentType: "INVOICE" | "BILL"; // Type of document
+}
+
+/**
  * Payment Document Interface
  */
 export interface IPayment {
@@ -32,9 +43,10 @@ export interface IPayment {
   referenceNumber: string; // Check number, transaction ID, etc.
   amount: number;
   customerId: Types.ObjectId; // Reference to Customer (if received)
-  invoiceIds: Types.ObjectId[]; // Array of invoices being paid
+  invoiceIds: Types.ObjectId[]; // Array of invoices being paid (deprecated - use allocations)
+  allocations: IPaymentAllocation[]; // NEW: Track allocation to each document
   supplierId?: Types.ObjectId; // Reference to Supplier (if made)
-  billIds: Types.ObjectId[]; // Array of bills being paid
+  billIds: Types.ObjectId[]; // Array of bills being paid (deprecated - use allocations)
   bankAccountId: Types.ObjectId; // Reference to Account (asset account)
   notes?: string;
   journalEntryId: Types.ObjectId; // Reference to auto-generated JournalEntry
