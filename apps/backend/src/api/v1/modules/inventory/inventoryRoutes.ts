@@ -16,7 +16,7 @@ inventoryRoutes.get("/active", inventoryController.getActiveItems);
 // Get items needing reorder
 inventoryRoutes.get(
   "/reorder/needed",
-  inventoryController.getItemsNeedingReorder
+  inventoryController.getItemsNeedingReorder,
 );
 
 // Get total inventory value
@@ -25,7 +25,13 @@ inventoryRoutes.get("/value/total", inventoryController.getTotalInventoryValue);
 // Get inventory valuation report
 inventoryRoutes.get(
   "/reports/valuation",
-  inventoryController.getInventoryValuation
+  inventoryController.getInventoryValuation,
+);
+
+// Get all transactions
+inventoryRoutes.get(
+  "/transactions/all",
+  inventoryController.getAllTransactions,
 );
 
 // Search inventory items
@@ -37,7 +43,7 @@ inventoryRoutes.get("/sku/:sku", inventoryController.getItemBySku);
 // Get inventory items by category
 inventoryRoutes.get(
   "/category/:category",
-  inventoryController.getItemsByCategory
+  inventoryController.getItemsByCategory,
 );
 
 // Create new inventory item
@@ -58,13 +64,13 @@ inventoryRoutes.post("/:id/adjust", inventoryController.adjustQuantity);
 // Get item transactions
 inventoryRoutes.get(
   "/:id/transactions",
-  inventoryController.getItemTransactions
+  inventoryController.getItemTransactions,
 );
 
 // Get movement summary
 inventoryRoutes.get(
   "/:id/movement-summary",
-  inventoryController.getMovementSummary
+  inventoryController.getMovementSummary,
 );
 
 // Calculate COGS

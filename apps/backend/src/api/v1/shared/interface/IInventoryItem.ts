@@ -6,10 +6,11 @@ import { Document, Types } from "mongoose";
 export interface IInventoryItem {
   _id: Types.ObjectId;
   companyId: Types.ObjectId;
+  itemType: "Product" | "Service"; // Product has inventory tracking, Service doesn't
   sku: string; // SKU or product code
   itemName: string;
   description?: string;
-  category: "Food" | "Non-Food";
+  category: "Food" | "Non-Food" | "Service";
   unit:
     | "pcs"
     | "kg"
@@ -20,14 +21,17 @@ export interface IInventoryItem {
     | "can"
     | "set"
     | "bundle"
-    | "liter";
-  quantityOnHand: number;
-  quantityAsOfDate: Date;
-  reorderLevel: number;
-  unitCost: number; // Cost of goods
+    | "liter"
+    | "hour"
+    | "session"
+    | "service";
+  quantityOnHand?: number; // Optional for services
+  quantityAsOfDate?: Date; // Optional for services
+  reorderLevel?: number; // Optional for services
+  unitCost?: number; // Optional for services (can be hourly rate or flat fee)
   sellingPrice: number;
-  inventoryAccountId: Types.ObjectId; // Reference to Account (Asset)
-  cogsAccountId: Types.ObjectId; // Reference to Account (Expense - Cost of Goods Sold)
+  inventoryAccountId?: Types.ObjectId; // Optional for services (not needed)
+  cogsAccountId?: Types.ObjectId; // Optional for services (can use expense account)
   incomeAccountId: Types.ObjectId; // Reference to Account (Revenue)
   supplierId?: Types.ObjectId; // Reference to Supplier (optional)
   salesTaxEnabled: boolean;
@@ -44,7 +48,7 @@ export interface IInventoryItem {
 export interface IInventoryItemMethods {
   adjustQuantity(
     adjustment: number,
-    reason: string
+    reason: string,
   ): Promise<IInventoryItemDocument>;
   updateCost(newCost: number): Promise<IInventoryItemDocument>;
   updateSellingPrice(newPrice: number): Promise<IInventoryItemDocument>;
@@ -57,18 +61,18 @@ export interface IInventoryItemModel {
   findActive(companyId: Types.ObjectId): Promise<IInventoryItemDocument[]>;
   findBySku(
     companyId: Types.ObjectId,
-    sku: string
+    sku: string,
   ): Promise<IInventoryItemDocument | null>;
   findByCategory(
     companyId: Types.ObjectId,
-    category: string
+    category: string,
   ): Promise<IInventoryItemDocument[]>;
   findNeedingReorder(
-    companyId: Types.ObjectId
+    companyId: Types.ObjectId,
   ): Promise<IInventoryItemDocument[]>;
   searchItems(
     companyId: Types.ObjectId,
-    searchTerm: string
+    searchTerm: string,
   ): Promise<IInventoryItemDocument[]>;
   getTotalInventoryValue(companyId: Types.ObjectId): Promise<number>;
 }
@@ -77,6 +81,4 @@ export interface IInventoryItemModel {
  * Inventory Item Document (Mongoose)
  */
 export interface IInventoryItemDocument
-  extends Omit<IInventoryItem, "_id">,
-    IInventoryItemMethods,
-    Document {}
+  extends Omit<IInventoryItem, "_id">, IInventoryItemMethods, Document {}

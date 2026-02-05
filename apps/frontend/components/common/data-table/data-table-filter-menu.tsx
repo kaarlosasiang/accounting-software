@@ -128,7 +128,8 @@ export function DataTableFilterMenu<TData>({
       }
 
       const filterValue =
-        column.columnDef.meta?.variant === "multiSelect" ? [value] : value;
+        column.columnDef.meta?.variant === "multiSelect" || 
+        column.columnDef.meta?.variant === "select" ? [value] : value;
 
       const newFilter: ExtendedColumnFilter<TData> = {
         id: column.id as Extract<keyof TData, string>,

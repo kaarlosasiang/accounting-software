@@ -18,6 +18,13 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
       required: [true, "Company ID is required"],
       index: true,
     },
+    itemType: {
+      type: String,
+      required: [true, "Item type is required"],
+      enum: ["Product", "Service"],
+      default: "Product",
+      index: true,
+    },
     sku: {
       type: String,
       required: [true, "SKU is required"],
@@ -38,7 +45,7 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
     category: {
       type: String,
       required: [true, "Category is required"],
-      enum: ["Food", "Non-Food"],
+      enum: ["Food", "Non-Food", "Service"],
       trim: true,
       index: true,
     },
@@ -56,31 +63,41 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
         "set",
         "bundle",
         "liter",
+        "hour",
+        "session",
+        "service",
       ],
       trim: true,
       lowercase: true,
     },
     quantityOnHand: {
       type: Number,
-      required: [true, "Quantity on hand is required"],
+      required: function (this: IInventoryItem) {
+        return this.itemType === "Product";
+      },
       default: 0,
       min: [0, "Quantity cannot be negative"],
     },
     quantityAsOfDate: {
       type: Date,
-      required: [true, "Quantity as of date is required"],
+      required: function (this: IInventoryItem) {
+        return this.itemType === "Product";
+      },
       default: Date.now,
     },
     reorderLevel: {
       type: Number,
-      required: [true, "Reorder level is required"],
+      required: function (this: IInventoryItem) {
+        return this.itemType === "Product";
+      },
       default: 0,
       min: [0, "Reorder level cannot be negative"],
     },
     unitCost: {
       type: Number,
-      required: [true, "Unit cost is required"],
+      required: false, // Optional for services
       min: [0, "Unit cost cannot be negative"],
+      default: 0,
     },
     sellingPrice: {
       type: Number,
@@ -90,13 +107,17 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
     inventoryAccountId: {
       type: Schema.Types.ObjectId,
       ref: "Account",
-      required: [true, "Inventory account ID is required"],
+      required: function (this: IInventoryItem) {
+        return this.itemType === "Product";
+      },
       index: true,
     },
     cogsAccountId: {
       type: Schema.Types.ObjectId,
       ref: "Account",
-      required: [true, "COGS account ID is required"],
+      required: function (this: IInventoryItem) {
+        return this.itemType === "Product";
+      },
       index: true,
     },
     incomeAccountId: {
@@ -138,7 +159,7 @@ const InventoryItemSchema = new Schema<IInventoryItem>(
   {
     timestamps: true,
     collection: "inventoryItems",
-  }
+  },
 );
 
 /**
@@ -154,22 +175,24 @@ InventoryItemSchema.index({ companyId: 1, supplierId: 1 });
  * Virtual: Inventory value
  */
 InventoryItemSchema.virtual("inventoryValue").get(function () {
-  return this.quantityOnHand * this.unitCost;
+  return (this.quantityOnHand || 0) * (this.unitCost || 0);
 });
 
 /**
  * Virtual: Profit margin
  */
 InventoryItemSchema.virtual("profitMargin").get(function () {
-  if (this.sellingPrice === 0) return 0;
-  return ((this.sellingPrice - this.unitCost) / this.sellingPrice) * 100;
+  const sellingPrice = this.sellingPrice || 0;
+  const unitCost = this.unitCost || 0;
+  if (sellingPrice === 0) return 0;
+  return ((sellingPrice - unitCost) / sellingPrice) * 100;
 });
 
 /**
  * Virtual: Needs reorder
  */
 InventoryItemSchema.virtual("needsReorder").get(function () {
-  return this.quantityOnHand <= this.reorderLevel;
+  return (this.quantityOnHand || 0) <= (this.reorderLevel || 0);
 });
 
 /**
@@ -177,14 +200,14 @@ InventoryItemSchema.virtual("needsReorder").get(function () {
  */
 InventoryItemSchema.methods.adjustQuantity = function (
   adjustment: number,
-  reason: string
+  reason: string,
 ) {
   const newQuantity = this.quantityOnHand + adjustment;
   if (newQuantity < 0) {
     throw new Error(
       `Insufficient inventory. Available: ${
         this.quantityOnHand
-      }, Requested: ${Math.abs(adjustment)}`
+      }, Requested: ${Math.abs(adjustment)}`,
     );
   }
   this.quantityOnHand = newQuantity;
@@ -217,7 +240,7 @@ InventoryItemSchema.methods.updateSellingPrice = function (newPrice: number) {
  * Static method: Find active items
  */
 InventoryItemSchema.statics.findActive = function (
-  companyId: mongoose.Types.ObjectId
+  companyId: mongoose.Types.ObjectId,
 ) {
   return this.find({ companyId, isActive: true }).sort({ itemName: 1 });
 };
@@ -227,7 +250,7 @@ InventoryItemSchema.statics.findActive = function (
  */
 InventoryItemSchema.statics.findBySku = function (
   companyId: mongoose.Types.ObjectId,
-  sku: string
+  sku: string,
 ) {
   return this.findOne({ companyId, sku: sku.toUpperCase() });
 };
@@ -237,7 +260,7 @@ InventoryItemSchema.statics.findBySku = function (
  */
 InventoryItemSchema.statics.findByCategory = function (
   companyId: mongoose.Types.ObjectId,
-  category: string
+  category: string,
 ) {
   return this.find({ companyId, category, isActive: true }).sort({
     itemName: 1,
@@ -248,7 +271,7 @@ InventoryItemSchema.statics.findByCategory = function (
  * Static method: Find items needing reorder
  */
 InventoryItemSchema.statics.findNeedingReorder = function (
-  companyId: mongoose.Types.ObjectId
+  companyId: mongoose.Types.ObjectId,
 ) {
   return this.find({
     companyId,
@@ -262,7 +285,7 @@ InventoryItemSchema.statics.findNeedingReorder = function (
  */
 InventoryItemSchema.statics.searchItems = function (
   companyId: mongoose.Types.ObjectId,
-  searchTerm: string
+  searchTerm: string,
 ) {
   const regex = new RegExp(searchTerm, "i");
   return this.find({
@@ -276,7 +299,7 @@ InventoryItemSchema.statics.searchItems = function (
  * Static method: Get total inventory value
  */
 InventoryItemSchema.statics.getTotalInventoryValue = async function (
-  companyId: mongoose.Types.ObjectId
+  companyId: mongoose.Types.ObjectId,
 ) {
   const result = await this.aggregate([
     {
@@ -305,5 +328,5 @@ export const InventoryItem =
   (mongoose.models.InventoryItem as any) ||
   mongoose.model<IInventoryItemDocument>(
     "InventoryItem",
-    InventoryItemSchema as any
+    InventoryItemSchema as any,
   );

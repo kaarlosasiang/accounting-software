@@ -112,72 +112,33 @@ export function useOrganization(): UseOrganizationReturn {
   const { data: sessionData } = useSession();
   const { data: organizationsData } = useListOrganizations();
 
-  // Debug logging
-  console.log("useOrganization - useActiveOrganization response:", {
-    data: activeOrgData,
-    isPending,
-    error,
-    dataType: typeof activeOrgData,
-    dataKeys: activeOrgData ? Object.keys(activeOrgData) : null,
-  });
+  // Debug logging (only when data changes)
+  useEffect(() => {
+    console.log("[useOrganization] Hook state:", {
+      activeOrgData,
+      hasActiveOrg: !!activeOrgData,
+      isPending,
+      error,
+      sessionExists: !!sessionData,
+      organizationsCount: Array.isArray(organizationsData)
+        ? organizationsData.length
+        : 0,
+    });
+  }, [activeOrgData, isPending, error, sessionData, organizationsData]);
 
-  console.log("useOrganization - session data:", {
-    session: sessionData,
-    sessionKeys: sessionData ? Object.keys(sessionData) : null,
-    activeOrganizationId: (sessionData as any)?.session?.activeOrganizationId,
-    activeOrganization: (sessionData as any)?.session?.activeOrganization,
-  });
-
-  console.log("useOrganization - organizations list:", organizationsData);
-
-  // Better-auth's useActiveOrganization can return data in different formats:
-  // 1. Direct organization object
-  // 2. Wrapped in { organization: {...} }
-  // 3. Wrapped in { data: {...} }
-  // 4. null if no active organization is set
-  let activeOrganization: Organization | null = null;
-
-  if (activeOrgData) {
-    if (typeof activeOrgData === "object") {
-      // Check if it's wrapped in a property
-      if ("organization" in activeOrgData && activeOrgData.organization) {
-        activeOrganization = activeOrgData.organization as Organization;
-      } else if ("data" in activeOrgData && activeOrgData.data) {
-        activeOrganization = activeOrgData.data as Organization;
-      } else if (
-        "id" in activeOrgData ||
-        "name" in activeOrgData ||
-        "slug" in activeOrgData
-      ) {
-        // It's likely the organization object directly
-        activeOrganization = activeOrgData as Organization;
-      }
-    }
-  }
-
-  // Fallback: Try to get from session if hook returns null
-  if (!activeOrganization && sessionData) {
-    const session = (sessionData as any)?.session;
-    if (session?.activeOrganization) {
-      activeOrganization = session.activeOrganization as Organization;
-    }
-  }
+  // Better-auth's useActiveOrganization returns the organization directly in data
+  // If null/undefined, it means no active organization is set
+  const activeOrganization =
+    (activeOrgData as Organization | null | undefined) ?? null;
 
   // Auto-set first organization as active if none is set but user has organizations
   useEffect(() => {
     if (!isPending && !activeOrganization && organizationsData) {
-      const orgs = Array.isArray(organizationsData)
-        ? organizationsData
-        : (organizationsData as any)?.data ||
-          (organizationsData as any)?.organizations ||
-          [];
+      const orgs =
+        (organizationsData as Organization[] | null | undefined) ?? [];
 
       if (orgs.length > 0 && orgs[0]) {
-        const firstOrg = orgs[0] as Organization;
-        console.log(
-          "useOrganization - Auto-setting first organization as active:",
-          firstOrg
-        );
+        const firstOrg = orgs[0];
         const orgClient = (authClient as any)?.organization;
         if (orgClient?.setActive) {
           orgClient
@@ -189,11 +150,6 @@ export function useOrganization(): UseOrganizationReturn {
       }
     }
   }, [isPending, activeOrganization, organizationsData]);
-
-  console.log(
-    "useOrganization - final activeOrganization:",
-    activeOrganization
-  );
   const organization: OrganizationClient =
     (authClient as any)?.organization ?? null;
 
@@ -271,14 +227,15 @@ export function useOrganizationRole() {
 }
 
 /**
- * Hook for listing all organizations the user is a member of
+ * Hook for listing all organizations (companies) the user is a member of
  * @returns List of organizations with loading/error states
  */
 export function useOrganizations() {
   const { data, isPending, error } = useListOrganizations();
 
   const organizations = useMemo(() => {
-    return (data ?? []) as Organization[];
+    // better-auth returns array directly in data, handle null/undefined
+    return (data as Organization[] | null | undefined) ?? [];
   }, [data]);
 
   return {

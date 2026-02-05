@@ -3,9 +3,42 @@ import mongoose, { Schema } from "mongoose";
 import {
   IPayment,
   IPaymentDocument,
+  IPaymentAllocation,
   PaymentMethod,
   PaymentType,
-} from '../shared/interface/IPayment.js';
+} from "../shared/interface/IPayment.js";
+
+/**
+ * Payment Allocation Schema
+ * Tracks how much of a payment is allocated to each invoice/bill
+ */
+const PaymentAllocationSchema = new Schema<IPaymentAllocation>(
+  {
+    documentId: {
+      type: Schema.Types.ObjectId,
+      required: [true, "Document ID is required"],
+    },
+    documentNumber: {
+      type: String,
+      required: [true, "Document number is required"],
+      trim: true,
+    },
+    allocatedAmount: {
+      type: Number,
+      required: [true, "Allocated amount is required"],
+      min: [0, "Allocated amount cannot be negative"],
+    },
+    documentType: {
+      type: String,
+      required: [true, "Document type is required"],
+      enum: {
+        values: ["INVOICE", "BILL"],
+        message: "Document type must be either INVOICE or BILL",
+      },
+    },
+  },
+  { _id: false },
+);
 
 /**
  * Payment Schema
@@ -56,6 +89,23 @@ const PaymentSchema = new Schema<IPayment>(
       type: Number,
       required: [true, "Amount is required"],
       min: [0, "Amount cannot be negative"],
+    },
+    allocations: {
+      type: [PaymentAllocationSchema],
+      required: [true, "At least one allocation is required"],
+      validate: {
+        validator: function (allocations: IPaymentAllocation[]) {
+          if (!allocations || allocations.length === 0) return false;
+          // Validate total allocated equals total payment amount
+          const totalAllocated = allocations.reduce(
+            (sum, alloc) => sum + alloc.allocatedAmount,
+            0,
+          );
+          const paymentAmount = this.get('amount') || 0;
+          return Math.abs(totalAllocated - paymentAmount) < 0.01; // Allow for floating point rounding
+        },
+        message: "Total allocated amount must equal payment amount",
+      },
     },
     customerId: {
       type: Schema.Types.ObjectId,
@@ -129,20 +179,36 @@ PaymentSchema.index({ companyId: 1, paymentNumber: 1 });
  */
 PaymentSchema.pre("save", function () {
   if (this.paymentType === PaymentType.RECEIVED) {
-    // Payment received: must have customerId and invoiceIds
+    // Payment received: must have customerId and allocations
     if (!this.customerId) {
       throw new Error("Customer ID is required for received payments");
     }
-    if (!this.invoiceIds || this.invoiceIds.length === 0) {
-      throw new Error("At least one invoice is required for received payments");
+    if (!this.allocations || this.allocations.length === 0) {
+      throw new Error(
+        "At least one allocation is required for received payments",
+      );
+    }
+    // Validate all allocations are for invoices
+    const allInvoices = this.allocations.every(
+      (alloc) => alloc.documentType === "INVOICE",
+    );
+    if (!allInvoices) {
+      throw new Error("Received payments can only be allocated to invoices");
     }
   } else if (this.paymentType === PaymentType.MADE) {
-    // Payment made: must have supplierId and billIds
+    // Payment made: must have supplierId and allocations
     if (!this.supplierId) {
       throw new Error("Supplier ID is required for made payments");
     }
-    if (!this.billIds || this.billIds.length === 0) {
-      throw new Error("At least one bill is required for made payments");
+    if (!this.allocations || this.allocations.length === 0) {
+      throw new Error("At least one allocation is required for made payments");
+    }
+    // Validate all allocations are for bills
+    const allBills = this.allocations.every(
+      (alloc) => alloc.documentType === "BILL",
+    );
+    if (!allBills) {
+      throw new Error("Made payments can only be allocated to bills");
     }
   }
 });

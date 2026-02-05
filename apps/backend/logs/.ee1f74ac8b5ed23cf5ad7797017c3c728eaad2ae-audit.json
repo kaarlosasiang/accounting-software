@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 7
+    },
+    "auditLog": "logs/.ee1f74ac8b5ed23cf5ad7797017c3c728eaad2ae-audit.json",
+    "files": [
+        {
+            "date": 1769851550472,
+            "name": "logs/rrd10-sas-api-2026-01-31.log",
+            "hash": "b23b798748b8a8278041a011fd37b91be44f8194ab6918b1453b73fdf22d3bd7"
+        }
+    ],
+    "hashType": "sha256"
+}

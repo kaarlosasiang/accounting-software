@@ -15,6 +15,7 @@ import { DataTableAdvancedToolbar } from "@/components/common/data-table/data-ta
 import { DataTableFilterMenu } from "@/components/common/data-table/data-table-filter-menu";
 import { DataTableSortList } from "@/components/common/data-table/data-table-sort-list";
 import { useDataTable } from "@/hooks/use-data-table";
+import { useSuppliers } from "@/hooks/use-suppliers";
 import { columns } from "./columns";
 import {
   Sheet,
@@ -52,8 +53,12 @@ declare module "@tanstack/react-table" {
 }
 
 export default function SuppliersPage() {
-  const [suppliers, setSuppliers] = useState<ColumnsSupplier[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    suppliers: rawSuppliers,
+    loading: isLoading,
+    fetchSuppliers,
+    deleteSupplier,
+  } = useSuppliers();
   // Keep lightweight search input wired to hidden column "search"
   const [searchQuery, setSearchQuery] = useState("");
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -62,7 +67,6 @@ export default function SuppliersPage() {
   const [editingFormData, setEditingFormData] = useState<
     Partial<SupplierFormType & { _id?: string }> | undefined
   >(undefined);
-  const filteredSuppliers = suppliers; // DataTable handles filters client-side
 
   // Transform API supplier to table format
   const transformSupplier = (supplier: SupplierType): ColumnsSupplier => {
@@ -80,30 +84,9 @@ export default function SuppliersPage() {
     };
   };
 
-  // Fetch suppliers
-  const fetchSuppliers = async () => {
-    setIsLoading(true);
-    try {
-      const result = await supplierService.getAllSuppliers();
-      if (result.success && result.data) {
-        const transformed = result.data.map(transformSupplier);
-        setSuppliers(transformed);
-      } else {
-        throw new Error(result.error || "Failed to fetch suppliers");
-      }
-    } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to fetch suppliers";
-      toast.error(message);
-      console.error("Error fetching suppliers:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSuppliers();
-  }, []);
+  // Transform suppliers from hook
+  const suppliers = rawSuppliers.map(transformSupplier);
+  const filteredSuppliers = suppliers; // DataTable handles filters client-side
 
   const totalSuppliers = suppliers.length;
   const activeSuppliers = suppliers.filter((s) => s.isActive).length;
@@ -186,26 +169,15 @@ export default function SuppliersPage() {
       onDelete: async (supplier: ColumnsSupplier) => {
         if (
           !confirm(
-            `Are you sure you want to delete ${supplier.supplierName}? This will deactivate the supplier.`
+            `Are you sure you want to delete ${supplier.supplierName}? This will deactivate the supplier.`,
           )
         ) {
           return;
         }
 
         try {
-          const result = await supplierService.deleteSupplier(supplier.id);
-          if (result.success) {
-            toast.success("Supplier deleted successfully");
-            await fetchSuppliers();
-          } else {
-            throw new Error(result.error || "Failed to delete supplier");
-          }
+          await deleteSupplier(supplier.id);
         } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : "Failed to delete supplier";
-          toast.error(message);
           console.error("Error deleting supplier:", error);
         }
       },
@@ -213,9 +185,6 @@ export default function SuppliersPage() {
   });
 
   const handleFormSubmit = async () => {
-    // Refresh suppliers after successful save
-    await fetchSuppliers();
-
     // Close the sheet after successful save
     setIsSheetOpen(false);
     setEditingSupplier(null);
@@ -267,10 +236,10 @@ export default function SuppliersPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent">
+          <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
             Suppliers
           </h1>
-          <p className="text-muted-foreground mt-2">
+          <p className="text-muted-foreground text-sm">
             Manage your supplier relationships
           </p>
         </div>
@@ -359,7 +328,7 @@ export default function SuppliersPage() {
             <p className="text-xs text-muted-foreground">
               {totalSuppliers > 0
                 ? `${((activeSuppliers / totalSuppliers) * 100).toFixed(
-                    0
+                    0,
                   )}% of total`
                 : "0% of total"}
             </p>

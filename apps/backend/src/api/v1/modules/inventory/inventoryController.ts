@@ -17,7 +17,7 @@ const inventoryController = {
   getAllItems: async (req: Request, res: Response) => {
     try {
       const companyId = getCompanyId(req);
-
+      console.log("Fetched companyId:", companyId);
       if (!companyId) {
         return res.status(401).json({
           success: false,
@@ -180,7 +180,7 @@ const inventoryController = {
 
       const items = await inventoryService.getItemsByCategory(
         companyId,
-        category
+        category,
       );
 
       return res.status(200).json({
@@ -215,9 +215,7 @@ const inventoryController = {
         });
       }
 
-      const items = await inventoryService.getItemsNeedingReorder(
-        companyId
-      );
+      const items = await inventoryService.getItemsNeedingReorder(companyId);
 
       return res.status(200).json({
         success: true,
@@ -304,9 +302,39 @@ const inventoryController = {
         });
       }
 
+      // Filter out services - they should be handled separately
+      if (validationResult.data.itemType === "Service") {
+        return res.status(400).json({
+          success: false,
+          message: "Services should be created using the service endpoint",
+        });
+      }
+
+      // Create filtered data object that matches the service expectations
+      const validUnits = ["pcs", "kg", "sack", "box", "pack", "bottle", "can", "set", "bundle", "liter"] as const;
+      const filteredData = {
+        sku: validationResult.data.sku,
+        itemName: validationResult.data.itemName,
+        description: validationResult.data.description,
+        category: validationResult.data.category as "Food" | "Non-Food",
+        unit: (validUnits.includes(validationResult.data.unit as any) ? validationResult.data.unit : "pcs") as any,
+        quantityOnHand: validationResult.data.quantityOnHand,
+        reorderLevel: validationResult.data.reorderLevel,
+        unitCost: validationResult.data.unitCost,
+        sellingPrice: validationResult.data.sellingPrice,
+        inventoryAccountId: validationResult.data.inventoryAccountId || "",
+        cogsAccountId: validationResult.data.cogsAccountId || "",
+        incomeAccountId: validationResult.data.incomeAccountId || "",
+        supplierId: validationResult.data.supplierId,
+        salesTaxEnabled: validationResult.data.salesTaxEnabled,
+        salesTaxRate: validationResult.data.salesTaxRate,
+        purchaseTaxRate: validationResult.data.purchaseTaxRate,
+        isActive: validationResult.data.isActive,
+      };
+
       const item = await inventoryService.createItem(
         companyId,
-        validationResult.data
+        filteredData,
       );
 
       return res.status(201).json({
@@ -363,10 +391,41 @@ const inventoryController = {
         });
       }
 
+      // Filter out services - they should be handled separately
+      if (validationResult.data.itemType === "Service") {
+        return res.status(400).json({
+          success: false,
+          message: "Services should be updated using the service endpoint",
+        });
+      }
+
+      // Create filtered data object that matches the service expectations
+      const validUnits = ["pcs", "kg", "sack", "box", "pack", "bottle", "can", "set", "bundle", "liter"] as const;
+      const filteredData: any = {};
+      if (validationResult.data.sku !== undefined) filteredData.sku = validationResult.data.sku;
+      if (validationResult.data.itemName !== undefined) filteredData.itemName = validationResult.data.itemName;
+      if (validationResult.data.description !== undefined) filteredData.description = validationResult.data.description;
+      if (validationResult.data.category !== undefined) filteredData.category = validationResult.data.category;
+      if (validationResult.data.unit !== undefined) {
+        filteredData.unit = (validUnits.includes(validationResult.data.unit as any) ? validationResult.data.unit : "pcs") as any;
+      }
+      if (validationResult.data.quantityOnHand !== undefined) filteredData.quantityOnHand = validationResult.data.quantityOnHand;
+      if (validationResult.data.reorderLevel !== undefined) filteredData.reorderLevel = validationResult.data.reorderLevel;
+      if (validationResult.data.unitCost !== undefined) filteredData.unitCost = validationResult.data.unitCost;
+      if (validationResult.data.sellingPrice !== undefined) filteredData.sellingPrice = validationResult.data.sellingPrice;
+      if (validationResult.data.inventoryAccountId !== undefined) filteredData.inventoryAccountId = validationResult.data.inventoryAccountId;
+      if (validationResult.data.cogsAccountId !== undefined) filteredData.cogsAccountId = validationResult.data.cogsAccountId;
+      if (validationResult.data.incomeAccountId !== undefined) filteredData.incomeAccountId = validationResult.data.incomeAccountId;
+      if (validationResult.data.supplierId !== undefined) filteredData.supplierId = validationResult.data.supplierId;
+      if (validationResult.data.salesTaxEnabled !== undefined) filteredData.salesTaxEnabled = validationResult.data.salesTaxEnabled;
+      if (validationResult.data.salesTaxRate !== undefined) filteredData.salesTaxRate = validationResult.data.salesTaxRate;
+      if (validationResult.data.purchaseTaxRate !== undefined) filteredData.purchaseTaxRate = validationResult.data.purchaseTaxRate;
+      if (validationResult.data.isActive !== undefined) filteredData.isActive = validationResult.data.isActive;
+
       const item = await inventoryService.updateItem(
         companyId,
         id,
-        validationResult.data
+        filteredData,
       );
 
       return res.status(200).json({
@@ -467,7 +526,7 @@ const inventoryController = {
         id,
         adjustment,
         reason,
-        userId
+        userId,
       );
 
       return res.status(200).json({
@@ -517,9 +576,8 @@ const inventoryController = {
         });
       }
 
-      const totalValue = await inventoryService.getTotalInventoryValue(
-        companyId
-      );
+      const totalValue =
+        await inventoryService.getTotalInventoryValue(companyId);
 
       return res.status(200).json({
         success: true,
@@ -555,7 +613,7 @@ const inventoryController = {
 
       const transactions = await inventoryService.getItemTransactions(
         companyId,
-        id
+        id,
       );
 
       return res.status(200).json({
@@ -570,6 +628,40 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch item transactions",
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  /**
+   * GET /api/v1/inventory/transactions/all
+   * Get all inventory transactions for the company
+   */
+  getAllTransactions: async (req: Request, res: Response) => {
+    try {
+      const companyId = getCompanyId(req);
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          message: "Organization ID is required",
+        });
+      }
+
+      const transactions = await inventoryService.getAllTransactions(companyId);
+
+      return res.status(200).json({
+        success: true,
+        data: transactions,
+        count: transactions.length,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "get-all-transactions-controller",
+      });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch transactions",
         error: (error as Error).message,
       });
     }
@@ -602,7 +694,7 @@ const inventoryController = {
       const summary = await inventoryService.getMovementSummary(
         id,
         new Date(startDate as string),
-        new Date(endDate as string)
+        new Date(endDate as string),
       );
 
       return res.status(200).json({
@@ -648,7 +740,7 @@ const inventoryController = {
       const cogs = await inventoryService.calculateCOGS(
         id,
         new Date(startDate as string),
-        new Date(endDate as string)
+        new Date(endDate as string),
       );
 
       return res.status(200).json({
@@ -682,9 +774,7 @@ const inventoryController = {
         });
       }
 
-      const valuation = await inventoryService.getInventoryValuation(
-        companyId
-      );
+      const valuation = await inventoryService.getInventoryValuation(companyId);
 
       return res.status(200).json({
         success: true,

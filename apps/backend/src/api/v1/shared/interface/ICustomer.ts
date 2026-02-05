@@ -1,6 +1,6 @@
-import { Document, Types } from "mongoose";
+import { Document, Types, Model } from "mongoose";
 
-import { IAddress } from './IAddress.js';
+import { IAddress } from "./IAddress.js";
 
 /**
  * Customer Document Interface
@@ -28,6 +28,37 @@ export interface ICustomer {
 }
 
 /**
+ * Customer Instance Methods
+ */
+export interface ICustomerMethods {
+  updateBalance(amount: number): Promise<ICustomerDocument>;
+  hasCreditAvailable(amount: number): boolean;
+}
+
+/**
+ * Customer Static Methods
+ */
+export interface ICustomerModel
+  extends Model<ICustomerDocument, {}, ICustomerMethods> {
+  findActive(companyId: Types.ObjectId): Promise<ICustomerDocument[]>;
+  findByCustomerCode(
+    companyId: Types.ObjectId,
+    customerCode: string
+  ): Promise<ICustomerDocument | null>;
+  searchCustomers(
+    companyId: Types.ObjectId,
+    searchTerm: string
+  ): Promise<ICustomerDocument[]>;
+}
+
+/**
  * Customer Document (Mongoose)
  */
-export interface ICustomerDocument extends Omit<ICustomer, "_id">, Document {}
+export interface ICustomerDocument
+  extends Omit<ICustomer, "_id">,
+    Document,
+    ICustomerMethods {
+  fullBillingAddress: string;
+  fullShippingAddress: string;
+  availableCredit: number;
+}
