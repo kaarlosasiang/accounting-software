@@ -71,6 +71,69 @@ export const getPaymentsReceived = async (
 };
 
 /**
+ * Record a payment made to a supplier
+ * POST /api/v1/payments/made
+ */
+export const recordPaymentMade = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const companyId = req.body.companyId || (req as any).user?.companyId;
+    const userId = (req as any).user?._id;
+
+    if (!companyId || !userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const result = await paymentService.recordPaymentMade(
+      companyId,
+      userId,
+      req.body,
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Payment made recorded successfully",
+      data: result,
+    });
+  } catch (error) {
+    logger.logError(error as Error, { operation: "recordPaymentMade" });
+    next(error);
+  }
+};
+
+/**
+ * Get all payments made for a company
+ * GET /api/v1/payments/made
+ */
+export const getPaymentsMade = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const companyId =
+      (req.query.companyId as string) || (req as any).user?.companyId;
+
+    if (!companyId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const payments = await paymentService.getPaymentsMade(companyId);
+
+    res.status(200).json({
+      success: true,
+      data: payments,
+    });
+  } catch (error) {
+    logger.logError(error as Error, { operation: "getPaymentsMade" });
+    next(error);
+  }
+};
+
+/**
  * Get payments for a specific customer
  * GET /api/v1/payments/customer/:customerId
  */

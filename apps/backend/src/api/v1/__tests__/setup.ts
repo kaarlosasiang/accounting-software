@@ -11,11 +11,21 @@ jest.mock("../config/env.js", () => ({
   default: { config: jest.fn() },
 }));
 
+// Mock @rrd10-sas/validators to avoid ESM transformation issues
+jest.mock("@rrd10-sas/validators", () => ({
+  subscriptionActivationSchema: {},
+  subscriptionCancellationSchema: {},
+  // Add other schemas as needed
+}));
+
 // Mock better-auth modules before importing anything that uses them
 jest.mock(
   "better-auth/node",
   () => ({
-    toNodeHandler: jest.fn((handler) => handler),
+    toNodeHandler: jest.fn(() => (req: any, res: any, next: any) => {
+      // Mock auth handler that just calls next()
+      next();
+    }),
   }),
   { virtual: true },
 );
@@ -23,7 +33,7 @@ jest.mock(
 jest.mock(
   "better-auth/adapters/mongodb",
   () => ({
-    mongodbAdapter: jest.fn(),
+    mongodbAdapter: jest.fn(() => ({})),
   }),
   { virtual: true },
 );
@@ -31,10 +41,10 @@ jest.mock(
 jest.mock(
   "better-auth/plugins",
   () => ({
-    admin: jest.fn(),
-    emailOTP: jest.fn(),
-    oneTap: jest.fn(),
-    organization: jest.fn(),
+    admin: jest.fn(() => ({})),
+    emailOTP: jest.fn(() => ({})),
+    oneTap: jest.fn(() => ({})),
+    organization: jest.fn(() => ({})),
   }),
   { virtual: true },
 );

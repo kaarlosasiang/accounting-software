@@ -175,7 +175,7 @@ const defaultSuppliers: SeedSupplier[] = [
  * Seed suppliers for a specific company
  */
 export async function seedSuppliersForCompany(
-  companyId: string
+  companyId: string,
 ): Promise<void> {
   try {
     // Check if suppliers already exist for this company
@@ -183,7 +183,7 @@ export async function seedSuppliersForCompany(
 
     if (existingCount > 0) {
       logger.info(
-        `Suppliers already exist for company ${companyId}. Skipping seed.`
+        `Suppliers already exist for company ${companyId}. Skipping seed.`,
       );
       return;
     }
@@ -195,13 +195,13 @@ export async function seedSuppliersForCompany(
           ...supplier,
           companyId: new mongoose.Types.ObjectId(companyId),
           currentBalance: supplier.openingBalance || 0,
-        } as any)
+        }) as any,
     );
 
     await Supplier.insertMany(suppliersWithCompanyId);
 
     logger.info(
-      `Successfully seeded ${defaultSuppliers.length} suppliers for company ${companyId}`
+      `Successfully seeded ${defaultSuppliers.length} suppliers for company ${companyId}`,
     );
   } catch (error) {
     logger.logError(error as Error, {
@@ -220,8 +220,8 @@ async function main() {
   const companyId = process.argv[2];
 
   if (!companyId) {
-    console.error(
-      "Usage: npx tsx src/api/v1/scripts/seedSuppliers.ts <companyId>"
+    logger.error(
+      "Usage: npx tsx src/api/v1/scripts/seedSuppliers.ts <companyId>",
     );
     process.exit(1);
   }
@@ -229,23 +229,23 @@ async function main() {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
-    console.error("MONGODB_URI environment variable is not set");
+    logger.error("MONGODB_URI environment variable is not set");
     process.exit(1);
   }
 
   try {
     await mongoose.connect(mongoUri);
-    console.log("Connected to MongoDB");
+    logger.info("Connected to MongoDB");
 
     await seedSuppliersForCompany(companyId);
 
-    console.log("Seeding complete!");
+    logger.info("Seeding complete!");
   } catch (error) {
-    console.error("Seeding failed:", error);
+    logger.logError(error as Error, { operation: "seed-suppliers-main" });
     process.exit(1);
   } finally {
     await mongoose.disconnect();
-    console.log("Disconnected from MongoDB");
+    logger.info("Disconnected from MongoDB");
   }
 }
 

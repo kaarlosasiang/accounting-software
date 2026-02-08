@@ -854,7 +854,7 @@ export async function seedAccountsForCompany(companyId: string): Promise<void> {
 
     if (existingCount > 0) {
       logger.info(
-        `Accounts already exist for company ${companyId}. Skipping seed.`
+        `Accounts already exist for company ${companyId}. Skipping seed.`,
       );
       return;
     }
@@ -869,7 +869,7 @@ export async function seedAccountsForCompany(companyId: string): Promise<void> {
     await Account.insertMany(accountsWithCompanyId);
 
     logger.info(
-      `Successfully seeded ${defaultAccounts.length} accounts for company ${companyId}`
+      `Successfully seeded ${defaultAccounts.length} accounts for company ${companyId}`,
     );
   } catch (error) {
     logger.logError(error as Error, {
@@ -888,8 +888,8 @@ async function main() {
   const companyId = process.argv[2];
 
   if (!companyId) {
-    console.error(
-      "Usage: npx tsx src/api/v1/scripts/seedAccounts.ts <companyId>"
+    logger.error(
+      "Usage: npx tsx src/api/v1/scripts/seedAccounts.ts <companyId>",
     );
     process.exit(1);
   }
@@ -897,23 +897,23 @@ async function main() {
   const mongoUri = process.env.MONGODB_URI;
 
   if (!mongoUri) {
-    console.error("MONGODB_URI environment variable is not set");
+    logger.error("MONGODB_URI environment variable is not set");
     process.exit(1);
   }
 
   try {
     await mongoose.connect(mongoUri);
-    console.log("Connected to MongoDB");
+    logger.info("Connected to MongoDB");
 
     await seedAccountsForCompany(companyId);
 
-    console.log("Seeding complete!");
+    logger.info("Seeding complete!");
   } catch (error) {
-    console.error("Seeding failed:", error);
+    logger.logError(error as Error, { operation: "seed-accounts-main" });
     process.exit(1);
   } finally {
     await mongoose.disconnect();
-    console.log("Disconnected from MongoDB");
+    logger.info("Disconnected from MongoDB");
   }
 }
 

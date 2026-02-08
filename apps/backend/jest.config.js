@@ -39,7 +39,7 @@ export default {
   setupFilesAfterEnv: ["<rootDir>/src/api/v1/__tests__/setup.ts"],
   modulePathIgnorePatterns: ["<rootDir>/dist/"],
   transformIgnorePatterns: [
-    "node_modules/(?!(better-auth|better-call|@better-auth)/)",
+    "node_modules/(?!(better-auth|better-call|@better-auth|@rrd10-sas)/)",
   ],
   testTimeout: 30000,
 };

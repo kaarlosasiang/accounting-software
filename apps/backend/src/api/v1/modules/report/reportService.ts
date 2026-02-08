@@ -1,0 +1,562 @@
+import mongoose from "mongoose";
+import Account from "../../models/Account.js";
+import { Ledger } from "../../models/Ledger.js";
+import { ledgerService } from "../ledger/ledgerService.js";
+import logger from "../../config/logger.js";
+
+/**
+ * Report Service
+ * Handles business logic for financial report generation
+ */
+export const reportService = {
+  /**
+   * Generate Balance Sheet
+   * Shows: Assets = Liabilities + Equity at a specific date
+   * Formula verification: Assets = Liabilities + Equity
+   */
+  async generateBalanceSheet(companyId: string, asOfDate: Date = new Date()) {
+    try {
+      // 1. Get all accounts for the company
+      const accounts = await Account.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+      }).lean();
+
+      // 2. For each account, get balance from Ledger
+      const accountsWithBalances = await Promise.all(
+        accounts.map(async (account) => {
+          const balanceData = await ledgerService.getAccountBalance(
+            companyId,
+            account._id.toString(),
+            asOfDate,
+          );
+
+          return {
+            ...account,
+            balance: balanceData.balance,
+          };
+        }),
+      );
+
+      // 3. Group by account type
+      const assets = accountsWithBalances.filter(
+        (a) => a.accountType === "Asset",
+      );
+      const liabilities = accountsWithBalances.filter(
+        (a) => a.accountType === "Liability",
+      );
+      const equity = accountsWithBalances.filter(
+        (a) => a.accountType === "Equity",
+      );
+
+      // 4. Further group assets by subtype
+      const currentAssets = assets
+        .filter((a) => a.subType?.includes("Current"))
+        .map((a) => ({
+          accountCode: a.accountCode,
+          accountName: a.accountName,
+          balance: a.balance,
+        }));
+
+      const fixedAssets = assets
+        .filter((a) => a.subType?.includes("Fixed"))
+        .map((a) => ({
+          accountCode: a.accountCode,
+          accountName: a.accountName,
+          balance: a.balance,
+        }));
+
+      const otherAssets = assets
+        .filter(
+          (a) =>
+            !a.subType?.includes("Current") && !a.subType?.includes("Fixed"),
+        )
+        .map((a) => ({
+          accountCode: a.accountCode,
+          accountName: a.accountName,
+          balance: a.balance,
+        }));
+
+      // 5. Group liabilities by subtype
+      const currentLiabilities = liabilities
+        .filter((a) => a.subType?.includes("Current"))
+        .map((a) => ({
+          accountCode: a.accountCode,
+          accountName: a.accountName,
+          balance: a.balance,
+        }));
+
+      const longTermLiabilities = liabilities
+        .filter((a) => a.subType?.includes("Long-term"))
+        .map((a) => ({
+          accountCode: a.accountCode,
+          accountName: a.accountName,
+          balance: a.balance,
+        }));
+
+      const otherLiabilities = liabilities
+        .filter(
+          (a) =>
+            !a.subType?.includes("Current") &&
+            !a.subType?.includes("Long-term"),
+        )
+        .map((a) => ({
+          accountCode: a.accountCode,
+          accountName: a.accountName,
+          balance: a.balance,
+        }));
+
+      // 6. Group equity accounts
+      const equityAccounts = equity.map((a) => ({
+        accountCode: a.accountCode,
+        accountName: a.accountName,
+        subType: a.subType,
+        balance: a.balance,
+      }));
+
+      // 7. Calculate totals
+      const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
+      const totalLiabilities = liabilities.reduce(
+        (sum, a) => sum + a.balance,
+        0,
+      );
+      const totalEquity = equity.reduce((sum, a) => sum + a.balance, 0);
+
+      // 8. Verify accounting equation
+      const balanced =
+        Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01;
+
+      return {
+        asOfDate,
+        assets: {
+          currentAssets,
+          fixedAssets,
+          otherAssets,
+          total: totalAssets,
+        },
+        liabilities: {
+          currentLiabilities,
+          longTermLiabilities,
+          otherLiabilities,
+          total: totalLiabilities,
+        },
+        equity: {
+          accounts: equityAccounts,
+          total: totalEquity,
+        },
+        balanced,
+        equation: {
+          assets: totalAssets,
+          liabilities: totalLiabilities,
+          equity: totalEquity,
+          difference: totalAssets - (totalLiabilities + totalEquity),
+        },
+      };
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "generate-balance-sheet",
+        companyId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Generate Income Statement (Profit & Loss)
+   * Shows: Revenue - Expenses = Net Income for a period
+   */
+  async generateIncomeStatement(
+    companyId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    try {
+      // 1. Get Revenue accounts
+      const revenueAccounts = await Account.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        accountType: "Revenue",
+      }).lean();
+
+      // 2. Get Expense accounts
+      const expenseAccounts = await Account.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        accountType: "Expense",
+      }).lean();
+
+      // 3. Calculate revenue total from ledger entries
+      const revenueWithAmounts = await Promise.all(
+        revenueAccounts.map(async (account) => {
+          const entries = await Ledger.find({
+            companyId: new mongoose.Types.ObjectId(companyId),
+            accountId: account._id,
+            transactionDate: { $gte: startDate, $lte: endDate },
+          }).lean();
+
+          // Revenue has credit normal balance
+          const total = entries.reduce((sum, entry) => {
+            return sum + (parseFloat(entry.credit) - parseFloat(entry.debit));
+          }, 0);
+
+          return {
+            accountCode: account.accountCode,
+            accountName: account.accountName,
+            subType: account.subType,
+            amount: total,
+          };
+        }),
+      );
+
+      // 4. Calculate expense total from ledger entries
+      const expenseWithAmounts = await Promise.all(
+        expenseAccounts.map(async (account) => {
+          const entries = await Ledger.find({
+            companyId: new mongoose.Types.ObjectId(companyId),
+            accountId: account._id,
+            transactionDate: { $gte: startDate, $lte: endDate },
+          }).lean();
+
+          // Expense has debit normal balance
+          const total = entries.reduce((sum, entry) => {
+            return sum + (parseFloat(entry.debit) - parseFloat(entry.credit));
+          }, 0);
+
+          return {
+            accountCode: account.accountCode,
+            accountName: account.accountName,
+            subType: account.subType,
+            amount: total,
+          };
+        }),
+      );
+
+      // 5. Group revenue by subtype
+      const operatingRevenue = revenueWithAmounts.filter(
+        (r) =>
+          r.subType?.includes("Operating") || r.subType?.includes("Service"),
+      );
+      const otherIncome = revenueWithAmounts.filter(
+        (r) => r.subType?.includes("Other") || r.subType?.includes("Interest"),
+      );
+
+      // 6. Group expenses by subtype
+      const costOfSales = expenseWithAmounts.filter((e) =>
+        e.subType?.includes("Cost of Sales"),
+      );
+      const operatingExpenses = expenseWithAmounts.filter((e) =>
+        e.subType?.includes("Operating"),
+      );
+      const nonOperatingExpenses = expenseWithAmounts.filter(
+        (e) =>
+          e.subType?.includes("Non-Operating") ||
+          e.subType?.includes("Tax Expense"),
+      );
+
+      // 7. Calculate totals
+      const totalRevenue = revenueWithAmounts.reduce(
+        (sum, a) => sum + a.amount,
+        0,
+      );
+      const totalExpenses = expenseWithAmounts.reduce(
+        (sum, a) => sum + a.amount,
+        0,
+      );
+      const netIncome = totalRevenue - totalExpenses;
+
+      // 8. Calculate subtotals
+      const grossRevenue = operatingRevenue.reduce(
+        (sum, r) => sum + r.amount,
+        0,
+      );
+      const totalCostOfSales = costOfSales.reduce(
+        (sum, e) => sum + e.amount,
+        0,
+      );
+      const grossProfit = grossRevenue - totalCostOfSales;
+
+      const totalOperatingExpenses = operatingExpenses.reduce(
+        (sum, e) => sum + e.amount,
+        0,
+      );
+      const operatingIncome = grossProfit - totalOperatingExpenses;
+
+      const totalOtherIncome = otherIncome.reduce(
+        (sum, r) => sum + r.amount,
+        0,
+      );
+      const totalNonOperatingExpenses = nonOperatingExpenses.reduce(
+        (sum, e) => sum + e.amount,
+        0,
+      );
+
+      return {
+        period: { startDate, endDate },
+        revenue: {
+          operatingRevenue,
+          otherIncome,
+          total: totalRevenue,
+        },
+        expenses: {
+          costOfSales,
+          operatingExpenses,
+          nonOperatingExpenses,
+          total: totalExpenses,
+        },
+        summary: {
+          grossRevenue,
+          costOfSales: totalCostOfSales,
+          grossProfit,
+          operatingExpenses: totalOperatingExpenses,
+          operatingIncome,
+          otherIncome: totalOtherIncome,
+          nonOperatingExpenses: totalNonOperatingExpenses,
+          netIncome,
+        },
+      };
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "generate-income-statement",
+        companyId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Generate Cash Flow Statement
+   * Shows: Operating, Investing, Financing activities
+   */
+  async generateCashFlowStatement(
+    companyId: string,
+    startDate: Date,
+    endDate: Date,
+  ) {
+    try {
+      // 1. Get Net Income from Income Statement
+      const incomeStatement = await this.generateIncomeStatement(
+        companyId,
+        startDate,
+        endDate,
+      );
+      const netIncome = incomeStatement.summary.netIncome;
+
+      // 2. Operating Activities - Get changes in current assets and liabilities
+      const operatingAccountCodes = [
+        "1100", // Accounts Receivable
+        "1200", // Inventory
+        "1300", // Prepaid Expenses
+        "2000", // Accounts Payable
+        "2100", // Accrued Expenses
+      ];
+
+      const operatingActivities = await Promise.all(
+        operatingAccountCodes.map(async (code) => {
+          const account = await Account.findOne({
+            companyId: new mongoose.Types.ObjectId(companyId),
+            accountCode: code,
+          }).lean();
+
+          if (!account) {
+            return null;
+          }
+
+          // Get balance at start of period
+          const startBalance = await ledgerService.getAccountBalance(
+            companyId,
+            account._id.toString(),
+            startDate,
+          );
+
+          // Get balance at end of period
+          const endBalance = await ledgerService.getAccountBalance(
+            companyId,
+            account._id.toString(),
+            endDate,
+          );
+
+          const change = endBalance.balance - startBalance.balance;
+
+          // For assets: increase = use of cash (negative), decrease = source of cash (positive)
+          // For liabilities: increase = source of cash (positive), decrease = use of cash (negative)
+          const isAsset = account.accountType === "Asset";
+          const cashEffect = isAsset ? -change : change;
+
+          return {
+            accountName: account.accountName,
+            accountCode: account.accountCode,
+            change,
+            cashEffect,
+          };
+        }),
+      );
+
+      const validOperatingActivities = operatingActivities.filter(
+        (a) => a !== null,
+      );
+
+      // 3. Investing Activities - Get capital expenditures (purchases of fixed assets)
+      const investingAccounts = await Account.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        accountType: "Asset",
+        subType: { $regex: /Fixed/i },
+      }).lean();
+
+      const investingActivities = await Promise.all(
+        investingAccounts.map(async (account) => {
+          const entries = await Ledger.find({
+            companyId: new mongoose.Types.ObjectId(companyId),
+            accountId: account._id,
+            transactionDate: { $gte: startDate, $lte: endDate },
+          }).lean();
+
+          // Debit entries increase fixed assets (purchase = use of cash)
+          const purchases = entries.reduce((sum, entry) => {
+            return sum + parseFloat(entry.debit);
+          }, 0);
+
+          // Credit entries decrease fixed assets (sale = source of cash)
+          const sales = entries.reduce((sum, entry) => {
+            return sum + parseFloat(entry.credit);
+          }, 0);
+
+          const netPurchases = purchases - sales;
+
+          return {
+            accountName: account.accountName,
+            accountCode: account.accountCode,
+            purchases,
+            sales,
+            netCashEffect: -netPurchases, // Negative because purchases use cash
+          };
+        }),
+      );
+
+      // 4. Financing Activities - Get equity and long-term loan changes
+      const financingAccounts = await Account.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        $or: [
+          { accountType: "Equity" },
+          { accountType: "Liability", subType: { $regex: /Long-term/i } },
+        ],
+      }).lean();
+
+      const financingActivities = await Promise.all(
+        financingAccounts.map(async (account) => {
+          const entries = await Ledger.find({
+            companyId: new mongoose.Types.ObjectId(companyId),
+            accountId: account._id,
+            transactionDate: { $gte: startDate, $lte: endDate },
+          }).lean();
+
+          // For equity/liabilities: Credit = increase = source of cash
+          const increases = entries.reduce((sum, entry) => {
+            return sum + parseFloat(entry.credit);
+          }, 0);
+
+          // For equity/liabilities: Debit = decrease = use of cash
+          const decreases = entries.reduce((sum, entry) => {
+            return sum + parseFloat(entry.debit);
+          }, 0);
+
+          const netCashEffect = increases - decreases;
+
+          return {
+            accountName: account.accountName,
+            accountCode: account.accountCode,
+            increases,
+            decreases,
+            netCashEffect,
+          };
+        }),
+      );
+
+      // 5. Calculate net cash flow
+      const operatingAdjustments = validOperatingActivities.reduce(
+        (sum, a) => sum + a.cashEffect,
+        0,
+      );
+      const operatingCashFlow = netIncome + operatingAdjustments;
+
+      const investingCashFlow = investingActivities.reduce(
+        (sum, a) => sum + a.netCashEffect,
+        0,
+      );
+
+      const financingCashFlow = financingActivities.reduce(
+        (sum, a) => sum + a.netCashEffect,
+        0,
+      );
+
+      const netCashFlow =
+        operatingCashFlow + investingCashFlow + financingCashFlow;
+
+      // 6. Get beginning and ending cash balances
+      const cashAccounts = await Account.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        accountCode: { $in: ["1000", "1010", "1020"] }, // Cash on Hand, Cash in Bank, Petty Cash
+      }).lean();
+
+      let beginningCash = 0;
+      let endingCash = 0;
+
+      for (const cashAccount of cashAccounts) {
+        const startBalance = await ledgerService.getAccountBalance(
+          companyId,
+          cashAccount._id.toString(),
+          startDate,
+        );
+        const endBalance = await ledgerService.getAccountBalance(
+          companyId,
+          cashAccount._id.toString(),
+          endDate,
+        );
+
+        beginningCash += startBalance.balance;
+        endingCash += endBalance.balance;
+      }
+
+      return {
+        period: { startDate, endDate },
+        operatingActivities: {
+          netIncome,
+          adjustments: validOperatingActivities,
+          total: operatingCashFlow,
+        },
+        investingActivities: {
+          items: investingActivities,
+          total: investingCashFlow,
+        },
+        financingActivities: {
+          items: financingActivities,
+          total: financingCashFlow,
+        },
+        summary: {
+          netCashFlow,
+          beginningCash,
+          endingCash,
+          calculatedEndingCash: beginningCash + netCashFlow,
+        },
+      };
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "generate-cash-flow-statement",
+        companyId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Generate Trial Balance
+   * Reuse existing ledgerService method
+   */
+  async generateTrialBalance(companyId: string, asOfDate?: Date) {
+    try {
+      return await ledgerService.getTrialBalance(companyId, asOfDate);
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "generate-trial-balance",
+        companyId,
+      });
+      throw error;
+    }
+  },
+};

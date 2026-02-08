@@ -4,7 +4,7 @@ const accountTypeEnum = z.enum(
   ["Asset", "Liability", "Equity", "Revenue", "Expense"],
   {
     message: "Invalid account type",
-  }
+  },
 );
 
 const normalBalanceEnum = z.enum(["Debit", "Credit"], {
@@ -27,8 +27,12 @@ export const accountSchema = z.object({
     .optional(),
   parentAccount: z
     .string()
-    .regex(/^[a-fA-F0-9]{24}$/, "Parent account ID must be a valid ObjectId")
-    .optional(),
+    .optional()
+    .refine(
+      (val) => !val || val === "" || /^[a-fA-F0-9]{24}$/.test(val),
+      { message: "Parent account ID must be a valid ObjectId" },
+    )
+    .transform((val) => (val === "" ? undefined : val)),
   balance: z.number({ message: "Balance must be a number" }).default(0),
   normalBalance: normalBalanceEnum,
   description: z
