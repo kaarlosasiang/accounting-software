@@ -1,6 +1,6 @@
-import { Button } from "ui/components/ui/button";
-import { Badge } from "ui/components/ui/badge";
-import { Card, CardContent } from "ui/components/ui/card";
+import { Button } from "ui/components/button";
+import { Badge } from "ui/components/badge";
+import { Card, CardContent } from "ui/components/card";
 
 export function LandingPage() {
   const features = [
@@ -102,7 +102,12 @@ export function LandingPage() {
                 cash flow and profit insights.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="rounded-full h-12 px-8 bg-red-400">
+                <Button
+                  size="lg"
+                  variant={"default"}
+                  className="rounded-full h-12 px-8"
+                  asChild
+                >
                   <a href="/signup">
                     Start Free Trial
                     <svg
