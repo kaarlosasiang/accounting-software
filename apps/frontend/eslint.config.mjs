@@ -1,5 +1,5 @@
 import { defineConfig, globalIgnores } from "eslint/config";
-import baseConfig from "@rrd10-sas/config-eslint/next.js";
+import baseConfig from "@sas/config-eslint/next.js";
 
 const eslintConfig = defineConfig([
   ...baseConfig,

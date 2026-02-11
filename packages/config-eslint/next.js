@@ -20,7 +20,7 @@ module.exports = {
           // `react` first, `next` second, then packages starting with a character
           ["^react$", "^next", "^@?\\w"],
           // Internal packages
-          ["^(@rrd10-sas)(/.*|$)"],
+          ["^(@sas)(/.*|$)"],
           // Absolute imports from `@/`
           ["^@/"],
           // Parent imports

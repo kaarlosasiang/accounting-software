@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { accountSchema } from "@rrd10-sas/validators";
+import { accountSchema } from "@sas/validators";
 import accountsService from "./accountsService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";

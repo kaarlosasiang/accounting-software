@@ -21,7 +21,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
   "dependencies": {
-    "@rrd10-sas/validators": "workspace:*",
+    "@sas/validators": "workspace:*",
     "@types/nodemailer": "^7.0.9",
     "better-auth": "^1.4.3",
     "cookie-parser": "^1.4.7",
@@ -39,7 +39,7 @@
   },
   "devDependencies": {
     "@jest/globals": "^30.2.0",
-    "@rrd10-sas/config-eslint": "workspace:*",
+    "@sas/config-eslint": "workspace:*",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",

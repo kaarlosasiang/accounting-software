@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { userRegistrationSchema } from "@rrd10-sas/validators";
+import { userRegistrationSchema } from "@sas/validators";
 
 type FormValues = z.infer<typeof userRegistrationSchema> & {
   companyId?: string;

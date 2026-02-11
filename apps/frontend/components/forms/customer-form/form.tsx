@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { customerSchema } from "@rrd10-sas/validators";
+import { customerSchema } from "@sas/validators";
 import type { CustomerForm } from "@/lib/types/customer";
 import { Button } from "@/components/ui/button";
 import {

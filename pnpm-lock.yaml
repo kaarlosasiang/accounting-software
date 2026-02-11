@@ -67,7 +67,7 @@ importers:
 
   apps/backend:
     dependencies:
-      '@rrd10-sas/validators':
+      '@sas/validators':
         specifier: workspace:*
         version: link:../../packages/validators
       '@types/nodemailer':
@@ -116,7 +116,7 @@ importers:
       '@jest/globals':
         specifier: ^30.2.0
         version: 30.2.0
-      '@rrd10-sas/config-eslint':
+      '@sas/config-eslint':
         specifier: workspace:*
         version: link:../../packages/config-eslint
       '@types/cookie-parser':
@@ -257,7 +257,7 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@19.2.2(@types/react@19.2.2))(@types/react@19.2.2)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
-      '@rrd10-sas/validators':
+      '@sas/validators':
         specifier: workspace:*
         version: link:../../packages/validators
       '@tanstack/react-query':
@@ -345,7 +345,7 @@ importers:
         specifier: ^4.1.12
         version: 4.1.12
     devDependencies:
-      '@rrd10-sas/config-eslint':
+      '@sas/config-eslint':
         specifier: workspace:*
         version: link:../../packages/config-eslint
       '@tailwindcss/postcss':

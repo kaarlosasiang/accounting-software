@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import {
   subscriptionActivationSchema,
   subscriptionCancellationSchema,
-} from "@rrd10-sas/validators";
+} from "@sas/validators";
 
 import subscriptionService from "./subscriptionService.js";
 

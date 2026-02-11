@@ -1,5 +1,5 @@
 {
-  "name": "@rrd10-sas/validators",
+  "name": "@sas/validators",
   "version": "1.0.0",
   "description": "Shared Zod validators for backend and frontend",
   "type": "module",
@@ -17,7 +17,10 @@
     "dev": "tsc --watch",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["validation", "zod"],
+  "keywords": [
+    "validation",
+    "zod"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",

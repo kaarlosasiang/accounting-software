@@ -14,7 +14,7 @@ Shared ESLint configuration for the RRD10 SAS monorepo.
 
 ```javascript
 // apps/frontend/eslint.config.mjs
-import nextConfig from "@rrd10-sas/config-eslint/next.js";
+import nextConfig from "@sas/config-eslint/next.js";
 
 export default nextConfig;
 ```
@@ -24,7 +24,7 @@ export default nextConfig;
 ```javascript
 // apps/api/eslint.config.js
 module.exports = {
-  ...require("@rrd10-sas/config-eslint/node.js"),
+  ...require("@sas/config-eslint/node.js"),
 };
 ```
 

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { inventoryItemSchema } from "@rrd10-sas/validators";
+import { inventoryItemSchema } from "@sas/validators";
 import inventoryService from "./inventoryService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";

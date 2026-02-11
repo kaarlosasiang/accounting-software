@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Save, Briefcase, DollarSign } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { inventoryItemSchema, type InventoryItem } from "@rrd10-sas/validators";
+import { inventoryItemSchema, type InventoryItem } from "@sas/validators";
 import { useAccounts } from "@/hooks/use-accounts";
 import { inventoryService } from "@/lib/services/inventory.service";
 import { toast } from "sonner";

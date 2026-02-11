@@ -11,8 +11,8 @@ jest.mock("../config/env.js", () => ({
   default: { config: jest.fn() },
 }));
 
-// Mock @rrd10-sas/validators to avoid ESM transformation issues
-jest.mock("@rrd10-sas/validators", () => ({
+// Mock @sas/validators to avoid ESM transformation issues
+jest.mock("@sas/validators", () => ({
   subscriptionActivationSchema: {},
   subscriptionCancellationSchema: {},
   // Add other schemas as needed

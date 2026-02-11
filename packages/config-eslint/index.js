@@ -71,7 +71,7 @@ module.exports = [
             // Packages starting with a character
             ["^@?\\w"],
             // Internal packages
-            ["^(@rrd10-sas)(/.*|$)"],
+            ["^(@sas)(/.*|$)"],
             // Absolute imports
             ["^@/"],
             // Parent imports
