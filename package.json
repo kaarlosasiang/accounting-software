@@ -15,6 +15,7 @@
     "build:app": "pnpm --filter frontend build",
     "build:site": "pnpm --filter site build",
     "build:validators": "pnpm --filter @rrd10-sas/validators build",
+    "build:ui": "pnpm --filter @rrd10-sas/ui build",
     "start:api": "pnpm --filter api start",
     "start:frontend": "pnpm --filter frontend start",
     "preview:site": "pnpm --filter site preview",

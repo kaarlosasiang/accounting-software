@@ -57,7 +57,7 @@ export default function LandingPage() {
           window.location.hostname === "127.0.0.1")
       ) {
         console.debug(
-          "Google One Tap disabled on localhost due to FedCM restrictions. Use the Google Sign-In button instead or test on a deployed environment."
+          "Google One Tap disabled on localhost due to FedCM restrictions. Use the Google Sign-In button instead or test on a deployed environment.",
         );
         return;
       }

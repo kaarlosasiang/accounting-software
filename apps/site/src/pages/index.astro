@@ -1,28 +1,24 @@
 ---
 import "../styles/global.css";
-// Component Imports
-import { Button } from "@/components/ui/button";
-
-// Full Astro Component Syntax:
-// https://docs.astro.build/basics/astro-components/
+import { LandingPage } from "@/components/LandingPage";
 ---
 
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
-    <title>Astro + TailwindCSS</title>
+    <title>AM FINTRASS - Close Your Books Faster</title>
+    <meta
+      name="description"
+      content="Smart accounting built for growing businesses. Import bank statements via CSV, categorize transactions, and get up‑to‑date cash flow and profit insights."
+    />
   </head>
 
   <body>
-    <div class="grid place-items-center h-screen content-center">
-      <Button>Click me</Button>
-      <a href="/markdown-page" class="p-4 underline"
-        >Markdown is also supported...</a
-      >
-    </div>
+    <LandingPage client:load />
   </body>
 </html>
