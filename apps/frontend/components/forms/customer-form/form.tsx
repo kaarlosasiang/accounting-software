@@ -399,8 +399,8 @@ export function CustomerForm({ onSuccess, initialData }: CustomerFormProps) {
                 ? "Updating..."
                 : "Creating..."
               : isEditing
-              ? "Update Customer"
-              : "Create Customer"}
+                ? "Update Customer"
+                : "Create Customer"}
           </Button>
         </div>
       </form>

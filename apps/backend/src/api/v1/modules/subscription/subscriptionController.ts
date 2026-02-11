@@ -28,7 +28,7 @@ const subscriptionController = {
 
       const result = await subscriptionService.activateSubscription(
         validationResult.data.userId,
-        validationResult.data.planId
+        validationResult.data.planId,
       );
 
       if (result.matchedCount === 0) {
@@ -105,7 +105,7 @@ const subscriptionController = {
       }
 
       const result = await subscriptionService.cancelSubscription(
-        validationResult.data.userId
+        validationResult.data.userId,
       );
 
       if (result.matchedCount === 0) {

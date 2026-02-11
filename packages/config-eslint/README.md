@@ -41,15 +41,18 @@ module.exports = {
 ## Rules
 
 ### TypeScript
+
 - Warns on `any` types
 - Ignores variables starting with `_`
 - Allows empty object types
 
 ### Imports
+
 - Auto-sorts imports by category
 - Removes unused imports automatically
 - Groups: Node.js built-ins → Packages → Internal → Relative → Styles
 
 ### Code Style
+
 - Enforced via Prettier
 - Consistent formatting across all projects

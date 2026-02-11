@@ -94,7 +94,7 @@ export function SupplierForm({
       Object.keys(values).forEach((key) => {
         form.setValue(
           key as keyof SupplierForm,
-          values[key as keyof SupplierForm] as any
+          values[key as keyof SupplierForm] as any,
         );
       });
     }

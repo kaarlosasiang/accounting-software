@@ -274,8 +274,8 @@ export function SignupForm({
           </Field>
         </FieldGroup>
         {/* Social Login */}
-          <AuthDivider />
-          <GoogleSignInButton callbackURL="/dashboard" mode="signup" />
+        <AuthDivider />
+        <GoogleSignInButton callbackURL="/dashboard" mode="signup" />
       </form>
       <FieldDescription className="px-6 text-center text-sm">
         By clicking continue, you agree to our{" "}

@@ -27,7 +27,7 @@ module.exports = [
     rules: {
       ...tsPlugin.configs.recommended.rules,
       ...prettierConfig.rules,
-      
+
       // TypeScript rules
       "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
@@ -67,7 +67,9 @@ module.exports = [
         {
           groups: [
             // Node.js builtins
-            ["^(assert|buffer|child_process|cluster|console|constants|crypto|dgram|dns|domain|events|fs|http|https|module|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|sys|timers|tls|tty|url|util|vm|zlib|freelist|v8|process|async_hooks|http2|perf_hooks)(/.*|$)"],
+            [
+              "^(assert|buffer|child_process|cluster|console|constants|crypto|dgram|dns|domain|events|fs|http|https|module|net|os|path|punycode|querystring|readline|repl|stream|string_decoder|sys|timers|tls|tty|url|util|vm|zlib|freelist|v8|process|async_hooks|http2|perf_hooks)(/.*|$)",
+            ],
             // Packages starting with a character
             ["^@?\\w"],
             // Internal packages
@@ -89,13 +91,6 @@ module.exports = [
     },
   },
   {
-    ignores: [
-      "node_modules/",
-      "dist/",
-      "build/",
-      ".next/",
-      "coverage/",
-      "*.min.js",
-    ],
+    ignores: ["node_modules/", "dist/", "build/", ".next/", "coverage/", "*.min.js"],
   },
 ];
