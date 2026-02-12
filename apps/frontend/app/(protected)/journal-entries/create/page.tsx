@@ -161,7 +161,7 @@ export default function CreateJournalEntryPage() {
       return;
     }
 
-    const result = await checkDateInClosedPeriod(date);
+    const result = await checkDateInClosedPeriod(dateString);
     if (result?.isInClosedPeriod && result.period) {
       setPeriodWarning({
         show: true,
