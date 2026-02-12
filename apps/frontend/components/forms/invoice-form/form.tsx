@@ -168,7 +168,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
       return;
     }
 
-    const result = await checkDateInClosedPeriod(date);
+    const result = await checkDateInClosedPeriod(date.toISOString().split('T')[0]);
     if (result?.isInClosedPeriod && result.period) {
       setPeriodWarning({
         show: true,
