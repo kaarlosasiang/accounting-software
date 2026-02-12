@@ -12,6 +12,7 @@ import { paymentRoutes } from "../modules/payment/paymentRoutes.js";
 import journalEntryRoutes from "../modules/journalEntry/journalEntryRoutes.js";
 import ledgerRoutes from "../modules/ledger/ledgerRoutes.js";
 import { reportRoutes } from "../modules/report/reportRoutes.js";
+import periodRoutes from "../modules/period/periodRoutes.js";
 
 import userRoutes from "../modules/user/userRoutes.js";
 
@@ -61,6 +62,9 @@ export default (app: Application): void => {
 
   // Report routes
   app.use(`${API_PREFIX}/reports`, reportRoutes);
+
+  // Accounting Period routes
+  app.use(`${API_PREFIX}/periods`, periodRoutes);
 
   // Add more routes here as needed
   // app.use(`${API_PREFIX}/transactions`, transactionRoutes);

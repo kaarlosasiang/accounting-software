@@ -155,3 +155,73 @@ export const generateTrialBalance = async (
     next(error);
   }
 };
+
+/**
+ * Generate Accounts Receivable Aging Report
+ * GET /api/v1/reports/ar-aging
+ * Query params: asOfDate (optional, defaults to today)
+ */
+export const generateARAgingReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const companyId = getCompanyId(req);
+    const asOfDate = req.query.asOfDate
+      ? new Date(req.query.asOfDate as string)
+      : new Date();
+
+    if (!companyId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const arAgingReport = await reportService.generateARAgingReport(
+      companyId,
+      asOfDate,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: arAgingReport,
+    });
+  } catch (error) {
+    logger.logError(error as Error, { operation: "generateARAgingReport" });
+    next(error);
+  }
+};
+
+/**
+ * Generate Accounts Payable Aging Report
+ * GET /api/v1/reports/ap-aging
+ * Query params: asOfDate (optional, defaults to today)
+ */
+export const generateAPAgingReport = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const companyId = getCompanyId(req);
+    const asOfDate = req.query.asOfDate
+      ? new Date(req.query.asOfDate as string)
+      : new Date();
+
+    if (!companyId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const apAgingReport = await reportService.generateAPAgingReport(
+      companyId,
+      asOfDate,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: apAgingReport,
+    });
+  } catch (error) {
+    logger.logError(error as Error, { operation: "generateAPAgingReport" });
+    next(error);
+  }
+};

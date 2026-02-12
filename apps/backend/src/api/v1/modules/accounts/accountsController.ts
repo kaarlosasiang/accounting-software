@@ -393,6 +393,176 @@ const accountsController = {
       });
     }
   },
+
+  /**
+   * PUT /api/v1/accounts/:id/archive
+   * Archive an account (soft delete)
+   */
+  archiveAccount: async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const companyId = getCompanyId(req);
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          message: "Organization ID is required",
+        });
+      }
+
+      const account = await accountsService.archiveAccount(companyId, id);
+
+      return res.status(200).json({
+        success: true,
+        message: "Account archived successfully",
+        data: account,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "archive-account-controller",
+      });
+
+      if ((error as Error).message === "Account not found") {
+        return res.status(404).json({
+          success: false,
+          message: "Account not found",
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: "Failed to archive account",
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  /**
+   * PUT /api/v1/accounts/:id/restore
+   * Restore an archived account
+   */
+  restoreAccount: async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const companyId = getCompanyId(req);
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          message: "Organization ID is required",
+        });
+      }
+
+      const account = await accountsService.restoreAccount(companyId, id);
+
+      return res.status(200).json({
+        success: true,
+        message: "Account restored successfully",
+        data: account,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "restore-account-controller",
+      });
+
+      if ((error as Error).message === "Account not found") {
+        return res.status(404).json({
+          success: false,
+          message: "Account not found",
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        message: "Failed to restore account",
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  /**
+   * POST /api/v1/accounts/:id/reconcile
+   * Reconcile account balance with ledger
+   */
+  reconcileAccountBalance: async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const companyId = getCompanyId(req);
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          message: "Organization ID is required",
+        });
+      }
+
+      const result = await accountsService.reconcileAccountBalance(
+        companyId,
+        id,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: result.reconciled
+          ? "Account balance reconciled successfully"
+          : "Account balance already in sync",
+        data: result,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "reconcile-account-balance-controller",
+      });
+
+      if ((error as Error).message === "Account not found") {
+        return res.status(404).json({
+          success: false,
+          message: "Account not found",
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to reconcile account balance",
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  /**
+   * POST /api/v1/accounts/reconcile-all
+   * Reconcile all account balances for the company
+   */
+  reconcileAllAccountBalances: async (req: Request, res: Response) => {
+    try {
+      const companyId = getCompanyId(req);
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          message: "Organization ID is required",
+        });
+      }
+
+      const result =
+        await accountsService.reconcileAllAccountBalances(companyId);
+
+      return res.status(200).json({
+        success: true,
+        message: `Reconciled ${result.reconciledCount} of ${result.totalAccounts} accounts`,
+        data: result,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "reconcile-all-account-balances-controller",
+      });
+
+      return res.status(500).json({
+        success: false,
+        message: "Failed to reconcile account balances",
+        error: (error as Error).message,
+      });
+    }
+  },
 };
 
 export default accountsController;

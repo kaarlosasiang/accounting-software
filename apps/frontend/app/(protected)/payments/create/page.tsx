@@ -34,9 +34,20 @@ import * as z from "zod";
 import { useOrganization } from "@/hooks/use-organization";
 import { useCustomers } from "@/hooks/use-customers";
 import { useSuppliers } from "@/hooks/use-suppliers";
+import { usePeriods } from "@/hooks/use-periods";
 import { formatCurrency, parseAmount } from "@/lib/utils";
-import { AlertCircle, Check, Loader2, Trash2, Plus } from "lucide-react";
+import { AlertCircle, Check, Loader2, Trash2, Plus, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Table,
   TableBody,
@@ -98,6 +109,7 @@ export default function RecordPaymentPage() {
   const { organizationId } = useOrganization();
   const { customers } = useCustomers();
   const { suppliers } = useSuppliers();
+  const { checkDateInClosedPeriod } = usePeriods();
 
   // Get URL parameters
   const invoiceId = searchParams?.get("invoiceId");
@@ -116,6 +128,13 @@ export default function RecordPaymentPage() {
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState(false);
   const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [periodWarning, setPeriodWarning] = useState<{
+    show: boolean;
+    periodName: string;
+    periodStatus: string;
+    date: string | undefined;
+    callback: (() => void) | null;
+  }>({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null });
 
   // Initialize payment type and amount from URL params
   useEffect(() => {
@@ -142,6 +161,39 @@ export default function RecordPaymentPage() {
       notes: "",
     },
   });
+
+  const handleDateChange = async (dateString: string, onChange: (dateString: string) => void) => {
+    if (!dateString) {
+      onChange(dateString);
+      return;
+    }
+
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      onChange(dateString);
+      return;
+    }
+
+    const result = await checkDateInClosedPeriod(date);
+    if (result?.isInClosedPeriod && result.period) {
+      setPeriodWarning({
+        show: true,
+        periodName: result.period.periodName,
+        periodStatus: result.period.status,
+        date: dateString,
+        callback: () => onChange(dateString),
+      });
+    } else {
+      onChange(dateString);
+    }
+  };
+
+  const handleProceedWithWarning = () => {
+    if (periodWarning.callback) {
+      periodWarning.callback();
+    }
+    setPeriodWarning({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null });
+  };
 
   // Fetch bank accounts on mount
   useEffect(() => {
@@ -522,7 +574,11 @@ organizationId,
                       <FormItem>
                         <FormLabel>Payment Date</FormLabel>
                         <FormControl>
-                          <Input type="date" {...field} />
+                          <Input
+                            type="date"
+                            value={field.value}
+                            onChange={(e) => handleDateChange(e.target.value, field.onChange)}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -816,5 +872,53 @@ organizationId,
         </Card>
       )}
     </div>
+
+    <AlertDialog open={periodWarning.show} onOpenChange={(open) => !open && setPeriodWarning({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null })}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            Posting to {periodWarning.periodStatus} Period
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            The selected date falls within the accounting period{" "}
+            <span className="font-semibold">{periodWarning.periodName}</span>, which is currently{" "}
+            <span className="font-semibold">{periodWarning.periodStatus}</span>.
+            <ul className="mt-2 ml-4 list-disc space-y-1 text-sm">
+              {periodWarning.periodStatus === "Closed" && (
+                <>
+                  <li>This period has been closed for financial reporting</li>
+                  <li>Posting to this period may affect previously reported financials</li>
+                  <li>Consider using a different date or contact your accountant</li>
+                </>
+              )}
+              {periodWarning.periodStatus === "Locked" && (
+                <>
+                  <li>This period has been permanently locked</li>
+                  <li>Transactions cannot be posted to locked periods</li>
+                  <li>Please select a date in an open period</li>
+                </>
+              )}
+            </ul>
+            <p className="mt-2 font-semibold text-yellow-600">
+              {periodWarning.periodStatus === "Locked" 
+                ? "You must select a different date."
+                : "Proceed with caution."}
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Choose Different Date</AlertDialogCancel>
+          {periodWarning.periodStatus !== "Locked" && (
+            <AlertDialogAction
+              onClick={handleProceedWithWarning}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              Proceed Anyway
+            </AlertDialogAction>
+          )}
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

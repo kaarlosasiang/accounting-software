@@ -11,6 +11,7 @@ export interface IAccount extends Document {
   balance: number;
   normalBalance: "Debit" | "Credit";
   description?: string;
+  isActive: boolean;
   createdAt: Date;
   updatedAt?: Date;
 }

@@ -11,7 +11,9 @@ import {
   Eye,
   ArrowUpCircle,
   ArrowDownCircle,
+  XCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +38,18 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -46,6 +59,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
+import { voidPayment } from "@/lib/services/payment.service";
 
 interface Payment {
   id: string;
@@ -58,6 +72,7 @@ interface Payment {
   entity: string;
   entityEmail: string;
   description: string;
+  status?: "COMPLETED" | "VOIDED";
 }
 
 const mockPayments: Payment[] = [
@@ -72,6 +87,7 @@ const mockPayments: Payment[] = [
     entity: "Manila Rice Trading",
     entityEmail: "accounts@manilarice.com",
     description: "Payment for Bill #2025-B001",
+    status: "COMPLETED",
   },
   {
     id: "PAY-002",
@@ -84,6 +100,7 @@ const mockPayments: Payment[] = [
     entity: "Maria's Salon",
     entityEmail: "billing@mariasalon.com",
     description: "Payment for Invoice #2025-001",
+    status: "COMPLETED",
   },
   {
     id: "PAY-003",
@@ -96,6 +113,7 @@ const mockPayments: Payment[] = [
     entity: "Tech Solutions Office",
     entityEmail: "finance@techsol.com",
     description: "Payment for Invoice #2025-003",
+    status: "COMPLETED",
   },
   {
     id: "PAY-004",
@@ -108,6 +126,7 @@ const mockPayments: Payment[] = [
     entity: "Metro Cleaning Supplies",
     entityEmail: "billing@metrocleaning.ph",
     description: "Payment for Bill #2025-B002",
+    status: "COMPLETED",
   },
   {
     id: "PAY-005",
@@ -120,13 +139,51 @@ const mockPayments: Payment[] = [
     entity: "Juan's Grocery",
     entityEmail: "accounts@juangrocery.com",
     description: "Payment for Invoice #2025-002",
+    status: "COMPLETED",
   },
 ];
 
 export default function PaymentsPage() {
-  const [payments] = useState<Payment[]>(mockPayments);
+  const [payments, setPayments] = useState<Payment[]>(mockPayments);
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [voidDialogOpen, setVoidDialogOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isVoiding, setIsVoiding] = useState(false);
+
+  const handleVoidClick = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setVoidDialogOpen(true);
+  };
+
+  const handleVoidConfirm = async () => {
+    if (!selectedPayment) return;
+
+    setIsVoiding(true);
+    try {
+      await voidPayment(selectedPayment.id);
+
+      // Update local state
+      setPayments((prev) =>
+        prev.map((p) =>
+          p.id === selectedPayment.id ? { ...p, status: "VOIDED" as const } : p,
+        ),
+      );
+
+      toast.success(
+        `Payment ${selectedPayment.paymentNumber} voided successfully`,
+      );
+      setVoidDialogOpen(false);
+    } catch (error) {
+      console.error("Error voiding payment:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to void payment",
+      );
+    } finally {
+      setIsVoiding(false);
+      setSelectedPayment(null);
+    }
+  };
 
   const filteredPayments = payments.filter((payment) => {
     const matchesSearch =
@@ -276,6 +333,7 @@ export default function PaymentsPage() {
                   <TableHead>Payment #</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Entity</TableHead>
                   <TableHead>Method</TableHead>
                   <TableHead>Reference</TableHead>
@@ -309,6 +367,24 @@ export default function PaymentsPage() {
                         )}
                         {payment.paymentType}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {payment.status === "VOIDED" ? (
+                        <Badge
+                          variant="outline"
+                          className="bg-gray-500/10 text-gray-600 border-gray-500/20"
+                        >
+                          <XCircle className="h-3 w-3 mr-1" />
+                          Voided
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="bg-blue-500/10 text-blue-600 border-blue-500/20"
+                        >
+                          Completed
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
@@ -356,6 +432,18 @@ export default function PaymentsPage() {
                             <Download className="mr-2 h-4 w-4" />
                             Download Receipt
                           </DropdownMenuItem>
+                          {payment.status !== "VOIDED" && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleVoidClick(payment)}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <XCircle className="mr-2 h-4 w-4" />
+                                Void Payment
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -366,6 +454,42 @@ export default function PaymentsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Void Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to void payment{" "}
+              <span className="font-semibold">
+                {selectedPayment?.paymentNumber}
+              </span>
+              ? This action will:
+              <ul className="mt-2 ml-4 list-disc space-y-1 text-sm">
+                <li>Reverse the journal entry for this payment</li>
+                <li>
+                  Restore the outstanding balance on the related invoice/bill
+                </li>
+                <li>Update customer/supplier account balances</li>
+                <li>Mark the payment as VOIDED</li>
+              </ul>
+              <p className="mt-2 font-semibold text-red-600">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isVoiding}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleVoidConfirm}
+              disabled={isVoiding}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isVoiding ? "Voiding..." : "Void Payment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

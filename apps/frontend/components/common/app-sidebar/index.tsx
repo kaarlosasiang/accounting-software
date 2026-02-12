@@ -240,6 +240,10 @@ const data = {
           url: "/settings/company",
         },
         {
+          title: "Accounting Periods",
+          url: "/periods",
+        },
+        {
           title: "Fiscal Year",
           url: "/settings/fiscal-year",
         },

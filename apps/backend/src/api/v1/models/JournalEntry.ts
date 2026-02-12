@@ -6,7 +6,7 @@ import {
   IJournalEntryLine,
   JournalEntryStatus,
   JournalEntryType,
-} from '../shared/interface/IJournalEntry.js';
+} from "../shared/interface/IJournalEntry.js";
 
 /**
  * Journal Entry Line Item Schema
@@ -121,6 +121,11 @@ const JournalEntrySchema = new Schema<IJournalEntry>(
       required: [true, "Total credit is required"],
       min: [0, "Total credit cannot be negative"],
     },
+    isClosingEntry: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     postedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -156,9 +161,9 @@ JournalEntrySchema.index({ companyId: 1, entryType: 1 });
 JournalEntrySchema.index({ companyId: 1, entryNumber: 1 });
 
 /**
- * Pre-save validation: Ensure debits equal credits
+ * Pre-validate: Calculate totals and ensure debits equal credits
  */
-JournalEntrySchema.pre("save", function () {
+JournalEntrySchema.pre("validate", function () {
   // Calculate totals from lines
   this.totalDebit = this.lines.reduce((sum, line) => sum + line.debit, 0);
   this.totalCredit = this.lines.reduce((sum, line) => sum + line.credit, 0);
@@ -187,9 +192,9 @@ JournalEntrySchema.pre("save", function () {
 });
 
 /**
- * Pre-save hook: Generate entry number if not provided
+ * Pre-validate hook: Generate entry number if not provided
  */
-JournalEntrySchema.pre("save", async function () {
+JournalEntrySchema.pre("validate", async function () {
   if (this.isNew && !this.entryNumber) {
     const year = new Date().getFullYear();
     const prefix = `JE-${year}-`;

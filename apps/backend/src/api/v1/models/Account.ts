@@ -60,6 +60,10 @@ const accountSchema = new Schema<IAccount>(
       trim: true,
       maxlength: [500, "Description cannot exceed 500 characters"],
     },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   {
     timestamps: true,
@@ -73,7 +77,7 @@ const accountSchema = new Schema<IAccount>(
     toObject: {
       virtuals: true,
     },
-  }
+  },
 );
 
 // Compound index to ensure unique account code per company

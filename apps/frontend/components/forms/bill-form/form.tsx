@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -35,8 +35,19 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { useAccounts } from "@/hooks/use-accounts";
+import { usePeriods } from "@/hooks/use-periods";
 import { billService } from "@/lib/services/bill.service";
 
 // Define the form schema locally to avoid type inference issues
@@ -79,6 +90,14 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { suppliers, loading: loadingSuppliers } = useSuppliers();
   const { accounts, loading: loadingAccounts } = useAccounts();
+  const { checkDateInClosedPeriod } = usePeriods();
+  const [periodWarning, setPeriodWarning] = useState<{
+    show: boolean;
+    periodName: string;
+    periodStatus: string;
+    date: Date | undefined;
+    callback: (() => void) | null;
+  }>({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null });
 
   const form = useForm({
     resolver: zodResolver(createBillSchema),
@@ -101,6 +120,33 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
       status: "Draft" as const,
     },
   });
+
+  const handleDateChange = async (date: Date | undefined, onChange: (date: Date | undefined) => void) => {
+    if (!date || isNaN(date.getTime())) {
+      onChange(date);
+      return;
+    }
+
+    const result = await checkDateInClosedPeriod(date);
+    if (result?.isInClosedPeriod && result.period) {
+      setPeriodWarning({
+        show: true,
+        periodName: result.period.periodName,
+        periodStatus: result.period.status,
+        date,
+        callback: () => onChange(date),
+      });
+    } else {
+      onChange(date);
+    }
+  };
+
+  const handleProceedWithWarning = () => {
+    if (periodWarning.callback) {
+      periodWarning.callback();
+    }
+    setPeriodWarning({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null });
+  };
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -258,15 +304,15 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
                     <FormControl>
                       <Input
                         type="date"
-                        {...field}
                         value={
                           field.value instanceof Date
                             ? field.value.toISOString().split("T")[0]
                             : ""
                         }
-                        onChange={(e) =>
-                          field.onChange(new Date(e.target.value))
-                        }
+                        onChange={(e) => {
+                          const newDate = new Date(e.target.value);
+                          handleDateChange(newDate, field.onChange);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -566,5 +612,53 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
         </Form>
       </SheetContent>
     </Sheet>
+
+    <AlertDialog open={periodWarning.show} onOpenChange={(open) => !open && setPeriodWarning({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null })}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            Posting to {periodWarning.periodStatus} Period
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            The selected date falls within the accounting period{" "}
+            <span className="font-semibold">{periodWarning.periodName}</span>, which is currently{" "}
+            <span className="font-semibold">{periodWarning.periodStatus}</span>.
+            <ul className="mt-2 ml-4 list-disc space-y-1 text-sm">
+              {periodWarning.periodStatus === "Closed" && (
+                <>
+                  <li>This period has been closed for financial reporting</li>
+                  <li>Posting to this period may affect previously reported financials</li>
+                  <li>Consider using a different date or contact your accountant</li>
+                </>
+              )}
+              {periodWarning.periodStatus === "Locked" && (
+                <>
+                  <li>This period has been permanently locked</li>
+                  <li>Transactions cannot be posted to locked periods</li>
+                  <li>Please select a date in an open period</li>
+                </>
+              )}
+            </ul>
+            <p className="mt-2 font-semibold text-yellow-600">
+              {periodWarning.periodStatus === "Locked" 
+                ? "You must select a different date."
+                : "Proceed with caution."}
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Choose Different Date</AlertDialogCancel>
+          {periodWarning.periodStatus !== "Locked" && (
+            <AlertDialogAction
+              onClick={handleProceedWithWarning}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              Proceed Anyway
+            </AlertDialogAction>
+          )}
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
