@@ -245,6 +245,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
   }
 
   return (
+    <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* Header Section with Customer and Balance */}
@@ -857,5 +858,6 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    </>
   );
 }
