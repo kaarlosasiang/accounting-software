@@ -135,7 +135,9 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
       return;
     }
 
-    const result = await checkDateInClosedPeriod(date.toISOString().split('T')[0]);
+    const result = await checkDateInClosedPeriod(
+      date.toISOString().split("T")[0],
+    );
     if (result?.isInClosedPeriod && result.period) {
       setPeriodWarning({
         show: true,
