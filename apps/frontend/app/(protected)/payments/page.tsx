@@ -59,7 +59,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
-import { voidPayment } from "@/lib/services/payment.service";
+import { paymentService } from "@/lib/services/payment.service";
 
 interface Payment {
   id: string;
@@ -161,7 +161,7 @@ export default function PaymentsPage() {
 
     setIsVoiding(true);
     try {
-      await voidPayment(selectedPayment.id);
+      await paymentService.voidPayment(selectedPayment.id);
 
       // Update local state
       setPayments((prev) =>
