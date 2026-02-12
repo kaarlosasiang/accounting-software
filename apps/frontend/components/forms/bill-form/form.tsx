@@ -224,6 +224,7 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
   };
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="sm:max-w-1/3 overflow-y-auto">
         <SheetHeader>
@@ -660,5 +661,6 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+    </>
   );
 }
