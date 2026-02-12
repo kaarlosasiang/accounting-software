@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { paymentService } from "./paymentService.js";
 import logger from "../../config/logger.js";
+import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
 /**
  * Payment Controller
@@ -17,8 +18,8 @@ export const recordPaymentReceived = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId = req.body.companyId || (req as any).user?.companyId;
-    const userId = (req as any).user?._id;
+    const companyId = req.body.companyId || getCompanyId(req);
+    const userId = getUserId(req);
 
     if (!companyId || !userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -32,7 +33,7 @@ export const recordPaymentReceived = async (
 
     res.status(201).json({
       success: true,
-      message: "Payment recorded successfully",
+      message: "Payment received recorded successfully",
       data: result,
     });
   } catch (error) {
@@ -51,8 +52,7 @@ export const getPaymentsReceived = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId =
-      (req.query.companyId as string) || (req as any).user?.companyId;
+    const companyId = (req.query.companyId as string) || getCompanyId(req);
 
     if (!companyId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -62,7 +62,7 @@ export const getPaymentsReceived = async (
 
     res.status(200).json({
       success: true,
-      data: payments,
+      payments,
     });
   } catch (error) {
     logger.logError(error as Error, { operation: "getPaymentsReceived" });
@@ -80,8 +80,8 @@ export const recordPaymentMade = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId = req.body.companyId || (req as any).user?.companyId;
-    const userId = (req as any).user?._id;
+    const companyId = req.body.companyId || getCompanyId(req);
+    const userId = getUserId(req);
 
     if (!companyId || !userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -114,8 +114,7 @@ export const getPaymentsMade = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId =
-      (req.query.companyId as string) || (req as any).user?.companyId;
+    const companyId = (req.query.companyId as string) || getCompanyId(req);
 
     if (!companyId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -125,7 +124,7 @@ export const getPaymentsMade = async (
 
     res.status(200).json({
       success: true,
-      data: payments,
+      payments,
     });
   } catch (error) {
     logger.logError(error as Error, { operation: "getPaymentsMade" });
@@ -143,8 +142,7 @@ export const getCustomerPayments = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId =
-      (req.query.companyId as string) || (req as any).user?.companyId;
+    const companyId = (req.query.companyId as string) || getCompanyId(req);
     const { customerId } = req.params;
 
     if (!companyId) {
@@ -176,8 +174,7 @@ export const getPaymentById = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId =
-      (req.query.companyId as string) || (req as any).user?.companyId;
+    const companyId = (req.query.companyId as string) || getCompanyId(req);
     const { paymentId } = req.params;
 
     if (!companyId) {
@@ -207,7 +204,7 @@ export const suggestPaymentAllocations = async (
   next: NextFunction,
 ) => {
   try {
-    const companyId = req.body.companyId || (req as any).user?.companyId;
+    const companyId = req.body.companyId || getCompanyId(req);
     const { customerId, paymentAmount } = req.body;
 
     if (!companyId) {
@@ -234,6 +231,51 @@ export const suggestPaymentAllocations = async (
   } catch (error) {
     logger.logError(error as Error, {
       operation: "suggestPaymentAllocations",
+    });
+    next(error);
+  }
+};
+
+/**
+ * Void a payment
+ * POST /api/v1/payments/:paymentId/void
+ * Reverses the payment transaction and restores invoice/bill balances
+ */
+export const voidPayment = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const companyId = getCompanyId(req);
+    const userId = getUserId(req);
+    const { paymentId } = req.params;
+
+    if (!companyId || !userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    if (!paymentId) {
+      return res.status(400).json({
+        success: false,
+        message: "Payment ID is required",
+      });
+    }
+
+    const result = await paymentService.voidPayment(
+      companyId,
+      paymentId,
+      userId,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Payment voided successfully",
+      data: result,
+    });
+  } catch (error) {
+    logger.logError(error as Error, {
+      operation: "voidPayment",
     });
     next(error);
   }

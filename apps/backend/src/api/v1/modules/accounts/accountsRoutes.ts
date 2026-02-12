@@ -13,6 +13,12 @@ accountsRoutes.get("/", accountsController.getAllAccounts);
 // Get chart of accounts
 accountsRoutes.get("/chart/view", accountsController.getChartOfAccounts);
 
+// Reconcile all account balances
+accountsRoutes.post(
+  "/reconcile-all",
+  accountsController.reconcileAllAccountBalances,
+);
+
 // Search accounts
 accountsRoutes.get("/search", accountsController.searchAccounts);
 
@@ -30,6 +36,18 @@ accountsRoutes.get("/:id/balance", accountsController.getAccountBalance);
 
 // Update account
 accountsRoutes.put("/:id", accountsController.updateAccount);
+
+// Archive account (soft delete)
+accountsRoutes.put("/:id/archive", accountsController.archiveAccount);
+
+// Restore account
+accountsRoutes.put("/:id/restore", accountsController.restoreAccount);
+
+// Reconcile single account balance
+accountsRoutes.post(
+  "/:id/reconcile",
+  accountsController.reconcileAccountBalance,
+);
 
 // Delete account
 accountsRoutes.delete("/:id", accountsController.deleteAccount);

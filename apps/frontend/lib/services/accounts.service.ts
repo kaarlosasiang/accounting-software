@@ -10,6 +10,7 @@ export interface Account {
   description?: string;
   normalBalance?: "Debit" | "Credit";
   parentAccount?: string;
+  isActive?: boolean; // Optional, defaults to true
   companyId?: string;
   createdAt?: Date | string;
   updatedAt?: Date | string;
@@ -84,7 +85,7 @@ class AccountsService {
    */
   async updateAccount(
     id: string,
-    updateData: Partial<Account>
+    updateData: Partial<Account>,
   ): Promise<AccountResponse> {
     return apiFetch<AccountResponse>(`/accounts/${id}`, {
       method: "PUT",
@@ -113,7 +114,7 @@ class AccountsService {
    */
   async searchAccounts(query: string): Promise<AccountsResponse> {
     return apiFetch<AccountsResponse>(
-      `/accounts/search?q=${encodeURIComponent(query)}`
+      `/accounts/search?q=${encodeURIComponent(query)}`,
     );
   }
 
@@ -122,6 +123,65 @@ class AccountsService {
    */
   async getChartOfAccounts(): Promise<ChartOfAccountsResponse> {
     return apiFetch<ChartOfAccountsResponse>("/accounts/chart/view");
+  }
+
+  /**
+   * Archive an account (soft delete)
+   */
+  async archiveAccount(id: string): Promise<AccountResponse> {
+    return apiFetch<AccountResponse>(`/accounts/${id}/archive`, {
+      method: "PUT",
+    });
+  }
+
+  /**
+   * Restore an archived account
+   */
+  async restoreAccount(id: string): Promise<AccountResponse> {
+    return apiFetch<AccountResponse>(`/accounts/${id}/restore`, {
+      method: "PUT",
+    });
+  }
+
+  /**
+   * Reconcile account balance with ledger
+   */
+  async reconcileAccountBalance(id: string): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      accountId: string;
+      accountCode: string;
+      accountName: string;
+      previousBalance?: number;
+      actualBalance?: number;
+      difference?: number;
+      reconciled: boolean;
+      balance?: number;
+    };
+  }> {
+    return apiFetch(`/accounts/${id}/reconcile`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Reconcile all account balances
+   */
+  async reconcileAllAccountBalances(): Promise<{
+    success: boolean;
+    message: string;
+    data: {
+      totalAccounts: number;
+      reconciledCount: number;
+      inSyncCount: number;
+      totalDifference: number;
+      results: any[];
+    };
+  }> {
+    return apiFetch(`/accounts/reconcile-all`, {
+      method: "POST",
+    });
   }
 }
 

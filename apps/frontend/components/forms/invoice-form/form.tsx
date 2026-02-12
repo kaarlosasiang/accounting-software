@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useCustomers } from "@/hooks/use-customers";
 import { useAccounts } from "@/hooks/use-accounts";
+import { usePeriods } from "@/hooks/use-periods";
 import { inventoryService } from "@/lib/services/inventory.service";
 import type { InventoryItem } from "@/lib/types/inventory";
 import {
@@ -46,11 +47,22 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Calendar as CalendarIcon,
   Plus,
   Trash2,
   Check,
   ChevronsUpDown,
+  AlertTriangle,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -90,8 +102,16 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { customers, fetchCustomers } = useCustomers();
   const { accounts } = useAccounts("Revenue"); // Auto-fetches revenue accounts
+  const { checkDateInClosedPeriod } = usePeriods();
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoadingInventory, setIsLoadingInventory] = useState(true);
+  const [periodWarning, setPeriodWarning] = useState<{
+    show: boolean;
+    periodName: string;
+    periodStatus: string;
+    date: Date | undefined;
+    callback: (() => void) | null;
+  }>({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null });
 
   // Fetch customers on mount
   useEffect(() => {
@@ -132,6 +152,33 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
     control: form.control,
     name: "items",
   });
+
+  const handleDateChange = async (date: Date | undefined, onChange: (date: Date | undefined) => void) => {
+    if (!date) {
+      onChange(date);
+      return;
+    }
+
+    const result = await checkDateInClosedPeriod(date);
+    if (result?.isInClosedPeriod && result.period) {
+      setPeriodWarning({
+        show: true,
+        periodName: result.period.periodName,
+        periodStatus: result.period.status,
+        date,
+        callback: () => onChange(date),
+      });
+    } else {
+      onChange(date);
+    }
+  };
+
+  const handleProceedWithWarning = () => {
+    if (periodWarning.callback) {
+      periodWarning.callback();
+    }
+    setPeriodWarning({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null });
+  };
 
   const calculateItemTotal = (quantity: string, rate: string) => {
     const q = parseFloat(quantity) || 0;
@@ -315,7 +362,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                     <Calendar
                       mode="single"
                       selected={field.value}
-                      onSelect={field.onChange}
+                      onSelect={(date) => handleDateChange(date, field.onChange)}
                       disabled={(date) =>
                         date > new Date() || date < new Date("1900-01-01")
                       }
@@ -762,5 +809,53 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
         </div>
       </form>
     </Form>
+
+    <AlertDialog open={periodWarning.show} onOpenChange={(open) => !open && setPeriodWarning({ show: false, periodName: "", periodStatus: "", date: undefined, callback: null })}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-yellow-600" />
+            Posting to {periodWarning.periodStatus} Period
+          </AlertDialogTitle>
+          <AlertDialogDescription>
+            The selected date falls within the accounting period{" "}
+            <span className="font-semibold">{periodWarning.periodName}</span>, which is currently{" "}
+            <span className="font-semibold">{periodWarning.periodStatus}</span>.
+            <ul className="mt-2 ml-4 list-disc space-y-1 text-sm">
+              {periodWarning.periodStatus === "Closed" && (
+                <>
+                  <li>This period has been closed for financial reporting</li>
+                  <li>Posting to this period may affect previously reported financials</li>
+                  <li>Consider using a different date or contact your accountant</li>
+                </>
+              )}
+              {periodWarning.periodStatus === "Locked" && (
+                <>
+                  <li>This period has been permanently locked</li>
+                  <li>Transactions cannot be posted to locked periods</li>
+                  <li>Please select a date in an open period</li>
+                </>
+              )}
+            </ul>
+            <p className="mt-2 font-semibold text-yellow-600">
+              {periodWarning.periodStatus === "Locked" 
+                ? "You must select a different date."
+                : "Proceed with caution."}
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Choose Different Date</AlertDialogCancel>
+          {periodWarning.periodStatus !== "Locked" && (
+            <AlertDialogAction
+              onClick={handleProceedWithWarning}
+              className="bg-yellow-600 hover:bg-yellow-700"
+            >
+              Proceed Anyway
+            </AlertDialogAction>
+          )}
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

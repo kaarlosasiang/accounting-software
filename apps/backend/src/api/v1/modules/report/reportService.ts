@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import Account from "../../models/Account.js";
 import { Ledger } from "../../models/Ledger.js";
+import { Invoice } from "../../models/Invoice.js";
+import { Bill } from "../../models/Bill.js";
 import { ledgerService } from "../ledger/ledgerService.js";
 import logger from "../../config/logger.js";
 
@@ -554,6 +556,308 @@ export const reportService = {
     } catch (error) {
       logger.logError(error as Error, {
         operation: "generate-trial-balance",
+        companyId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Generate Accounts Receivable Aging Report
+   * Shows outstanding invoices grouped by age (0-30, 31-60, 61-90, 90+ days)
+   */
+  async generateARAgingReport(companyId: string, asOfDate: Date = new Date()) {
+    try {
+      // Get all unpaid/partially paid invoices
+      const invoices = await Invoice.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        status: { $in: ["Sent", "Partial"] },
+        balanceDue: { $gt: 0 },
+      })
+        .populate("customerId", "customerName displayName email")
+        .lean();
+
+      // Calculate age for each invoice
+      const today = asOfDate;
+      const invoicesWithAge = invoices.map((invoice) => {
+        const dueDate = invoice.dueDate;
+        const daysOverdue = Math.floor(
+          (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+
+        // Determine age bucket
+        let ageBucket: "Current" | "1-30" | "31-60" | "61-90" | "90+" =
+          "Current";
+        if (daysOverdue <= 0) {
+          ageBucket = "Current";
+        } else if (daysOverdue <= 30) {
+          ageBucket = "1-30";
+        } else if (daysOverdue <= 60) {
+          ageBucket = "31-60";
+        } else if (daysOverdue <= 90) {
+          ageBucket = "61-90";
+        } else {
+          ageBucket = "90+";
+        }
+
+        return {
+          invoiceNumber: invoice.invoiceNumber,
+          customerId: invoice.customerId,
+          customerName: (invoice.customerId as any)?.displayName || "Unknown",
+          issueDate: invoice.issueDate,
+          dueDate: invoice.dueDate,
+          totalAmount: invoice.totalAmount,
+          amountPaid: invoice.amountPaid || 0,
+          balanceDue: invoice.balanceDue,
+          daysOverdue,
+          ageBucket,
+        };
+      });
+
+      // Group by customer
+      const customerMap = new Map<
+        string,
+        {
+          customerId: string;
+          customerName: string;
+          invoices: typeof invoicesWithAge;
+          totals: {
+            current: number;
+            days1to30: number;
+            days31to60: number;
+            days61to90: number;
+            days90plus: number;
+            total: number;
+          };
+        }
+      >();
+
+      for (const invoice of invoicesWithAge) {
+        const customerId =
+          (invoice.customerId as any)?._id?.toString() || "unknown";
+        if (!customerMap.has(customerId)) {
+          customerMap.set(customerId, {
+            customerId,
+            customerName: invoice.customerName,
+            invoices: [],
+            totals: {
+              current: 0,
+              days1to30: 0,
+              days31to60: 0,
+              days61to90: 0,
+              days90plus: 0,
+              total: 0,
+            },
+          });
+        }
+
+        const customer = customerMap.get(customerId)!;
+        customer.invoices.push(invoice);
+
+        // Add to bucket totals
+        switch (invoice.ageBucket) {
+          case "Current":
+            customer.totals.current += invoice.balanceDue;
+            break;
+          case "1-30":
+            customer.totals.days1to30 += invoice.balanceDue;
+            break;
+          case "31-60":
+            customer.totals.days31to60 += invoice.balanceDue;
+            break;
+          case "61-90":
+            customer.totals.days61to90 += invoice.balanceDue;
+            break;
+          case "90+":
+            customer.totals.days90plus += invoice.balanceDue;
+            break;
+        }
+        customer.totals.total += invoice.balanceDue;
+      }
+
+      // Calculate grand totals
+      const grandTotals = {
+        current: 0,
+        days1to30: 0,
+        days31to60: 0,
+        days61to90: 0,
+        days90plus: 0,
+        total: 0,
+      };
+
+      for (const customer of customerMap.values()) {
+        grandTotals.current += customer.totals.current;
+        grandTotals.days1to30 += customer.totals.days1to30;
+        grandTotals.days31to60 += customer.totals.days31to60;
+        grandTotals.days61to90 += customer.totals.days61to90;
+        grandTotals.days90plus += customer.totals.days90plus;
+        grandTotals.total += customer.totals.total;
+      }
+
+      return {
+        asOfDate,
+        customers: Array.from(customerMap.values()),
+        grandTotals,
+        summary: {
+          totalInvoices: invoicesWithAge.length,
+          totalCustomers: customerMap.size,
+          totalOutstanding: grandTotals.total,
+        },
+      };
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "generate-ar-aging-report",
+        companyId,
+      });
+      throw error;
+    }
+  },
+
+  /**
+   * Generate Accounts Payable Aging Report
+   * Shows outstanding bills grouped by age (0-30, 31-60, 61-90, 90+ days)
+   */
+  async generateAPAgingReport(companyId: string, asOfDate: Date = new Date()) {
+    try {
+      // Get all unpaid/partially paid bills
+      const bills = await Bill.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        status: { $in: ["Open", "Partial"] },
+        balanceDue: { $gt: 0 },
+      })
+        .populate("supplierId", "supplierName displayName email")
+        .lean();
+
+      // Calculate age for each bill
+      const today = asOfDate;
+      const billsWithAge = bills.map((bill) => {
+        const dueDate = bill.dueDate;
+        const daysOverdue = Math.floor(
+          (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
+        );
+
+        // Determine age bucket
+        let ageBucket: "Current" | "1-30" | "31-60" | "61-90" | "90+" =
+          "Current";
+        if (daysOverdue <= 0) {
+          ageBucket = "Current";
+        } else if (daysOverdue <= 30) {
+          ageBucket = "1-30";
+        } else if (daysOverdue <= 60) {
+          ageBucket = "31-60";
+        } else if (daysOverdue <= 90) {
+          ageBucket = "61-90";
+        } else {
+          ageBucket = "90+";
+        }
+
+        return {
+          billNumber: bill.billNumber,
+          supplierId: bill.supplierId,
+          supplierName: (bill.supplierId as any)?.displayName || "Unknown",
+          billDate: bill.billDate,
+          dueDate: bill.dueDate,
+          totalAmount: bill.totalAmount,
+          amountPaid: bill.amountPaid || 0,
+          balanceDue: bill.balanceDue,
+          daysOverdue,
+          ageBucket,
+        };
+      });
+
+      // Group by supplier
+      const supplierMap = new Map<
+        string,
+        {
+          supplierId: string;
+          supplierName: string;
+          bills: typeof billsWithAge;
+          totals: {
+            current: number;
+            days1to30: number;
+            days31to60: number;
+            days61to90: number;
+            days90plus: number;
+            total: number;
+          };
+        }
+      >();
+
+      for (const bill of billsWithAge) {
+        const supplierId =
+          (bill.supplierId as any)?._id?.toString() || "unknown";
+        if (!supplierMap.has(supplierId)) {
+          supplierMap.set(supplierId, {
+            supplierId,
+            supplierName: bill.supplierName,
+            bills: [],
+            totals: {
+              current: 0,
+              days1to30: 0,
+              days31to60: 0,
+              days61to90: 0,
+              days90plus: 0,
+              total: 0,
+            },
+          });
+        }
+
+        const supplier = supplierMap.get(supplierId)!;
+        supplier.bills.push(bill);
+
+        // Add to bucket totals
+        switch (bill.ageBucket) {
+          case "Current":
+            supplier.totals.current += bill.balanceDue;
+            break;
+          case "1-30":
+            supplier.totals.days1to30 += bill.balanceDue;
+            break;
+          case "31-60":
+            supplier.totals.days31to60 += bill.balanceDue;
+            break;
+          case "61-90":
+            supplier.totals.days61to90 += bill.balanceDue;
+            break;
+          case "90+":
+            supplier.totals.days90plus += bill.balanceDue;
+            break;
+        }
+        supplier.totals.total += bill.balanceDue;
+      }
+
+      // Calculate grand totals
+      const grandTotals = {
+        current: 0,
+        days1to30: 0,
+        days31to60: 0,
+        days61to90: 0,
+        days90plus: 0,
+        total: 0,
+      };
+
+      for (const supplier of supplierMap.values()) {
+        grandTotals.current += supplier.totals.current;
+        grandTotals.days1to30 += supplier.totals.days1to30;
+        grandTotals.days31to60 += supplier.totals.days31to60;
+        grandTotals.days61to90 += supplier.totals.days61to90;
+        grandTotals.days90plus += supplier.totals.days90plus;
+        grandTotals.total += supplier.totals.total;
+      }
+
+      return {
+        asOfDate,
+        suppliers: Array.from(supplierMap.values()),
+        grandTotals,
+        summary: {
+          totalBills: billsWithAge.length,
+          totalSuppliers: supplierMap.size,
+          totalOutstanding: grandTotals.total,
+        },
+      };
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "generate-ap-aging-report",
         companyId,
       });
       throw error;

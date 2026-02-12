@@ -49,6 +49,9 @@ export interface IPayment {
   billIds: Types.ObjectId[]; // Array of bills being paid (deprecated - use allocations)
   bankAccountId: Types.ObjectId; // Reference to Account (asset account)
   notes?: string;
+  status: "COMPLETED" | "VOIDED"; // Payment status
+  voidedAt?: Date; // When payment was voided
+  voidedBy?: Types.ObjectId; // User who voided the payment
   journalEntryId: Types.ObjectId; // Reference to auto-generated JournalEntry
   createdBy: Types.ObjectId;
   createdAt: Date;
