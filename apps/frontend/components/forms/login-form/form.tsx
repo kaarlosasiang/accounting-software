@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 
 import z from "zod";
-import { userLoginSchema } from "@rrd10-sas/validators";
+import { userLoginSchema } from "@sas/validators";
 
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/lib/contexts/auth-context";

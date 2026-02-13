@@ -14,7 +14,7 @@ COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY apps/backend/package.json apps/backend/package.json
 COPY packages/validators/package.json packages/validators/package.json
 COPY packages/config-eslint/package.json packages/config-eslint/package.json
-RUN pnpm install --no-frozen-lockfile --ignore-scripts -r --filter @rrd10-sas/validators --filter api
+RUN pnpm install --no-frozen-lockfile --ignore-scripts -r --filter @sas/validators --filter api
 
 # Build the validators first, then the api
 FROM base AS build
@@ -27,8 +27,8 @@ COPY --from=deps /workspace/packages/validators/package.json /workspace/packages
 COPY --from=deps /workspace/packages/config-eslint/package.json /workspace/packages/config-eslint/package.json
 COPY packages/validators/ packages/validators/
 COPY apps/backend/ apps/backend/
-RUN pnpm install --no-frozen-lockfile --ignore-scripts -r --filter @rrd10-sas/validators --filter api
-RUN pnpm -r --filter @rrd10-sas/validators --filter api build
+RUN pnpm install --no-frozen-lockfile --ignore-scripts -r --filter @sas/validators --filter api
+RUN pnpm -r --filter @sas/validators --filter api build
 
 # Production runtime with only necessary files
 FROM node:20.14-alpine AS runner
@@ -44,7 +44,7 @@ COPY packages/config-eslint/package.json packages/config-eslint/package.json
 
 # Install production deps scoped to the required workspaces
 RUN npm i -g pnpm@10.8.0 \
-	&& pnpm install --prod --no-frozen-lockfile --ignore-scripts -r --filter @rrd10-sas/validators --filter api
+	&& pnpm install --prod --no-frozen-lockfile --ignore-scripts -r --filter @sas/validators --filter api
 
 # Copy built artifacts
 COPY --from=build /workspace/apps/backend/dist apps/backend/dist

@@ -25,29 +25,31 @@ import {
 } from "@/components/ui/form";
 import { Save, Briefcase, DollarSign } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { inventoryItemSchema, type InventoryItem } from "@rrd10-sas/validators";
+import { inventoryItemSchema, type InventoryItem } from "@sas/validators";
 import { useAccounts } from "@/hooks/use-accounts";
 import { inventoryService } from "@/lib/services/inventory.service";
 import { toast } from "sonner";
 import { z } from "zod";
 
 // Service-specific schema
-const serviceSchema = inventoryItemSchema.pick({
-  sku: true,
-  itemName: true,
-  description: true,
-  unit: true,
-  sellingPrice: true,
-  incomeAccountId: true,
-  salesTaxEnabled: true,
-  salesTaxRate: true,
-  purchaseTaxRate: true,
-  isActive: true,
-}).extend({
-  itemType: z.literal("Service"),
-  category: z.literal("Service"),
-  unit: z.enum(["service", "hour", "session"]),
-});
+const serviceSchema = inventoryItemSchema
+  .pick({
+    sku: true,
+    itemName: true,
+    description: true,
+    unit: true,
+    sellingPrice: true,
+    incomeAccountId: true,
+    salesTaxEnabled: true,
+    salesTaxRate: true,
+    purchaseTaxRate: true,
+    isActive: true,
+  })
+  .extend({
+    itemType: z.literal("Service"),
+    category: z.literal("Service"),
+    unit: z.enum(["service", "hour", "session"]),
+  });
 
 type ServiceFormData = z.infer<typeof serviceSchema>;
 
@@ -89,25 +91,32 @@ export function ServiceForm({
       isActive: true,
     };
 
-if (initialData) {
-        return {
-          ...baseData,
-          sku: initialData.sku || "",
-          itemName: initialData.itemName || "",
-          description: initialData.description || "",
-          unit: initialData.unit === "service" || initialData.unit === "hour" || initialData.unit === "session" 
-            ? initialData.unit 
+    if (initialData) {
+      return {
+        ...baseData,
+        sku: initialData.sku || "",
+        itemName: initialData.itemName || "",
+        description: initialData.description || "",
+        unit:
+          initialData.unit === "service" ||
+          initialData.unit === "hour" ||
+          initialData.unit === "session"
+            ? initialData.unit
             : "service",
-          sellingPrice: initialData.sellingPrice || 0,
-          incomeAccountId: (initialData.incomeAccountId as any)?._id || initialData.incomeAccountId || "",
-          salesTaxEnabled: initialData.salesTaxEnabled || false,
-          salesTaxRate: initialData.salesTaxRate,
-          purchaseTaxRate: initialData.purchaseTaxRate,
-          isActive: initialData.isActive !== undefined ? initialData.isActive : true,
-          itemType: "Service",
-          category: "Service",
-        };
-      }
+        sellingPrice: initialData.sellingPrice || 0,
+        incomeAccountId:
+          (initialData.incomeAccountId as any)?._id ||
+          initialData.incomeAccountId ||
+          "",
+        salesTaxEnabled: initialData.salesTaxEnabled || false,
+        salesTaxRate: initialData.salesTaxRate,
+        purchaseTaxRate: initialData.purchaseTaxRate,
+        isActive:
+          initialData.isActive !== undefined ? initialData.isActive : true,
+        itemType: "Service",
+        category: "Service",
+      };
+    }
 
     return baseData;
   };
@@ -153,10 +162,7 @@ if (initialData) {
 
       if (itemId) {
         // Update existing service
-        response = await inventoryService.updateItem(
-          itemId,
-          serviceData,
-        );
+        response = await inventoryService.updateItem(itemId, serviceData);
       } else {
         // Create new service
         response = await inventoryService.createItem(serviceData);

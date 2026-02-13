@@ -1,1 +1,1 @@
-export * from "ui/components/ui/resizable"
+export * from "ui/components/resizable";

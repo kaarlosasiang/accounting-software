@@ -1,4 +1,4 @@
-const baseConfig = require("@rrd10-sas/config-eslint/node.js");
+const baseConfig = require("@sas/config-eslint/node.js");
 
 module.exports = [
   ...baseConfig,

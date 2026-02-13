@@ -1,7 +1,7 @@
 {
-  "name": "@rrd10-sas/config-eslint",
+  "name": "@sas/config-eslint",
   "version": "1.0.0",
-  "description": "Shared ESLint configuration for RRD10 SAS monorepo",
+  "description": "Shared ESLint configuration for Smart Accounting System monorepo",
   "main": "index.js",
   "files": [
     "index.js",

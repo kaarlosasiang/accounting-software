@@ -1,4 +1,4 @@
-import dbConnection from './db.js';
+import dbConnection from "./db.js";
 
 import "./env.js";
 
@@ -18,7 +18,12 @@ const constants = {
   dbName: process.env.DB_NAME || "rrd10-sas",
 
   // JWT (for future auth)
-  jwtSecret: process.env.JWT_SECRET || "your-super-secret-jwt-key",
+  jwtSecret: (() => {
+    if (process.env.NODE_ENV === "production" && !process.env.JWT_SECRET) {
+      throw new Error("CRITICAL: JWT_SECRET is required in production");
+    }
+    return process.env.JWT_SECRET || "dev-jwt-secret-CHANGE-IN-PRODUCTION";
+  })(),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
 
   // Logging
@@ -33,7 +38,17 @@ const constants = {
     "http://localhost:3000",
 
   // Better Auth
-  betterAuthSecret: process.env.BETTER_AUTH_SECRET || "dev-better-auth-secret",
+  betterAuthSecret: (() => {
+    if (
+      process.env.NODE_ENV === "production" &&
+      !process.env.BETTER_AUTH_SECRET
+    ) {
+      throw new Error("CRITICAL: BETTER_AUTH_SECRET is required in production");
+    }
+    return (
+      process.env.BETTER_AUTH_SECRET || "dev-better-auth-secret-min-32-chars"
+    );
+  })(),
   betterAuthUrl:
     process.env.BETTER_AUTH_URL ||
     `${process.env.API_BASE_URL || `http://localhost:${Number(process.env.PORT) || 4000}`}/api/v1/auth`,

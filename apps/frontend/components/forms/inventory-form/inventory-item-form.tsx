@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/utils";
-import { inventoryItemSchema, type InventoryItem } from "@rrd10-sas/validators";
+import { inventoryItemSchema, type InventoryItem } from "@sas/validators";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { inventoryService } from "@/lib/services/inventory.service";

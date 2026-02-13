@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import {
   subscriptionActivationSchema,
   subscriptionCancellationSchema,
-} from "@rrd10-sas/validators";
+} from "@sas/validators";
 
 import subscriptionService from "./subscriptionService.js";
 
@@ -28,7 +28,7 @@ const subscriptionController = {
 
       const result = await subscriptionService.activateSubscription(
         validationResult.data.userId,
-        validationResult.data.planId
+        validationResult.data.planId,
       );
 
       if (result.matchedCount === 0) {
@@ -105,7 +105,7 @@ const subscriptionController = {
       }
 
       const result = await subscriptionService.cancelSubscription(
-        validationResult.data.userId
+        validationResult.data.userId,
       );
 
       if (result.matchedCount === 0) {

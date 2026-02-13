@@ -2,6 +2,8 @@ import { Router } from "express";
 import {
   recordPaymentReceived,
   getPaymentsReceived,
+  recordPaymentMade,
+  getPaymentsMade,
   getCustomerPayments,
   getPaymentById,
   suggestPaymentAllocations,
@@ -24,6 +26,18 @@ paymentRoutes.post("/received", recordPaymentReceived);
  * Get all payments received for a company
  */
 paymentRoutes.get("/received", getPaymentsReceived);
+
+/**
+ * POST /api/v1/payments/made
+ * Record a new payment made to a supplier
+ */
+paymentRoutes.post("/made", recordPaymentMade);
+
+/**
+ * GET /api/v1/payments/made
+ * Get all payments made for a company
+ */
+paymentRoutes.get("/made", getPaymentsMade);
 
 /**
  * POST /api/v1/payments/suggest-allocations

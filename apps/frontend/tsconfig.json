@@ -22,7 +22,7 @@
     "paths": {
       "@/*": ["./*"],
       "ui/*": ["../../packages/ui/*"],
-      "@ui/*": ["../../packages/ui/components/ui/*"]
+      "@ui/*": ["../../packages/ui/components/*"]
     }
   },
   "include": [

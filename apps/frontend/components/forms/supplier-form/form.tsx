@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import {
   supplierSchema,
   type Supplier as SupplierSchemaType,
-} from "@rrd10-sas/validators";
+} from "@sas/validators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -94,7 +94,7 @@ export function SupplierForm({
       Object.keys(values).forEach((key) => {
         form.setValue(
           key as keyof SupplierForm,
-          values[key as keyof SupplierForm] as any
+          values[key as keyof SupplierForm] as any,
         );
       });
     }

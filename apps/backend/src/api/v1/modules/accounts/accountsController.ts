@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { accountSchema } from "@rrd10-sas/validators";
+import { accountSchema } from "@sas/validators";
 import accountsService from "./accountsService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
@@ -62,7 +62,7 @@ const accountsController = {
 
       const accounts = await accountsService.getAccountsByType(
         companyId,
-        accountType
+        accountType,
       );
 
       return res.status(200).json({
@@ -152,7 +152,7 @@ const accountsController = {
 
       const account = await accountsService.createAccount(
         companyId,
-        validationResult.data
+        validationResult.data,
       );
 
       return res.status(201).json({
@@ -203,7 +203,7 @@ const accountsController = {
       const account = await accountsService.updateAccount(
         companyId,
         id,
-        validationResult.data
+        validationResult.data,
       );
 
       return res.status(200).json({
@@ -290,10 +290,7 @@ const accountsController = {
         });
       }
 
-      const balance = await accountsService.getAccountBalance(
-        companyId,
-        id
-      );
+      const balance = await accountsService.getAccountBalance(companyId, id);
 
       return res.status(200).json({
         success: true,
@@ -377,9 +374,8 @@ const accountsController = {
         });
       }
 
-      const chartOfAccounts = await accountsService.getChartOfAccounts(
-        companyId
-      );
+      const chartOfAccounts =
+        await accountsService.getChartOfAccounts(companyId);
 
       return res.status(200).json({
         success: true,

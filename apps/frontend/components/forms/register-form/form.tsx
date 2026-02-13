@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { userRegistrationSchema } from "@rrd10-sas/validators";
+import { userRegistrationSchema } from "@sas/validators";
 
 type FormValues = z.infer<typeof userRegistrationSchema> & {
   companyId?: string;
@@ -274,8 +274,8 @@ export function SignupForm({
           </Field>
         </FieldGroup>
         {/* Social Login */}
-          <AuthDivider />
-          <GoogleSignInButton callbackURL="/dashboard" mode="signup" />
+        <AuthDivider />
+        <GoogleSignInButton callbackURL="/dashboard" mode="signup" />
       </form>
       <FieldDescription className="px-6 text-center text-sm">
         By clicking continue, you agree to our{" "}

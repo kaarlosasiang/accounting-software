@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { inventoryItemSchema } from "@rrd10-sas/validators";
+import { inventoryItemSchema } from "@sas/validators";
 import inventoryService from "./inventoryService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
@@ -17,7 +17,7 @@ const inventoryController = {
   getAllItems: async (req: Request, res: Response) => {
     try {
       const companyId = getCompanyId(req);
-      console.log("Fetched companyId:", companyId);
+      logger.debug("Fetched companyId for inventory", { companyId });
       if (!companyId) {
         return res.status(401).json({
           success: false,
@@ -311,13 +311,26 @@ const inventoryController = {
       }
 
       // Create filtered data object that matches the service expectations
-      const validUnits = ["pcs", "kg", "sack", "box", "pack", "bottle", "can", "set", "bundle", "liter"] as const;
+      const validUnits = [
+        "pcs",
+        "kg",
+        "sack",
+        "box",
+        "pack",
+        "bottle",
+        "can",
+        "set",
+        "bundle",
+        "liter",
+      ] as const;
       const filteredData = {
         sku: validationResult.data.sku,
         itemName: validationResult.data.itemName,
         description: validationResult.data.description,
         category: validationResult.data.category as "Food" | "Non-Food",
-        unit: (validUnits.includes(validationResult.data.unit as any) ? validationResult.data.unit : "pcs") as any,
+        unit: (validUnits.includes(validationResult.data.unit as any)
+          ? validationResult.data.unit
+          : "pcs") as any,
         quantityOnHand: validationResult.data.quantityOnHand,
         reorderLevel: validationResult.data.reorderLevel,
         unitCost: validationResult.data.unitCost,
@@ -332,10 +345,7 @@ const inventoryController = {
         isActive: validationResult.data.isActive,
       };
 
-      const item = await inventoryService.createItem(
-        companyId,
-        filteredData,
-      );
+      const item = await inventoryService.createItem(companyId, filteredData);
 
       return res.status(201).json({
         success: true,
@@ -400,27 +410,59 @@ const inventoryController = {
       }
 
       // Create filtered data object that matches the service expectations
-      const validUnits = ["pcs", "kg", "sack", "box", "pack", "bottle", "can", "set", "bundle", "liter"] as const;
+      const validUnits = [
+        "pcs",
+        "kg",
+        "sack",
+        "box",
+        "pack",
+        "bottle",
+        "can",
+        "set",
+        "bundle",
+        "liter",
+      ] as const;
       const filteredData: any = {};
-      if (validationResult.data.sku !== undefined) filteredData.sku = validationResult.data.sku;
-      if (validationResult.data.itemName !== undefined) filteredData.itemName = validationResult.data.itemName;
-      if (validationResult.data.description !== undefined) filteredData.description = validationResult.data.description;
-      if (validationResult.data.category !== undefined) filteredData.category = validationResult.data.category;
+      if (validationResult.data.sku !== undefined)
+        filteredData.sku = validationResult.data.sku;
+      if (validationResult.data.itemName !== undefined)
+        filteredData.itemName = validationResult.data.itemName;
+      if (validationResult.data.description !== undefined)
+        filteredData.description = validationResult.data.description;
+      if (validationResult.data.category !== undefined)
+        filteredData.category = validationResult.data.category;
       if (validationResult.data.unit !== undefined) {
-        filteredData.unit = (validUnits.includes(validationResult.data.unit as any) ? validationResult.data.unit : "pcs") as any;
+        filteredData.unit = (
+          validUnits.includes(validationResult.data.unit as any)
+            ? validationResult.data.unit
+            : "pcs"
+        ) as any;
       }
-      if (validationResult.data.quantityOnHand !== undefined) filteredData.quantityOnHand = validationResult.data.quantityOnHand;
-      if (validationResult.data.reorderLevel !== undefined) filteredData.reorderLevel = validationResult.data.reorderLevel;
-      if (validationResult.data.unitCost !== undefined) filteredData.unitCost = validationResult.data.unitCost;
-      if (validationResult.data.sellingPrice !== undefined) filteredData.sellingPrice = validationResult.data.sellingPrice;
-      if (validationResult.data.inventoryAccountId !== undefined) filteredData.inventoryAccountId = validationResult.data.inventoryAccountId;
-      if (validationResult.data.cogsAccountId !== undefined) filteredData.cogsAccountId = validationResult.data.cogsAccountId;
-      if (validationResult.data.incomeAccountId !== undefined) filteredData.incomeAccountId = validationResult.data.incomeAccountId;
-      if (validationResult.data.supplierId !== undefined) filteredData.supplierId = validationResult.data.supplierId;
-      if (validationResult.data.salesTaxEnabled !== undefined) filteredData.salesTaxEnabled = validationResult.data.salesTaxEnabled;
-      if (validationResult.data.salesTaxRate !== undefined) filteredData.salesTaxRate = validationResult.data.salesTaxRate;
-      if (validationResult.data.purchaseTaxRate !== undefined) filteredData.purchaseTaxRate = validationResult.data.purchaseTaxRate;
-      if (validationResult.data.isActive !== undefined) filteredData.isActive = validationResult.data.isActive;
+      if (validationResult.data.quantityOnHand !== undefined)
+        filteredData.quantityOnHand = validationResult.data.quantityOnHand;
+      if (validationResult.data.reorderLevel !== undefined)
+        filteredData.reorderLevel = validationResult.data.reorderLevel;
+      if (validationResult.data.unitCost !== undefined)
+        filteredData.unitCost = validationResult.data.unitCost;
+      if (validationResult.data.sellingPrice !== undefined)
+        filteredData.sellingPrice = validationResult.data.sellingPrice;
+      if (validationResult.data.inventoryAccountId !== undefined)
+        filteredData.inventoryAccountId =
+          validationResult.data.inventoryAccountId;
+      if (validationResult.data.cogsAccountId !== undefined)
+        filteredData.cogsAccountId = validationResult.data.cogsAccountId;
+      if (validationResult.data.incomeAccountId !== undefined)
+        filteredData.incomeAccountId = validationResult.data.incomeAccountId;
+      if (validationResult.data.supplierId !== undefined)
+        filteredData.supplierId = validationResult.data.supplierId;
+      if (validationResult.data.salesTaxEnabled !== undefined)
+        filteredData.salesTaxEnabled = validationResult.data.salesTaxEnabled;
+      if (validationResult.data.salesTaxRate !== undefined)
+        filteredData.salesTaxRate = validationResult.data.salesTaxRate;
+      if (validationResult.data.purchaseTaxRate !== undefined)
+        filteredData.purchaseTaxRate = validationResult.data.purchaseTaxRate;
+      if (validationResult.data.isActive !== undefined)
+        filteredData.isActive = validationResult.data.isActive;
 
       const item = await inventoryService.updateItem(
         companyId,

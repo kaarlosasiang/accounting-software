@@ -236,6 +236,30 @@ export const paymentService = {
   },
 
   /**
+   * Get all payments made for a company
+   */
+  async getPaymentsMade(companyId: string) {
+    try {
+      const payments = await Payment.find({
+        companyId,
+        paymentType: PaymentType.MADE,
+      })
+        .populate("supplierId", "supplierName displayName email")
+        .populate("bankAccountId", "accountCode accountName")
+        .populate("createdBy", "first_name last_name email")
+        .sort({ paymentDate: -1 });
+
+      return payments;
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "getPaymentsMade",
+        companyId,
+      });
+      throw error;
+    }
+  },
+
+  /**
    * Get payments for a specific customer
    */
   async getCustomerPayments(companyId: string, customerId: string) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -16,11 +17,152 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Download, Calendar, TrendingUp, TrendingDown } from "lucide-react";
+import { Download, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/utils";
+import { apiFetch } from "@/lib/config/api-client";
+
+interface CashFlowItem {
+  accountName: string;
+  accountCode: string;
+  change?: number;
+  cashEffect?: number;
+  purchases?: number;
+  sales?: number;
+  netCashEffect?: number;
+  increases?: number;
+  decreases?: number;
+}
+
+interface CashFlowStatementData {
+  period: {
+    startDate: string;
+    endDate: string;
+  };
+  operatingActivities: {
+    netIncome: number;
+    adjustments: CashFlowItem[];
+    total: number;
+  };
+  investingActivities: {
+    items: CashFlowItem[];
+    total: number;
+  };
+  financingActivities: {
+    items: CashFlowItem[];
+    total: number;
+  };
+  summary: {
+    netCashFlow: number;
+    beginningCash: number;
+    endingCash: number;
+    calculatedEndingCash: number;
+  };
+}
 
 export default function CashFlowPage() {
+  const [data, setData] = useState<CashFlowStatementData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState<string>("ytd");
+
+  const getDateRange = () => {
+    const endDate = new Date();
+    let startDate = new Date();
+
+    switch (period) {
+      case "ytd":
+        startDate = new Date(endDate.getFullYear(), 0, 1);
+        break;
+      case "month":
+        startDate = new Date(endDate.getFullYear(), endDate.getMonth(), 1);
+        break;
+      case "quarter":
+        const quarter = Math.floor(endDate.getMonth() / 3);
+        startDate = new Date(endDate.getFullYear(), quarter * 3, 1);
+        break;
+      default:
+        startDate = new Date(endDate.getFullYear(), 0, 1);
+    }
+
+    return {
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+    };
+  };
+
+  useEffect(() => {
+    async function fetchCashFlow() {
+      setLoading(true);
+      setError(null);
+      try {
+        const { startDate, endDate } = getDateRange();
+        const result = await apiFetch<{
+          success: boolean;
+          data: CashFlowStatementData;
+        }>(`/reports/cash-flow?startDate=${startDate}&endDate=${endDate}`);
+        setData(result.data);
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load cash flow statement",
+        );
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCashFlow();
+  }, [period]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+        <p className="text-destructive">Error: {error}</p>
+        <Button onClick={() => window.location.reload()}>Retry</Button>
+      </div>
+    );
+  }
+
+  if (!data) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <p className="text-muted-foreground">No data available</p>
+      </div>
+    );
+  }
+
+  // Calculate totals for summary cards
+  const totalInflows =
+    (data.operatingActivities.total > 0 ? data.operatingActivities.total : 0) +
+    (data.investingActivities.total > 0 ? data.investingActivities.total : 0) +
+    (data.financingActivities.total > 0 ? data.financingActivities.total : 0);
+
+  const totalOutflows =
+    Math.abs(
+      data.operatingActivities.total < 0 ? data.operatingActivities.total : 0,
+    ) +
+    Math.abs(
+      data.investingActivities.total < 0 ? data.investingActivities.total : 0,
+    ) +
+    Math.abs(
+      data.financingActivities.total < 0 ? data.financingActivities.total : 0,
+    );
+
+  const totalActivity = totalInflows + totalOutflows;
+  const inflowPercentage =
+    totalActivity > 0 ? (totalInflows / totalActivity) * 100 : 50;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -33,15 +175,14 @@ export default function CashFlowPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select defaultValue="2025">
-            <SelectTrigger className="w-[120px]">
-              <Calendar className="mr-2 h-4 w-4" />
-              <SelectValue placeholder="Year" />
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2025">2025</SelectItem>
-              <SelectItem value="2024">2024</SelectItem>
-              <SelectItem value="2023">2023</SelectItem>
+              <SelectItem value="ytd">Year to Date</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+              <SelectItem value="quarter">This Quarter</SelectItem>
             </SelectContent>
           </Select>
           <Button variant="outline">
@@ -62,11 +203,11 @@ export default function CashFlowPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(167500)}
+              {formatCurrency(totalInflows)}
             </div>
-            <Progress value={75} className="mt-2 h-2" />
+            <Progress value={inflowPercentage} className="mt-2 h-2" />
             <p className="text-xs text-muted-foreground mt-2">
-              75% of total activity
+              {inflowPercentage.toFixed(0)}% of total activity
             </p>
           </CardContent>
         </Card>
@@ -79,11 +220,11 @@ export default function CashFlowPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(55250)}
+              {formatCurrency(totalOutflows)}
             </div>
-            <Progress value={25} className="mt-2 h-2" />
+            <Progress value={100 - inflowPercentage} className="mt-2 h-2" />
             <p className="text-xs text-muted-foreground mt-2">
-              25% of total activity
+              {(100 - inflowPercentage).toFixed(0)}% of total activity
             </p>
           </CardContent>
         </Card>
@@ -92,22 +233,32 @@ export default function CashFlowPage() {
             <CardTitle className="text-sm font-medium">Net Cash Flow</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(112250)}
+            <div
+              className={`text-2xl font-bold ${
+                data.summary.netCashFlow >= 0
+                  ? "text-green-600"
+                  : "text-red-600"
+              }`}
+            >
+              {formatCurrency(data.summary.netCashFlow)}
             </div>
             <p className="text-xs text-muted-foreground mt-2">
-              Positive cash flow
+              {data.summary.netCashFlow >= 0
+                ? "Positive cash flow"
+                : "Negative cash flow"}
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Cash Balance</CardTitle>
+            <CardTitle className="text-sm font-medium">Ending Cash</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(85200)}</div>
+            <div className="text-2xl font-bold">
+              {formatCurrency(data.summary.endingCash)}
+            </div>
             <p className="text-xs text-muted-foreground mt-2">
-              As of Nov 20, 2025
+              As of {new Date(data.period.endDate).toLocaleDateString()}
             </p>
           </CardContent>
         </Card>
@@ -115,10 +266,12 @@ export default function CashFlowPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Cash Flow Statement - Year 2025</CardTitle>
+          <CardTitle>
+            Cash Flow Statement - {new Date().getFullYear()}
+          </CardTitle>
           <CardDescription>
-            Detailed breakdown of cash movements across operating, investing,
-            and financing activities
+            {new Date(data.period.startDate).toLocaleDateString()} -{" "}
+            {new Date(data.period.endDate).toLocaleDateString()}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -133,80 +286,66 @@ export default function CashFlowPage() {
                   <TableBody>
                     <TableRow className="hover:bg-muted/50">
                       <TableCell>Net Income</TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(75100)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow>
                       <TableCell
-                        colSpan={2}
-                        className="pt-4 pb-2 text-sm font-semibold"
+                        className={`text-right font-medium ${
+                          data.operatingActivities.netIncome >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
                       >
-                        Adjustments to reconcile net income:
+                        {formatCurrency(data.operatingActivities.netIncome)}
                       </TableCell>
                     </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell className="pl-8">
-                        Depreciation and Amortization
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(20000)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell className="pl-8">
-                        Decrease in Accounts Receivable
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(8500)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell className="pl-8">
-                        Increase in Inventory
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
-                        ({formatCurrency(5200)})
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell className="pl-8">
-                        Increase in Prepaid Expenses
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
-                        ({formatCurrency(2000)})
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell className="pl-8">
-                        Increase in Accounts Payable
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(4500)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell className="pl-8">
-                        Increase in Accrued Expenses
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(3150)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell className="pl-8">
-                        Increase in Unearned Revenue
-                      </TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(7500)}
-                      </TableCell>
-                    </TableRow>
+
+                    {data.operatingActivities.adjustments.length > 0 && (
+                      <>
+                        <TableRow>
+                          <TableCell
+                            colSpan={2}
+                            className="pt-4 pb-2 text-sm font-semibold"
+                          >
+                            Adjustments to reconcile net income:
+                          </TableCell>
+                        </TableRow>
+                        {data.operatingActivities.adjustments.map((item) => (
+                          <TableRow
+                            key={item.accountCode}
+                            className="hover:bg-muted/50"
+                          >
+                            <TableCell className="pl-8">
+                              {item.accountName}
+                              {item.change !== undefined && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  (Change: {formatCurrency(item.change)})
+                                </span>
+                              )}
+                            </TableCell>
+                            <TableCell
+                              className={`text-right ${
+                                (item.cashEffect ?? 0) >= 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {formatCurrency(item.cashEffect ?? 0)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </>
+                    )}
+
                     <TableRow className="border-t-2 bg-blue-50 dark:bg-blue-950/20">
                       <TableCell className="font-bold">
-                        Net Cash Provided by Operating Activities
+                        Net Cash from Operating Activities
                       </TableCell>
-                      <TableCell className="text-right font-bold text-blue-600">
-                        {formatCurrency(111550)}
+                      <TableCell
+                        className={`text-right font-bold ${
+                          data.operatingActivities.total >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {formatCurrency(data.operatingActivities.total)}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -215,43 +354,67 @@ export default function CashFlowPage() {
             </div>
 
             {/* Investing Activities */}
-            <div className="pt-6 border-t">
+            <div>
               <h3 className="text-lg font-bold mb-4 text-purple-600">
                 CASH FLOWS FROM INVESTING ACTIVITIES
               </h3>
               <div className="ml-4">
                 <Table>
                   <TableBody>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Purchase of Property and Equipment</TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
-                        ({formatCurrency(25000)})
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Purchase of Furniture and Fixtures</TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
-                        ({formatCurrency(8000)})
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Investment in Intangible Assets</TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
-                        ({formatCurrency(10000)})
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Proceeds from Sale of Equipment</TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(5000)}
-                      </TableCell>
-                    </TableRow>
+                    {data.investingActivities.items.length > 0 ? (
+                      data.investingActivities.items.map((item) => (
+                        <TableRow
+                          key={item.accountCode}
+                          className="hover:bg-muted/50"
+                        >
+                          <TableCell>
+                            {item.accountName}
+                            {item.purchases !== undefined &&
+                              item.purchases > 0 && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  (Purchases: {formatCurrency(item.purchases)})
+                                </span>
+                              )}
+                            {item.sales !== undefined && item.sales > 0 && (
+                              <span className="text-xs text-muted-foreground ml-2">
+                                (Sales: {formatCurrency(item.sales)})
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell
+                            className={`text-right ${
+                              (item.netCashEffect ?? 0) >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {formatCurrency(item.netCashEffect ?? 0)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={2}
+                          className="text-center text-muted-foreground"
+                        >
+                          No investing activities for this period
+                        </TableCell>
+                      </TableRow>
+                    )}
+
                     <TableRow className="border-t-2 bg-purple-50 dark:bg-purple-950/20">
                       <TableCell className="font-bold">
-                        Net Cash Used in Investing Activities
+                        Net Cash from Investing Activities
                       </TableCell>
-                      <TableCell className="text-right font-bold text-purple-600">
-                        ({formatCurrency(38000)})
+                      <TableCell
+                        className={`text-right font-bold ${
+                          data.investingActivities.total >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {formatCurrency(data.investingActivities.total)}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -260,43 +423,68 @@ export default function CashFlowPage() {
             </div>
 
             {/* Financing Activities */}
-            <div className="pt-6 border-t">
+            <div>
               <h3 className="text-lg font-bold mb-4 text-orange-600">
                 CASH FLOWS FROM FINANCING ACTIVITIES
               </h3>
               <div className="ml-4">
                 <Table>
                   <TableBody>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Proceeds from Long-term Debt</TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(40000)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Repayment of Short-term Debt</TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
-                        ({formatCurrency(10000)})
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Owner Contributions</TableCell>
-                      <TableCell className="text-right font-medium text-green-600">
-                        {formatCurrency(25000)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Owner Draws</TableCell>
-                      <TableCell className="text-right font-medium text-red-600">
-                        ({formatCurrency(16300)})
-                      </TableCell>
-                    </TableRow>
+                    {data.financingActivities.items.length > 0 ? (
+                      data.financingActivities.items.map((item) => (
+                        <TableRow
+                          key={item.accountCode}
+                          className="hover:bg-muted/50"
+                        >
+                          <TableCell>
+                            {item.accountName}
+                            {item.increases !== undefined &&
+                              item.increases > 0 && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  (Increases: {formatCurrency(item.increases)})
+                                </span>
+                              )}
+                            {item.decreases !== undefined &&
+                              item.decreases > 0 && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  (Decreases: {formatCurrency(item.decreases)})
+                                </span>
+                              )}
+                          </TableCell>
+                          <TableCell
+                            className={`text-right ${
+                              (item.netCashEffect ?? 0) >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {formatCurrency(item.netCashEffect ?? 0)}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={2}
+                          className="text-center text-muted-foreground"
+                        >
+                          No financing activities for this period
+                        </TableCell>
+                      </TableRow>
+                    )}
+
                     <TableRow className="border-t-2 bg-orange-50 dark:bg-orange-950/20">
                       <TableCell className="font-bold">
-                        Net Cash Provided by Financing Activities
+                        Net Cash from Financing Activities
                       </TableCell>
-                      <TableCell className="text-right font-bold text-orange-600">
-                        {formatCurrency(38700)}
+                      <TableCell
+                        className={`text-right font-bold ${
+                          data.financingActivities.total >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {formatCurrency(data.financingActivities.total)}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -304,119 +492,46 @@ export default function CashFlowPage() {
               </div>
             </div>
 
-            {/* Net Change in Cash */}
-            <div className="pt-8 border-t-4">
+            {/* Summary */}
+            <div className="pt-4 border-t-4">
               <Table>
                 <TableBody>
-                  <TableRow className="hover:bg-muted/50">
+                  <TableRow className="bg-muted/30">
                     <TableCell className="font-semibold">
-                      Net Increase in Cash and Cash Equivalents
+                      Beginning Cash Balance
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-green-600">
-                      {formatCurrency(112250)}.00
-                    </TableCell>
-                  </TableRow>
-                  <TableRow className="hover:bg-muted/50">
-                    <TableCell>
-                      Cash and Cash Equivalents at Beginning of Period
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      ({formatCurrency(27050)})
+                    <TableCell className="text-right font-semibold">
+                      {formatCurrency(data.summary.beginningCash)}
                     </TableCell>
                   </TableRow>
-                  <TableRow className="border-t-2 bg-primary/10">
-                    <TableCell className="text-lg font-bold">
-                      Cash and Cash Equivalents at End of Period
+                  <TableRow className="bg-primary/5">
+                    <TableCell className="text-xl font-bold">
+                      Net Change in Cash
                     </TableCell>
-                    <TableCell className="text-right text-lg font-bold text-primary">
-                      {formatCurrency(85200)}.00
+                    <TableCell
+                      className={`text-right text-xl font-bold ${
+                        data.summary.netCashFlow >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {formatCurrency(data.summary.netCashFlow)}
+                    </TableCell>
+                  </TableRow>
+                  <TableRow className="border-t-2 bg-blue-50 dark:bg-blue-950/20">
+                    <TableCell className="text-xl font-bold">
+                      Ending Cash Balance
+                    </TableCell>
+                    <TableCell className="text-right text-xl font-bold text-blue-600">
+                      {formatCurrency(data.summary.endingCash)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
             </div>
-
-            {/* Supplemental Disclosures */}
-            <div className="pt-6 border-t">
-              <h4 className="text-sm font-semibold mb-3">
-                SUPPLEMENTAL DISCLOSURES
-              </h4>
-              <div className="ml-4 text-sm space-y-2">
-                <Table>
-                  <TableBody>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Cash Paid for Interest</TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(3200)}
-                      </TableCell>
-                    </TableRow>
-                    <TableRow className="hover:bg-muted/50">
-                      <TableCell>Cash Paid for Income Taxes</TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(18750)}
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Key Metrics */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              Operating Cash Flow Ratio
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">3.11</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Operating Cash Flow / Current Liabilities
-            </p>
-            <p className="text-xs text-green-600 mt-1">
-              ✓ Strong ability to cover short-term obligations
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              Free Cash Flow
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(73550)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Operating Cash Flow - Capital Expenditures
-            </p>
-            <p className="text-xs text-blue-600 mt-1">
-              ✓ Available for growth and dividends
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              Cash Conversion Cycle
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">32 days</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Time to convert investments back to cash
-            </p>
-            <p className="text-xs text-green-600 mt-1">
-              ✓ Efficient working capital management
-            </p>
-          </CardContent>
-        </Card>
-      </div>
     </div>
   );
 }

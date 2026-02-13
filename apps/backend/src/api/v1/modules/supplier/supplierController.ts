@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { supplierSchema } from "@rrd10-sas/validators";
+import { supplierSchema } from "@sas/validators";
 import supplierService from "./supplierService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
@@ -59,9 +59,7 @@ const supplierController = {
         });
       }
 
-      const suppliers = await supplierService.getActiveSuppliers(
-        companyId
-      );
+      const suppliers = await supplierService.getActiveSuppliers(companyId);
 
       return res.status(200).json({
         success: true,
@@ -96,10 +94,7 @@ const supplierController = {
         });
       }
 
-      const supplier = await supplierService.getSupplierById(
-        companyId,
-        id
-      );
+      const supplier = await supplierService.getSupplierById(companyId, id);
 
       return res.status(200).json({
         success: true,
@@ -141,10 +136,7 @@ const supplierController = {
         });
       }
 
-      const supplier = await supplierService.getSupplierByCode(
-        companyId,
-        code
-      );
+      const supplier = await supplierService.getSupplierByCode(companyId, code);
 
       return res.status(200).json({
         success: true,
@@ -193,10 +185,7 @@ const supplierController = {
         });
       }
 
-      const suppliers = await supplierService.searchSuppliers(
-        companyId,
-        q
-      );
+      const suppliers = await supplierService.searchSuppliers(companyId, q);
 
       return res.status(200).json({
         success: true,
@@ -242,7 +231,7 @@ const supplierController = {
 
       const supplier = await supplierService.createSupplier(
         companyId,
-        validationResult.data
+        validationResult.data,
       );
 
       return res.status(201).json({
@@ -302,7 +291,7 @@ const supplierController = {
       const supplier = await supplierService.updateSupplier(
         companyId,
         id,
-        validationResult.data
+        validationResult.data,
       );
 
       return res.status(200).json({

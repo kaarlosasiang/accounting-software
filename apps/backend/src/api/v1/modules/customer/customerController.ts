@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { customerSchema } from "@rrd10-sas/validators";
+import { customerSchema } from "@sas/validators";
 import customerService from "./customerService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
@@ -16,7 +16,7 @@ const customerController = {
   getAllCustomers: async (req: Request, res: Response) => {
     try {
       const companyId = getCompanyId(req);
-      console.log("Fetched companyId:", companyId);
+      logger.debug("Fetched companyId for customers", { companyId });
       if (!companyId) {
         return res.status(401).json({
           success: false,
@@ -231,7 +231,7 @@ const customerController = {
 
       const customer = await customerService.createCustomer(
         companyId,
-        validationResult.data
+        validationResult.data,
       );
 
       return res.status(201).json({
@@ -289,7 +289,7 @@ const customerController = {
       const customer = await customerService.updateCustomer(
         companyId,
         id,
-        validationResult.data
+        validationResult.data,
       );
 
       return res.status(200).json({
@@ -384,7 +384,7 @@ const customerController = {
 
       const customer = await customerService.toggleCustomerStatus(
         companyId,
-        id
+        id,
       );
 
       return res.status(200).json({
@@ -441,7 +441,7 @@ const customerController = {
       const customer = await customerService.updateCustomerBalance(
         companyId,
         id,
-        amount
+        amount,
       );
 
       return res.status(200).json({
@@ -496,7 +496,7 @@ const customerController = {
       const result = await customerService.checkCreditAvailability(
         companyId,
         id,
-        amount
+        amount,
       );
 
       return res.status(200).json({

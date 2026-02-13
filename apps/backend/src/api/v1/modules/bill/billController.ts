@@ -3,7 +3,7 @@ import { billService } from "./billService.js";
 import { paymentService } from "../payment/paymentService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
-import { createBillSchema, updateBillSchema } from "@rrd10-sas/validators";
+import { createBillSchema, updateBillSchema } from "@sas/validators";
 
 /**
  * Bill Controller
