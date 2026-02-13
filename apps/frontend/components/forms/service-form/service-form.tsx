@@ -79,15 +79,15 @@ export function ServiceForm({
   const getDefaultValues = (): Partial<ServiceFormData> => {
     const baseData: Partial<ServiceFormData> = {
       itemType: "Service",
-      sku: "",
-      itemName: "",
-      description: "",
+      sku: "SVC-001",
+      itemName: "Catering Service",
+      description: "Full catering service for events and corporate functions",
       category: "Service",
       unit: "service",
-      sellingPrice: 0,
+      sellingPrice: 15000,
       incomeAccountId: "",
-      salesTaxEnabled: false,
-      salesTaxRate: undefined,
+      salesTaxEnabled: true,
+      salesTaxRate: 12,
       isActive: true,
     };
 

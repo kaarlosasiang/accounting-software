@@ -47,24 +47,24 @@ export function SupplierForm({
     };
 
     const baseData: Partial<SupplierSchemaType> = {
-      // supplierCode: "MRT-2025",
-      // supplierName: "Manila Rice Trading Co.",
-      // displayName: "Manila Rice Trading",
-      // email: "accounts@manilarice.com",
-      // phone: "+63 2 1234 5678",
-      // website: "https://www.manilarice.com",
-      // address: {
-      //   street: "123 Rizal Avenue",
-      //   city: "Manila",
-      //   state: "Metro Manila",
-      //   zipCode: "1000",
-      //   country: "Philippines",
-      // },
-      // taxId: "123-456-789-000",
-      // paymentTerms: "Net 30",
-      // openingBalance: 0,
-      // isActive: true,
-      // notes: "Primary rice supplier for food items",
+      supplierCode: "SUP-001",
+      supplierName: "Manila Rice Trading Co.",
+      displayName: "Manila Rice Trading",
+      email: "accounts@manilarice.ph",
+      phone: "+63 2 1234 5678",
+      website: "https://www.manilarice.ph",
+      address: {
+        street: "123 Rizal Avenue",
+        city: "Manila",
+        state: "Metro Manila",
+        zipCode: "1000",
+        country: "Philippines",
+      },
+      taxId: "987-654-321-000",
+      paymentTerms: "Net 30",
+      openingBalance: 0,
+      isActive: true,
+      notes: "Primary rice supplier for food items",
     };
 
     if (initialData) {

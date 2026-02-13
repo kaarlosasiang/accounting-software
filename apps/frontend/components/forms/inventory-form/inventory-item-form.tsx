@@ -81,23 +81,29 @@ export function InventoryItemForm({
     const defaultItemType = propItemType || initialData?.itemType || "Product";
     const baseData: InventoryItem = {
       itemType: defaultItemType,
-      sku: "",
-      itemName: "",
-      description: "",
+      sku: defaultItemType === "Service" ? "SVC-001" : "PROD-001",
+      itemName:
+        defaultItemType === "Service"
+          ? "Consulting Service"
+          : "Premium Rice 25kg",
+      description:
+        defaultItemType === "Service"
+          ? "Professional consulting service"
+          : "Premium grade rice, 25kg sack",
       category: defaultItemType === "Service" ? "Service" : "Food",
-      unit: defaultItemType === "Service" ? "service" : "pcs",
-      quantityOnHand: defaultItemType === "Service" ? 0 : 0,
+      unit: defaultItemType === "Service" ? "service" : "sack",
+      quantityOnHand: defaultItemType === "Service" ? 0 : 100,
       quantityAsOfDate: new Date(),
-      reorderLevel: defaultItemType === "Service" ? 0 : 0,
-      unitCost: defaultItemType === "Service" ? 0 : 0,
-      sellingPrice: 0,
+      reorderLevel: defaultItemType === "Service" ? 0 : 20,
+      unitCost: defaultItemType === "Service" ? 0 : 850,
+      sellingPrice: defaultItemType === "Service" ? 5000 : 1200,
       inventoryAccountId: "",
       cogsAccountId: "",
       incomeAccountId: "",
       supplierId: undefined,
-      salesTaxEnabled: false,
-      salesTaxRate: undefined,
-      purchaseTaxRate: undefined,
+      salesTaxEnabled: true,
+      salesTaxRate: 12,
+      purchaseTaxRate: 12,
       isActive: true,
     } as InventoryItem;
 

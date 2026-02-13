@@ -100,7 +100,7 @@ const companySetupSchema = z.object({
     .min(3, "Company slug must be at least 3 characters")
     .regex(
       /^[a-z0-9-]+$/,
-      "Only lowercase letters, numbers, and hyphens allowed"
+      "Only lowercase letters, numbers, and hyphens allowed",
     ),
   businessType: z.enum([
     "sole proprietorship",
@@ -132,24 +132,24 @@ const companySetupSchema = z.object({
 type FormValues = z.infer<typeof companySetupSchema>;
 
 const defaultValues: FormValues = {
-  companyName: "",
-  companySlug: "",
+  companyName: "AM Fintrass Solutions",
+  companySlug: "am-fintrass-solutions",
   businessType: "corporation",
-  industry: "",
-  companySize: "",
-  description: "",
-  address: "",
-  city: "",
-  state: "",
-  country: "",
-  postalCode: "",
-  taxId: "",
-  registrationNumber: "",
+  industry: "Technology",
+  companySize: "11-50 employees",
+  description: "Cloud-based accounting and financial management solutions",
+  address: "789 BGC Corporate Center",
+  city: "Taguig",
+  state: "Metro Manila",
+  country: "Philippines",
+  postalCode: "1634",
+  taxId: "000-123-456-789",
+  registrationNumber: "SEC-2025-001234",
   currency: "PESO",
-  fiscalYearStart: new Date().toISOString().split("T")[0], // Current date
-  website: "",
-  phone: "",
-  email: "",
+  fiscalYearStart: "2026-01-01",
+  website: "https://amfintrass.com",
+  phone: "+63 2 7777 8888",
+  email: "admin@amfintrass.com",
   logo: "",
   headerText: "",
 };
@@ -380,7 +380,7 @@ export function CompanySetupForm({
                     isCompleted &&
                       "border-primary bg-primary text-primary-foreground",
                     isCurrent && "border-primary scale-110 shadow-lg",
-                    !isCompleted && !isCurrent && "border-muted-foreground/30"
+                    !isCompleted && !isCurrent && "border-muted-foreground/30",
                   )}
                 >
                   {isCompleted ? (
@@ -394,7 +394,7 @@ export function CompanySetupForm({
                     "text-xs font-medium transition-colors hidden sm:block",
                     isCurrent || isCompleted
                       ? "text-foreground"
-                      : "text-muted-foreground"
+                      : "text-muted-foreground",
                   )}
                 >
                   {step.title}
@@ -470,7 +470,7 @@ export function CompanySetupForm({
                   >
                     <SelectTrigger
                       className={cn(
-                        errors.businessType && "border-destructive"
+                        errors.businessType && "border-destructive",
                       )}
                     >
                       <SelectValue placeholder="Select business type" />

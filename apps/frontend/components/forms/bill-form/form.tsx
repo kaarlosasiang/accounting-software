@@ -112,16 +112,16 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       lineItems: [
         {
-          description: "",
-          quantity: 0,
-          unitPrice: 1, // Changed to 1 to avoid validation error
-          amount: 0,
+          description: "Office Supplies - Paper & Ink",
+          quantity: 10,
+          unitPrice: 500,
+          amount: 5000,
           accountId: "",
-          taxRate: 0,
+          taxRate: 12,
         },
       ],
-      taxRate: 0,
-      notes: "",
+      taxRate: 12,
+      notes: "Monthly office supplies order",
       status: "Draft" as const,
     },
   });

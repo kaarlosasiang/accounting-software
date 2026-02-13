@@ -148,8 +148,19 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
       clientEmail: "",
       issueDate: new Date(),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      items: [{ description: "", quantity: "1", rate: "" }],
-      notes: "",
+      items: [
+        {
+          description: "Web Development Services - January 2026",
+          quantity: "40",
+          rate: "2500",
+        },
+        {
+          description: "UI/UX Design Consultation",
+          quantity: "10",
+          rate: "3000",
+        },
+      ],
+      notes: "Thank you for your business!",
       terms: "Payment is due within 30 days of invoice date.",
     },
   });
