@@ -95,6 +95,7 @@ jobs:
                   envs: REGISTRY,IMAGE_NAME
                   script: |
                       set -e
+                      export PATH=$PATH:/usr/local/bin:/usr/bin:/bin
 
                       IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
                       CONTAINER="accounting-api"
