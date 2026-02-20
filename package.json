@@ -30,6 +30,14 @@
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.8.0",
+  "pnpm": {
+    "overrides": {
+      "react": "19.2.4",
+      "react-dom": "19.2.4",
+      "@types/react": "19.2.2",
+      "@types/react-dom": "19.2.3"
+    }
+  },
   "devDependencies": {
     "baseline-browser-mapping": "^2.9.11"
   },

@@ -2,6 +2,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Explicitly scan workspace UI package so Tailwind v4 generates its classes */
+@source "../../../../packages/ui";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
