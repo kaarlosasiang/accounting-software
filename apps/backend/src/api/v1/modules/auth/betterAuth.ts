@@ -39,6 +39,7 @@ export const authServer = betterAuth({
     constants.corsOrigin,
     "https://www.amfintrass.com",
     "https://amfintrass.com",
+    "https://app.fintrass.com",
   ],
   emailAndPassword: {
     enabled: true,
@@ -173,7 +174,7 @@ export const authServer = betterAuth({
         EmailService.sendVerificationOTP({ email, otp, type }).catch(
           (error) => {
             logger.error("Failed to send OTP email", { error, email, type });
-          }
+          },
         );
       },
       otpLength: 6, // 6-digit OTP
