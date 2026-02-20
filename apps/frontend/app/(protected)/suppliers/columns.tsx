@@ -201,6 +201,7 @@ export const columns: ColumnDef<Supplier>[] = [
         onEdit?: (supplier: Supplier) => void;
         onView?: (supplier: Supplier) => void;
         onDelete?: (supplier: Supplier) => void;
+        onRestore?: (supplier: Supplier) => void;
       };
 
       return (
@@ -228,13 +229,23 @@ export const columns: ColumnDef<Supplier>[] = [
               Edit
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => meta.onDelete?.(supplier)}
-              className="cursor-pointer text-red-600"
-            >
-              <Trash className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
+            {supplier.isActive ? (
+              <DropdownMenuItem
+                onClick={() => meta.onDelete?.(supplier)}
+                className="cursor-pointer text-red-600"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Deactivate
+              </DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem
+                onClick={() => meta.onRestore?.(supplier)}
+                className="cursor-pointer text-green-600"
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Restore
+              </DropdownMenuItem>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       );

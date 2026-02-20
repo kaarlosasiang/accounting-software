@@ -14,6 +14,7 @@ import {
   TrendingUp,
   TrendingDown,
   Download,
+  RefreshCw,
 } from "lucide-react";
 import { accountsService, type Account } from "@/lib/services/accounts.service";
 import { toast } from "sonner";
@@ -31,7 +32,8 @@ import { formatCurrency } from "@/lib/format";
 import { DataTable } from "@/components/common/data-table/data-table";
 import { DataTableToolbar } from "@/components/common/data-table/data-table-toolbar";
 import { useDataTable } from "@/hooks/use-data-table";
-import { columns } from "./columns";
+import { createColumns } from "./columns";
+import { useCurrency } from "@/hooks/use-currency";
 
 const accountTypeIcons = {
   Asset: Building,
@@ -44,13 +46,15 @@ const accountTypeIcons = {
 export default function ChartOfAccountsPage() {
   const router = useRouter();
   const { accounts, loading, error, refetch } = useAccounts();
+  const { currency } = useCurrency();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   // Initialize DataTable
   const { table } = useDataTable<Account>({
     data: accounts,
-    columns,
+    columns: createColumns(currency),
     pageCount: Math.max(1, Math.ceil(accounts.length / 10)),
     initialState: {
       sorting: [{ id: "accountCode", desc: false }],
@@ -69,6 +73,74 @@ export default function ChartOfAccountsPage() {
       },
       onDelete: (account: Account) => {
         setDeleteId(account._id);
+      },
+      onArchive: async (account: Account) => {
+        setProcessingId(account._id);
+        try {
+          const result = await accountsService.archiveAccount(account._id);
+          if (result.success) {
+            toast.success(
+              `Account "${account.accountName}" archived successfully`,
+            );
+            refetch();
+          } else {
+            toast.error(result.error || "Failed to archive account");
+          }
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to archive account",
+          );
+        } finally {
+          setProcessingId(null);
+        }
+      },
+      onRestore: async (account: Account) => {
+        setProcessingId(account._id);
+        try {
+          const result = await accountsService.restoreAccount(account._id);
+          if (result.success) {
+            toast.success(
+              `Account "${account.accountName}" restored successfully`,
+            );
+            refetch();
+          } else {
+            toast.error(result.error || "Failed to restore account");
+          }
+        } catch (err) {
+          toast.error(
+            err instanceof Error ? err.message : "Failed to restore account",
+          );
+        } finally {
+          setProcessingId(null);
+        }
+      },
+      onReconcile: async (account: Account) => {
+        setProcessingId(account._id);
+        try {
+          const result = await accountsService.reconcileAccountBalance(
+            account._id,
+          );
+          if (result.success && result.data.reconciled) {
+            const diff = result.data.difference || 0;
+            toast.success(
+              `Account "${account.accountName}" reconciled. ` +
+                `Difference: ${formatCurrency(Math.abs(diff), currency)}`,
+            );
+            refetch();
+          } else if (result.success && !result.data.reconciled) {
+            toast.info(`Account "${account.accountName}" is already in sync`);
+          } else {
+            toast.error("Failed to reconcile account balance");
+          }
+        } catch (err) {
+          toast.error(
+            err instanceof Error
+              ? err.message
+              : "Failed to reconcile account balance",
+          );
+        } finally {
+          setProcessingId(null);
+        }
       },
     },
   });
@@ -149,6 +221,28 @@ export default function ChartOfAccountsPage() {
     link.click();
   };
 
+  const handleReconcileAll = async () => {
+    setProcessingId("reconcile-all");
+    try {
+      const result = await accountsService.reconcileAllAccountBalances();
+      if (result.success) {
+        toast.success(
+          `Reconciled ${result.data.reconciledCount} of ${result.data.totalAccounts} accounts. ` +
+            `Total difference: ${formatCurrency(result.data.totalDifference, currency)}`,
+        );
+        refetch();
+      } else {
+        toast.error("Failed to reconcile accounts");
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to reconcile accounts",
+      );
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -177,7 +271,7 @@ export default function ChartOfAccountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalAssets)}
+              {formatCurrency(totalAssets, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
               {accountsByType.Asset.length} accounts
@@ -193,7 +287,7 @@ export default function ChartOfAccountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalLiabilities)}
+              {formatCurrency(totalLiabilities, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
               {accountsByType.Liability.length} accounts
@@ -207,7 +301,7 @@ export default function ChartOfAccountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalEquity)}
+              {formatCurrency(totalEquity, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
               {accountsByType.Equity.length} accounts
@@ -220,6 +314,20 @@ export default function ChartOfAccountsPage() {
         <CardContent>
           <DataTable table={table}>
             <DataTableToolbar table={table}>
+              <Button
+                variant="outline"
+                size={"sm"}
+                className="font-normal"
+                onClick={handleReconcileAll}
+                disabled={processingId === "reconcile-all"}
+              >
+                <RefreshCw
+                  className={`mr-2 h-4 w-4 text-muted-foreground ${processingId === "reconcile-all" ? "animate-spin" : ""}`}
+                />
+                {processingId === "reconcile-all"
+                  ? "Reconciling..."
+                  : "Reconcile All"}
+              </Button>
               <Button
                 variant="outline"
                 size={"sm"}
@@ -242,8 +350,9 @@ export default function ChartOfAccountsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              account and may affect related transactions.
+              This will permanently delete the account. This action can only be
+              performed on accounts with no transaction history. If the account
+              has transactions, please archive it instead.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

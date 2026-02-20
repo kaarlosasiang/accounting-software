@@ -101,7 +101,7 @@ const PaymentSchema = new Schema<IPayment>(
             (sum, alloc) => sum + alloc.allocatedAmount,
             0,
           );
-          const paymentAmount = this.get('amount') || 0;
+          const paymentAmount = this.get("amount") || 0;
           return Math.abs(totalAllocated - paymentAmount) < 0.01; // Allow for floating point rounding
         },
         message: "Total allocated amount must equal payment amount",
@@ -110,19 +110,13 @@ const PaymentSchema = new Schema<IPayment>(
     customerId: {
       type: Schema.Types.ObjectId,
       ref: "Customer",
-      required: [true, "Customer ID is required"],
+      default: null,
       index: true,
     },
     invoiceIds: {
       type: [Schema.Types.ObjectId],
       ref: "Invoice",
-      required: [true, "At least one invoice is required"],
-      validate: {
-        validator: function (ids: mongoose.Types.ObjectId[]) {
-          return ids && ids.length > 0;
-        },
-        message: "Payment must be applied to at least one invoice",
-      },
+      default: [],
     },
     supplierId: {
       type: Schema.Types.ObjectId,
@@ -147,10 +141,29 @@ const PaymentSchema = new Schema<IPayment>(
       trim: true,
       default: null,
     },
+    status: {
+      type: String,
+      required: [true, "Status is required"],
+      enum: {
+        values: ["COMPLETED", "VOIDED"],
+        message: "Status must be either COMPLETED or VOIDED",
+      },
+      default: "COMPLETED",
+      index: true,
+    },
+    voidedAt: {
+      type: Date,
+      default: null,
+    },
+    voidedBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     journalEntryId: {
       type: Schema.Types.ObjectId,
       ref: "JournalEntry",
-      required: [true, "Journal entry ID is required"],
+      default: null,
       index: true,
     },
     createdBy: {

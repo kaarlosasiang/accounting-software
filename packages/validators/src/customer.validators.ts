@@ -15,7 +15,10 @@ const addressSchema = z.object({
  * Customer Schema for creation
  */
 export const customerSchema = z.object({
-  customerCode: z.string().min(1, "Customer code is required").trim(),
+  customerCode: z.preprocess(
+    (val) => val || undefined,
+    z.string().trim().optional(),
+  ),
   customerName: z.string().min(1, "Customer name is required").trim(),
   displayName: z
     .string()
@@ -24,12 +27,10 @@ export const customerSchema = z.object({
     .transform((val) => val || undefined),
   email: z.string().email("Please enter a valid email").trim().toLowerCase(),
   phone: z.string().min(1, "Phone is required").trim(),
-  website: z
-    .string()
-    .url("Please enter a valid URL")
-    .trim()
-    .optional()
-    .nullable(),
+  website: z.preprocess(
+    (val) => (val === "" ? undefined : val),
+    z.string().url("Please enter a valid URL").trim().optional().nullable(),
+  ),
   billingAddress: addressSchema,
   shippingAddress: addressSchema.optional().nullable(),
   taxId: z.string().min(1, "Tax ID is required").trim(),

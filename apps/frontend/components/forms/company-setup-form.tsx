@@ -100,7 +100,7 @@ const companySetupSchema = z.object({
     .min(3, "Company slug must be at least 3 characters")
     .regex(
       /^[a-z0-9-]+$/,
-      "Only lowercase letters, numbers, and hyphens allowed"
+      "Only lowercase letters, numbers, and hyphens allowed",
     ),
   businessType: z.enum([
     "sole proprietorship",
@@ -132,24 +132,24 @@ const companySetupSchema = z.object({
 type FormValues = z.infer<typeof companySetupSchema>;
 
 const defaultValues: FormValues = {
-  companyName: "",
-  companySlug: "",
-  businessType: "corporation",
-  industry: "",
-  companySize: "",
-  description: "",
-  address: "",
-  city: "",
-  state: "",
-  country: "",
-  postalCode: "",
-  taxId: "",
-  registrationNumber: "",
+  companyName: "Kusina ni Maria",
+  companySlug: "kusina-ni-maria",
+  businessType: "sole proprietorship",
+  industry: "Hospitality",
+  companySize: "1-10 employees",
+  description: "Filipino restaurant and catering services in Makati City",
+  address: "Unit 5, 123 Poblacion Street",
+  city: "Makati",
+  state: "Metro Manila",
+  country: "Philippines",
+  postalCode: "1210",
+  taxId: "123-456-789-000",
+  registrationNumber: "DTI-2026-00567",
   currency: "PESO",
-  fiscalYearStart: new Date().toISOString().split("T")[0], // Current date
+  fiscalYearStart: "2026-01-01",
   website: "",
-  phone: "",
-  email: "",
+  phone: "+63 917 123 4567",
+  email: "maria@kusinanimaria.ph",
   logo: "",
   headerText: "",
 };
@@ -176,6 +176,7 @@ export function CompanySetupForm({
   const { organization } = useOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
+  const [allowSubmit, setAllowSubmit] = useState(false);
 
   const {
     register,
@@ -219,21 +220,26 @@ export function CompanySetupForm({
   const handleNext = async () => {
     const isValid = await validateStep(currentStep);
     if (isValid && currentStep < 3) {
+      setAllowSubmit(false); // Reset submit flag when navigating
       setCurrentStep(currentStep + 1);
     }
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
+      setAllowSubmit(false); // Reset submit flag when navigating
       setCurrentStep(currentStep - 1);
     }
   };
 
+  const handleFinalSubmit = () => {
+    setAllowSubmit(true);
+  };
+
   const onSubmit = async (values: FormValues) => {
-    // Only allow submission on the final step
-    if (currentStep !== 3) {
-      handleNext();
-      return;
+    // Only allow submission on the final step AND if explicitly allowed
+    if (currentStep !== 3 || !allowSubmit) {
+      return; // Prevent accidental submission
     }
 
     if (!organization?.create) {
@@ -380,7 +386,7 @@ export function CompanySetupForm({
                     isCompleted &&
                       "border-primary bg-primary text-primary-foreground",
                     isCurrent && "border-primary scale-110 shadow-lg",
-                    !isCompleted && !isCurrent && "border-muted-foreground/30"
+                    !isCompleted && !isCurrent && "border-muted-foreground/30",
                   )}
                 >
                   {isCompleted ? (
@@ -394,7 +400,7 @@ export function CompanySetupForm({
                     "text-xs font-medium transition-colors hidden sm:block",
                     isCurrent || isCompleted
                       ? "text-foreground"
-                      : "text-muted-foreground"
+                      : "text-muted-foreground",
                   )}
                 >
                   {step.title}
@@ -405,7 +411,16 @@ export function CompanySetupForm({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={handleSubmit(onSubmit)}
+        onKeyDown={(e) => {
+          // Prevent Enter key from submitting the form when in input fields
+          if (e.key === "Enter" && e.target instanceof HTMLInputElement) {
+            e.preventDefault();
+          }
+        }}
+        className="space-y-6"
+      >
         {/* Step 1: Basic Information */}
         {currentStep === 1 && (
           <Card className="animate-in fade-in slide-in-from-right-4 duration-500">
@@ -470,7 +485,7 @@ export function CompanySetupForm({
                   >
                     <SelectTrigger
                       className={cn(
-                        errors.businessType && "border-destructive"
+                        errors.businessType && "border-destructive",
                       )}
                     >
                       <SelectValue placeholder="Select business type" />
@@ -812,6 +827,7 @@ export function CompanySetupForm({
               size="lg"
               className="flex-1 group"
               disabled={isSubmitting}
+              onClick={handleFinalSubmit}
             >
               {isSubmitting ? (
                 <>

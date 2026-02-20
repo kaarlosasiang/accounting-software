@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useOrganization } from "@/hooks/use-organization";
 import {
   MoreHorizontal,
   Plus,
@@ -11,7 +12,10 @@ import {
   Eye,
   ArrowUpCircle,
   ArrowDownCircle,
+  XCircle,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,7 +40,18 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -46,106 +61,172 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatCurrency } from "@/lib/utils";
-
-interface Payment {
-  id: string;
-  paymentNumber: string;
-  paymentDate: string;
-  paymentType: "Received" | "Made";
-  paymentMethod: "Cash" | "Check" | "Bank Transfer" | "Credit Card" | "Other";
-  referenceNumber: string;
-  amount: number;
-  entity: string;
-  entityEmail: string;
-  description: string;
-}
-
-const mockPayments: Payment[] = [
-  {
-    id: "PAY-001",
-    paymentNumber: "PMT-2025-001",
-    paymentDate: "2025-11-28",
-    paymentType: "Made",
-    paymentMethod: "Bank Transfer",
-    referenceNumber: "TXN-112820251",
-    amount: 11250.0,
-    entity: "Manila Rice Trading",
-    entityEmail: "accounts@manilarice.com",
-    description: "Payment for Bill #2025-B001",
-  },
-  {
-    id: "PAY-002",
-    paymentNumber: "PMT-2025-002",
-    paymentDate: "2025-11-25",
-    paymentType: "Received",
-    paymentMethod: "Cash",
-    referenceNumber: "CASH-001",
-    amount: 2850.0,
-    entity: "Maria's Salon",
-    entityEmail: "billing@mariasalon.com",
-    description: "Payment for Invoice #2025-001",
-  },
-  {
-    id: "PAY-003",
-    paymentNumber: "PMT-2025-003",
-    paymentDate: "2025-11-20",
-    paymentType: "Received",
-    paymentMethod: "Bank Transfer",
-    referenceNumber: "TXN-112020253",
-    amount: 5250.0,
-    entity: "Tech Solutions Office",
-    entityEmail: "finance@techsol.com",
-    description: "Payment for Invoice #2025-003",
-  },
-  {
-    id: "PAY-004",
-    paymentNumber: "PMT-2025-004",
-    paymentDate: "2025-11-18",
-    paymentType: "Made",
-    paymentMethod: "Check",
-    referenceNumber: "CHK-1234",
-    amount: 3500.0,
-    entity: "Metro Cleaning Supplies",
-    entityEmail: "billing@metrocleaning.ph",
-    description: "Payment for Bill #2025-B002",
-  },
-  {
-    id: "PAY-005",
-    paymentNumber: "PMT-2025-005",
-    paymentDate: "2025-11-15",
-    paymentType: "Received",
-    paymentMethod: "Credit Card",
-    referenceNumber: "CC-5678",
-    amount: 12750.0,
-    entity: "Juan's Grocery",
-    entityEmail: "accounts@juangrocery.com",
-    description: "Payment for Invoice #2025-002",
-  },
-];
+import { paymentService } from "@/lib/services/payment.service";
+import { Payment } from "@/lib/types/payment";
 
 export default function PaymentsPage() {
-  const [payments] = useState<Payment[]>(mockPayments);
+  const { organizationId } = useOrganization();
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [voidDialogOpen, setVoidDialogOpen] = useState(false);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isVoiding, setIsVoiding] = useState(false);
+
+  // Fetch payments data
+  useEffect(() => {
+    const fetchPayments = async () => {
+      if (!organizationId) return;
+
+      try {
+        setLoading(true);
+        setError("");
+
+        const [receivedPayments, madePayments] = await Promise.all([
+          paymentService.getReceivedPayments(),
+          paymentService.getMadePayments(),
+        ]);
+
+        // Combine both arrays and sort by date (newest first)
+        const allPayments = [...receivedPayments, ...madePayments].sort(
+          (a, b) =>
+            new Date(b.paymentDate).getTime() -
+            new Date(a.paymentDate).getTime(),
+        );
+
+        setPayments(allPayments);
+      } catch (err) {
+        console.error("Failed to fetch payments:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load payments",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayments();
+  }, [organizationId]);
+
+  const handleVoidClick = (payment: Payment) => {
+    setSelectedPayment(payment);
+    setVoidDialogOpen(true);
+  };
+
+  const handleVoidConfirm = async () => {
+    if (!selectedPayment) return;
+
+    setIsVoiding(true);
+    try {
+      await paymentService.voidPayment(selectedPayment._id);
+
+      // Refresh payments data
+      const [receivedPayments, madePayments] = await Promise.all([
+        paymentService.getReceivedPayments(),
+        paymentService.getMadePayments(),
+      ]);
+
+      const allPayments = [...receivedPayments, ...madePayments].sort(
+        (a, b) =>
+          new Date(b.paymentDate).getTime() - new Date(a.paymentDate).getTime(),
+      );
+
+      setPayments(allPayments);
+
+      toast.success(
+        `Payment ${selectedPayment.paymentNumber} voided successfully`,
+      );
+      setVoidDialogOpen(false);
+    } catch (error) {
+      console.error("Error voiding payment:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to void payment",
+      );
+    } finally {
+      setIsVoiding(false);
+      setSelectedPayment(null);
+    }
+  };
+
+  const normalizePaymentType = (paymentType?: string) =>
+    (paymentType || "").toUpperCase();
+
+  const isReceivedPayment = (payment: Payment) =>
+    normalizePaymentType(payment.paymentType) === "RECEIVED";
+
+  // Helper function to get entity name and email
+  const getEntityInfo = (payment: Payment) => {
+    if (isReceivedPayment(payment) && payment.customer) {
+      return {
+        name: payment.customer.displayName || payment.customer.customerName,
+        email: payment.customer.email,
+      };
+    }
+    if (!isReceivedPayment(payment) && payment.supplier) {
+      return {
+        name: payment.supplier.supplierName,
+        email: payment.supplier.email,
+      };
+    }
+    return { name: "N/A", email: "" };
+  };
+
+  // Helper function to get payment description
+  const getPaymentDescription = (payment: Payment) => {
+    if (payment.allocations && payment.allocations.length > 0) {
+      const docNumbers = payment.allocations
+        .map((a) => a.documentNumber)
+        .join(", ");
+      const docType = isReceivedPayment(payment) ? "Invoice" : "Bill";
+      return `Payment for ${docType} ${docNumbers}`;
+    }
+    return (
+      payment.notes ||
+      `${isReceivedPayment(payment) ? "Payment received" : "Payment made"}`
+    );
+  };
+
+  // Helper function to get display payment method
+  const getPaymentMethodDisplay = (method: string) => {
+    switch (method) {
+      case "BANK_TRANSFER":
+        return "Bank Transfer";
+      case "CREDIT_CARD":
+        return "Credit Card";
+      case "CASH":
+        return "Cash";
+      case "CHECK":
+        return "Check";
+      case "ONLINE":
+        return "Online";
+      default:
+        return method;
+    }
+  };
 
   const filteredPayments = payments.filter((payment) => {
+    const entityInfo = getEntityInfo(payment);
     const matchesSearch =
       payment.paymentNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.entity.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      entityInfo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       payment.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesType =
-      typeFilter === "all" || payment.paymentType === typeFilter;
+      typeFilter === "all" ||
+      (typeFilter === "Received" && isReceivedPayment(payment)) ||
+      (typeFilter === "Made" && !isReceivedPayment(payment));
 
     return matchesSearch && matchesType;
   });
 
   const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
   const received = payments
-    .filter((p) => p.paymentType === "Received")
+    .filter((p) => isReceivedPayment(p))
     .reduce((sum, p) => sum + p.amount, 0);
   const made = payments
-    .filter((p) => p.paymentType === "Made")
+    .filter((p) => !isReceivedPayment(p))
     .reduce((sum, p) => sum + p.amount, 0);
 
   return (
@@ -201,8 +282,7 @@ export default function PaymentsPage() {
               {formatCurrency(received)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => p.paymentType === "Received").length}{" "}
-              payments
+              {payments.filter((p) => isReceivedPayment(p)).length} payments
             </p>
           </CardContent>
         </Card>
@@ -217,7 +297,7 @@ export default function PaymentsPage() {
               {formatCurrency(made)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => p.paymentType === "Made").length} payments
+              {payments.filter((p) => !isReceivedPayment(p)).length} payments
             </p>
           </CardContent>
         </Card>
@@ -269,103 +349,246 @@ export default function PaymentsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Payment #</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Entity</TableHead>
-                  <TableHead>Method</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Amount</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredPayments.map((payment) => (
-                  <TableRow key={payment.id}>
-                    <TableCell className="font-medium">
-                      {payment.paymentNumber}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(payment.paymentDate).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className={
-                          payment.paymentType === "Received"
-                            ? "bg-green-500/10 text-green-600 border-green-500/20"
-                            : "bg-red-500/10 text-red-600 border-red-500/20"
-                        }
-                      >
-                        {payment.paymentType === "Received" ? (
-                          <ArrowUpCircle className="h-3 w-3 mr-1" />
-                        ) : (
-                          <ArrowDownCircle className="h-3 w-3 mr-1" />
-                        )}
-                        {payment.paymentType}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{payment.entity}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {payment.entityEmail}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant="outline"
-                        className="bg-blue-500/10 text-blue-600 border-blue-500/20"
-                      >
-                        {payment.paymentMethod}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {payment.referenceNumber}
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {payment.description}
-                    </TableCell>
-                    <TableCell
-                      className={`font-medium ${payment.paymentType === "Received" ? "text-green-600" : "text-red-600"}`}
-                    >
-                      {payment.paymentType === "Received" ? "+" : "-"}
-                      {formatCurrency(payment.amount)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>
-                            <Eye className="mr-2 h-4 w-4" />
-                            View Details
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Download className="mr-2 h-4 w-4" />
-                            Download Receipt
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <XCircle className="h-12 w-12 text-red-500 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">
+                Failed to load payments
+              </h3>
+              <p className="text-muted-foreground mb-4">{error}</p>
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+                size="sm"
+              >
+                Try Again
+              </Button>
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              {!loading && filteredPayments.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <CreditCard className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    No payments found
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    {searchQuery || typeFilter !== "all"
+                      ? "No payments match your current filters."
+                      : "You haven't recorded any payments yet."}
+                  </p>
+                  <Link href="/payments/create">
+                    <Button size="sm">
+                      <Plus className="h-4 w-4 mr-2" />
+                      Record Your First Payment
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Payment #</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Entity</TableHead>
+                      <TableHead>Method</TableHead>
+                      <TableHead>Reference</TableHead>
+                      <TableHead>Description</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {loading
+                      ? Array(5)
+                          .fill({})
+                          .map((_, i) => (
+                            <TableRow key={i}>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="h-4 bg-muted animate-pulse rounded"></div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="h-4 w-8 bg-muted animate-pulse rounded ml-auto"></div>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                      : filteredPayments.map((payment) => {
+                          const entityInfo = getEntityInfo(payment);
+                          return (
+                            <TableRow key={payment._id}>
+                              <TableCell className="font-medium">
+                                {payment.paymentNumber}
+                              </TableCell>
+                              <TableCell>
+                                {new Date(
+                                  payment.paymentDate,
+                                ).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    isReceivedPayment(payment)
+                                      ? "bg-green-500/10 text-green-600 border-green-500/20"
+                                      : "bg-red-500/10 text-red-600 border-red-500/20"
+                                  }
+                                >
+                                  {isReceivedPayment(payment) ? (
+                                    <ArrowUpCircle className="h-3 w-3 mr-1" />
+                                  ) : (
+                                    <ArrowDownCircle className="h-3 w-3 mr-1" />
+                                  )}
+                                  {isReceivedPayment(payment)
+                                    ? "Received"
+                                    : "Made"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                >
+                                  Active
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-col">
+                                  <span className="font-medium">
+                                    {entityInfo.name}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {entityInfo.email}
+                                  </span>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                >
+                                  {getPaymentMethodDisplay(
+                                    payment.paymentMethod,
+                                  )}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {payment.referenceNumber}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {getPaymentDescription(payment)}
+                              </TableCell>
+                              <TableCell
+                                className={`font-medium ${isReceivedPayment(payment) ? "text-green-600" : "text-red-600"}`}
+                              >
+                                {isReceivedPayment(payment) ? "+" : "-"}
+                                {formatCurrency(payment.amount)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      className="h-8 w-8 p-0"
+                                    >
+                                      <span className="sr-only">Open menu</span>
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>
+                                      Actions
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem>
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem>
+                                      <Download className="mr-2 h-4 w-4" />
+                                      Download Receipt
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => handleVoidClick(payment)}
+                                      className="text-red-600 focus:text-red-600"
+                                    >
+                                      <XCircle className="mr-2 h-4 w-4" />
+                                      Void Payment
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={voidDialogOpen} onOpenChange={setVoidDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Void Payment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to void payment{" "}
+              <span className="font-semibold">
+                {selectedPayment?.paymentNumber}
+              </span>
+              ? This action will:
+              <ul className="mt-2 ml-4 list-disc space-y-1 text-sm">
+                <li>Reverse the journal entry for this payment</li>
+                <li>
+                  Restore the outstanding balance on the related invoice/bill
+                </li>
+                <li>Update customer/supplier account balances</li>
+                <li>Mark the payment as VOIDED</li>
+              </ul>
+              <p className="mt-2 font-semibold text-red-600">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isVoiding}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleVoidConfirm}
+              disabled={isVoiding}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isVoiding ? "Voiding..." : "Void Payment"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

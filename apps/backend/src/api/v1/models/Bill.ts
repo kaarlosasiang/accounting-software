@@ -171,33 +171,62 @@ BillSchema.index({ companyId: 1, status: 1 });
 BillSchema.index({ companyId: 1, dueDate: 1 });
 BillSchema.index({ companyId: 1, billNumber: 1 }, { unique: true });
 
-  /**
-   * Pre-save: Calculate amounts from line items or use provided amounts
-   */
-  BillSchema.pre("save", function () {
-    // Only calculate amounts if not already provided
-    if (this.isNew || !this.subtotal) {
-      // Calculate subtotal from line items
-      this.subtotal = this.lineItems.reduce((sum, item) => {
-        item.amount = item.quantity * item.unitPrice;
-        return sum + item.amount;
-      }, 0);
-      
-      // Calculate tax amount
-      this.taxAmount = (this.subtotal * this.taxRate) / 100;
-      
-      // Calculate total amount
-      this.totalAmount = this.subtotal + this.taxAmount - (this.discount || 0);
-      
-      // Calculate balance due
-      this.balanceDue = this.totalAmount - this.amountPaid;
+/**
+ * Pre-validate hook: Generate bill number if not provided
+ */
+BillSchema.pre("validate", async function () {
+  if (this.isNew && !this.billNumber) {
+    const year = new Date().getFullYear();
+    const prefix = `BILL-${year}-`;
+
+    // Find the last bill number for this year and company
+    const lastBill = await mongoose
+      .model<IBillDocument>("Bill")
+      .findOne({
+        companyId: this.companyId,
+        billNumber: new RegExp(`^${prefix}`),
+      })
+      .sort({ billNumber: -1 })
+      .select("billNumber");
+
+    let nextNumber = 1;
+    if (lastBill && lastBill.billNumber) {
+      const lastNumberStr = lastBill.billNumber.replace(prefix, "");
+      const lastNumber = parseInt(lastNumberStr, 10);
+      nextNumber = lastNumber + 1;
     }
-  });
+
+    this.billNumber = `${prefix}${nextNumber.toString().padStart(4, "0")}`;
+  }
+});
 
 /**
- * Pre-save: Auto-update status based on payment
+ * Pre-validate: Calculate amounts from line items or use provided amounts
  */
-BillSchema.pre("save", function () {
+BillSchema.pre("validate", function () {
+  // Only calculate amounts if not already provided
+  if (this.isNew || !this.subtotal) {
+    // Calculate subtotal from line items
+    this.subtotal = this.lineItems.reduce((sum, item) => {
+      item.amount = item.quantity * item.unitPrice;
+      return sum + item.amount;
+    }, 0);
+
+    // Calculate tax amount
+    this.taxAmount = (this.subtotal * this.taxRate) / 100;
+
+    // Calculate total amount
+    this.totalAmount = this.subtotal + this.taxAmount - (this.discount || 0);
+
+    // Calculate balance due
+    this.balanceDue = this.totalAmount - this.amountPaid;
+  }
+});
+
+/**
+ * Pre-validate: Auto-update status based on payment
+ */
+BillSchema.pre("validate", function () {
   if (this.status === BillStatus.VOID) return;
 
   const tolerance = 0.01;
@@ -262,7 +291,7 @@ BillSchema.statics.findByStatus = function (
  * Static method: Find overdue bills
  */
 BillSchema.statics.findOverdue = function (companyId: mongoose.Types.ObjectId) {
-    return this.find({
+  return this.find({
     companyId,
     status: { $in: [BillStatus.SENT, BillStatus.PARTIAL] },
     dueDate: { $lt: new Date() },

@@ -37,8 +37,10 @@ export interface Supplier {
  */
 export type SupplierForm = Omit<
   Supplier,
-  "_id" | "currentBalance" | "createdAt" | "updatedAt"
->;
+  "_id" | "currentBalance" | "createdAt" | "updatedAt" | "supplierCode"
+> & {
+  supplierCode?: string;
+};
 
 /**
  * Props for the SupplierForm component

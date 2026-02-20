@@ -579,4 +579,154 @@ export const paymentService = {
 
     return apAccount._id;
   },
+
+  /**
+   * Void a payment (reverse the transaction)
+   * - Updates payment status to VOIDED
+   * - Voids the related journal entry
+   * - Restores invoice/bill balances
+   * - Restores customer/supplier balances
+   */
+  async voidPayment(companyId: string, paymentId: string, userId: string) {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // 1. Find the payment
+      const payment = await Payment.findOne({
+        _id: paymentId,
+        companyId: new mongoose.Types.ObjectId(companyId),
+      }).session(session);
+
+      if (!payment) {
+        throw new Error("Payment not found");
+      }
+
+      if (payment.status === "VOIDED") {
+        throw new Error("Payment is already voided");
+      }
+
+      // 2. Void the related journal entry
+      if (payment.journalEntryId) {
+        await JournalEntryService.voidJournalEntry(
+          companyId,
+          payment.journalEntryId.toString(),
+          userId,
+          session,
+        );
+      }
+
+      // 3. Reverse allocations based on payment type
+      if (payment.paymentType === PaymentType.RECEIVED) {
+        // Payment received from customer - reverse invoice allocations
+        for (const allocation of payment.allocations) {
+          const invoice = await Invoice.findOne({
+            _id: allocation.documentId,
+            companyId: new mongoose.Types.ObjectId(companyId),
+          }).session(session);
+
+          if (invoice) {
+            // Restore invoice balance
+            invoice.amountPaid = Math.max(
+              0,
+              (invoice.amountPaid || 0) - allocation.allocatedAmount,
+            );
+            invoice.balanceDue =
+              invoice.totalAmount - (invoice.amountPaid || 0);
+
+            // Update invoice status
+            if (Math.abs(invoice.balanceDue - invoice.totalAmount) < 0.01) {
+              invoice.status = InvoiceStatus.SENT; // Back to unpaid
+            } else if (invoice.balanceDue > 0 && invoice.amountPaid > 0) {
+              invoice.status = InvoiceStatus.PARTIAL;
+            }
+
+            await invoice.save({ session });
+          }
+        }
+
+        // Restore customer balance
+        if (payment.customerId) {
+          const customer = await Customer.findOne({
+            _id: payment.customerId,
+            companyId: new mongoose.Types.ObjectId(companyId),
+          }).session(session);
+
+          if (customer) {
+            customer.currentBalance =
+              (customer.currentBalance || 0) + payment.amount;
+            await customer.save({ session });
+          }
+        }
+      } else if (payment.paymentType === PaymentType.MADE) {
+        // Payment made to supplier - reverse bill allocations
+        for (const allocation of payment.allocations) {
+          const bill = await Bill.findOne({
+            _id: allocation.documentId,
+            companyId: new mongoose.Types.ObjectId(companyId),
+          }).session(session);
+
+          if (bill) {
+            // Restore bill balance
+            bill.amountPaid = Math.max(
+              0,
+              (bill.amountPaid || 0) - allocation.allocatedAmount,
+            );
+            bill.balanceDue = bill.totalAmount - (bill.amountPaid || 0);
+
+            // Update bill status
+            if (Math.abs(bill.balanceDue - bill.totalAmount) < 0.01) {
+              bill.status = BillStatus.SENT; // Back to unpaid
+            } else if (bill.balanceDue > 0 && bill.amountPaid > 0) {
+              bill.status = BillStatus.PARTIAL;
+            }
+
+            await bill.save({ session });
+          }
+        }
+
+        // Restore supplier balance
+        if (payment.supplierId) {
+          const supplier = await Supplier.findOne({
+            _id: payment.supplierId,
+            companyId: new mongoose.Types.ObjectId(companyId),
+          }).session(session);
+
+          if (supplier) {
+            supplier.currentBalance =
+              (supplier.currentBalance || 0) + payment.amount;
+            await supplier.save({ session });
+          }
+        }
+      }
+
+      // 4. Update payment status
+      payment.status = "VOIDED";
+      payment.voidedAt = new Date();
+      payment.voidedBy = new mongoose.Types.ObjectId(userId);
+      await payment.save({ session });
+
+      await session.commitTransaction();
+
+      logger.info("Payment voided successfully", {
+        paymentId: payment._id,
+        paymentNumber: payment.paymentNumber,
+        amount: payment.amount,
+        paymentType: payment.paymentType,
+        companyId,
+      });
+
+      return payment;
+    } catch (error) {
+      await session.abortTransaction();
+      logger.logError(error as Error, {
+        operation: "voidPayment",
+        companyId,
+        paymentId,
+      });
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  },
 };

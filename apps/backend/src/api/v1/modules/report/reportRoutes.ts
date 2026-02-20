@@ -4,6 +4,8 @@ import {
   generateIncomeStatement,
   generateCashFlowStatement,
   generateTrialBalance,
+  generateARAgingReport,
+  generateAPAgingReport,
 } from "./reportController.js";
 import { requireAuth } from "../../shared/middleware/auth.middleware.js";
 
@@ -28,5 +30,11 @@ reportRoutes.get("/cash-flow", generateCashFlowStatement);
 
 // Trial Balance - All account balances for verification
 reportRoutes.get("/trial-balance", generateTrialBalance);
+
+// Accounts Receivable Aging - Outstanding customer invoices by age
+reportRoutes.get("/ar-aging", generateARAgingReport);
+
+// Accounts Payable Aging - Outstanding supplier bills by age
+reportRoutes.get("/ap-aging", generateAPAgingReport);
 
 export default reportRoutes;

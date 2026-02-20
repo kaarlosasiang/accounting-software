@@ -7,13 +7,18 @@ import {
   getCustomerPayments,
   getPaymentById,
   suggestPaymentAllocations,
+  voidPayment,
 } from "./paymentController.js";
+import { requireAuth } from "../../shared/middleware/auth.middleware.js";
 
 /**
  * Payment Routes
  * Handles all payment-related endpoints
  */
 export const paymentRoutes = Router();
+
+// Apply auth middleware to all payment routes
+paymentRoutes.use(requireAuth);
 
 /**
  * POST /api/v1/payments/received
@@ -56,5 +61,11 @@ paymentRoutes.get("/customer/:customerId", getCustomerPayments);
  * Get a specific payment by ID
  */
 paymentRoutes.get("/:paymentId", getPaymentById);
+
+/**
+ * POST /api/v1/payments/:paymentId/void
+ * Void a payment (reverse the transaction)
+ */
+paymentRoutes.post("/:paymentId/void", voidPayment);
 
 export default paymentRoutes;

@@ -1,16 +1,9 @@
 import request from "supertest";
-import {
-  describe,
-  it,
-  expect,
-  beforeAll,
-  afterAll,
-  beforeEach,
-} from "@jest/globals";
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import express from "express";
-import configureApp from "../config/app";
+import configureApp from "../config/app.js";
 import { MongoClient } from "mongodb";
-import { constants } from "../config/index";
+import { constants } from "../config/index.js";
 
 describe("Authentication Routes", () => {
   let mongoClient: MongoClient;

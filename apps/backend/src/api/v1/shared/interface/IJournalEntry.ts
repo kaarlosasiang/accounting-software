@@ -47,6 +47,7 @@ export interface IJournalEntry {
   lines: IJournalEntryLine[]; // Array of line items
   totalDebit: number; // Must equal totalCredit
   totalCredit: number; // Must equal totalDebit
+  isClosingEntry?: boolean; // True if this is a period closing entry
   postedBy?: Types.ObjectId; // User who posted the entry
   createdBy: Types.ObjectId;
   voidedAt?: Date;
@@ -59,5 +60,4 @@ export interface IJournalEntry {
  * Journal Entry Document (Mongoose)
  */
 export interface IJournalEntryDocument
-  extends Omit<IJournalEntry, "_id">,
-    Document {}
+  extends Omit<IJournalEntry, "_id">, Document {}

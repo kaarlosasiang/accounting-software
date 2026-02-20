@@ -35,7 +35,7 @@ const supplierService = {
   getActiveSuppliers: async (companyId: string | Types.ObjectId) => {
     try {
       const suppliers = await SupplierModel.findActive(
-        new Types.ObjectId(companyId)
+        new Types.ObjectId(companyId),
       );
       return suppliers;
     } catch (error) {
@@ -52,7 +52,7 @@ const supplierService = {
    */
   getSupplierById: async (
     companyId: string | Types.ObjectId,
-    supplierId: string | Types.ObjectId
+    supplierId: string | Types.ObjectId,
   ) => {
     try {
       const supplier = await Supplier.findOne({
@@ -79,12 +79,12 @@ const supplierService = {
    */
   getSupplierByCode: async (
     companyId: string | Types.ObjectId,
-    supplierCode: string
+    supplierCode: string,
   ) => {
     try {
       const supplier = await SupplierModel.findBySupplierCode(
         new Types.ObjectId(companyId),
-        supplierCode
+        supplierCode,
       );
       if (!supplier) {
         throw new Error("Supplier not found");
@@ -105,12 +105,12 @@ const supplierService = {
    */
   searchSuppliers: async (
     companyId: string | Types.ObjectId,
-    searchTerm: string
+    searchTerm: string,
   ) => {
     try {
       const suppliers = await SupplierModel.searchSuppliers(
         new Types.ObjectId(companyId),
-        searchTerm
+        searchTerm,
       );
       return suppliers;
     } catch (error) {
@@ -129,7 +129,7 @@ const supplierService = {
   createSupplier: async (
     companyId: string | Types.ObjectId,
     supplierData: {
-      supplierCode: string;
+      supplierCode?: string;
       supplierName: string;
       displayName?: string;
       email: string;
@@ -147,13 +147,32 @@ const supplierService = {
       openingBalance?: number;
       isActive?: boolean;
       notes?: string;
-    }
+    },
   ) => {
     try {
+      // Auto-generate supplier code if not provided
+      let supplierCode = supplierData.supplierCode;
+      if (!supplierCode) {
+        const lastSupplier = await Supplier.findOne({
+          companyId: new Types.ObjectId(companyId),
+        })
+          .sort({ createdAt: -1 })
+          .limit(1);
+
+        if (lastSupplier && lastSupplier.supplierCode) {
+          const match = lastSupplier.supplierCode.match(/\d+$/);
+          const lastNumber = match ? parseInt(match[0]) : 0;
+          const nextNumber = lastNumber + 1;
+          supplierCode = `SUP-${String(nextNumber).padStart(3, "0")}`;
+        } else {
+          supplierCode = "SUP-001";
+        }
+      }
+
       // Check if supplier code already exists
       const existingSupplier = await SupplierModel.findBySupplierCode(
         new Types.ObjectId(companyId),
-        supplierData.supplierCode
+        supplierCode,
       );
 
       if (existingSupplier) {
@@ -173,6 +192,7 @@ const supplierService = {
       const supplier = new Supplier({
         companyId: new Types.ObjectId(companyId),
         ...supplierData,
+        supplierCode,
         email: supplierData.email.toLowerCase(),
         currentBalance: supplierData.openingBalance || 0,
       });
@@ -213,7 +233,7 @@ const supplierService = {
       openingBalance: number;
       isActive: boolean;
       notes: string;
-    }>
+    }>,
   ) => {
     try {
       const supplier = await Supplier.findOne({
@@ -232,7 +252,7 @@ const supplierService = {
       ) {
         const existingSupplier = await SupplierModel.findBySupplierCode(
           new Types.ObjectId(companyId),
-          updateData.supplierCode
+          updateData.supplierCode,
         );
 
         if (existingSupplier) {
@@ -275,7 +295,7 @@ const supplierService = {
    */
   deleteSupplier: async (
     companyId: string | Types.ObjectId,
-    supplierId: string | Types.ObjectId
+    supplierId: string | Types.ObjectId,
   ) => {
     try {
       const supplier = await Supplier.findOne({

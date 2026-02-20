@@ -77,6 +77,29 @@ export interface INotificationsSettings {
 }
 
 /**
+ * Bank Account Info
+ * For record-keeping purposes (not actual bank connection)
+ */
+export interface IBankAccountInfo {
+  id: string; // Unique identifier
+  bankName: string;
+  accountName: string;
+  accountNumber: string; // Can be partially masked
+  accountType: "Checking" | "Savings" | "Credit Card" | "Other";
+  currency: string; // e.g., 'PHP', 'USD'
+  linkedAccountId?: Types.ObjectId; // Reference to Account in Chart of Accounts
+  isActive: boolean;
+  notes?: string;
+}
+
+/**
+ * Banking Settings Interface
+ */
+export interface IBankingSettings {
+  accounts: IBankAccountInfo[];
+}
+
+/**
  * Company Settings Interface
  */
 export interface ICompanySettings {
@@ -87,6 +110,7 @@ export interface ICompanySettings {
   invoicing: IInvoicingSettings;
   billing: IBillingSettings;
   payment: IPaymentSettings;
+  banking: IBankingSettings;
   reporting: IReportingSettings;
   notifications: INotificationsSettings;
   updatedAt: Date;
@@ -96,4 +120,23 @@ export interface ICompanySettings {
  * Company Settings Document (Mongoose)
  */
 export interface ICompanySettingsDocument
-  extends Omit<ICompanySettings, "_id">, Document {}
+  extends Omit<ICompanySettings, "_id">, Document {
+  // Instance methods
+  updateGeneralSettings(settings: Partial<IGeneralSettings>): Promise<this>;
+  updateAccountingSettings(
+    settings: Partial<IAccountingSettings>,
+  ): Promise<this>;
+  updateInvoicingSettings(settings: Partial<IInvoicingSettings>): Promise<this>;
+  updateBillingSettings(settings: Partial<IBillingSettings>): Promise<this>;
+  updateReportingSettings(settings: Partial<IReportingSettings>): Promise<this>;
+  updateNotificationsSettings(
+    settings: Partial<INotificationsSettings>,
+  ): Promise<this>;
+  addBankAccount(bankAccount: IBankAccountInfo): Promise<this>;
+  updateBankAccount(
+    accountId: string,
+    updates: Partial<IBankAccountInfo>,
+  ): Promise<this>;
+  removeBankAccount(accountId: string): Promise<this>;
+  getBankAccount(accountId: string): IBankAccountInfo | undefined;
+}

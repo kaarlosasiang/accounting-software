@@ -1,20 +1,35 @@
 {
-    "keep": {
-        "days": true,
-        "amount": 14
+  "keep": {
+    "days": true,
+    "amount": 14
+  },
+  "auditLog": "logs/error/.46799b894abb5ccfa66c18c685bc999697f8df1b-audit.json",
+  "files": [
+    {
+      "date": 1770415729863,
+      "name": "logs/error/rrd10-sas-api-2026-02-07.log",
+      "hash": "657392393677213081778aa7160e81757877d1f74e51db1b7a8ccd55066dc784"
     },
-    "auditLog": "logs/error/.46799b894abb5ccfa66c18c685bc999697f8df1b-audit.json",
-    "files": [
-        {
-            "date": 1769851550470,
-            "name": "logs/error/rrd10-sas-api-2026-01-31.log",
-            "hash": "ad3952ccd048d43c2fbad02a8e83c41a038871afd11b1e2edc452785beaa3cd7"
-        },
-        {
-            "date": 1770415729863,
-            "name": "logs/error/rrd10-sas-api-2026-02-07.log",
-            "hash": "657392393677213081778aa7160e81757877d1f74e51db1b7a8ccd55066dc784"
-        }
-    ],
-    "hashType": "sha256"
+    {
+      "date": 1770908583942,
+      "name": "logs/error/rrd10-sas-api-2026-02-12.log",
+      "hash": "03a4332efdae712fb99526c10cf2edf8b049cd7f1a5260f237574766ea56adab"
+    },
+    {
+      "date": 1770912296728,
+      "name": "logs/error/rrd10-sas-api-2026-02-13.log",
+      "hash": "86b02832e2a930161cfd6529af01ff4352b856f31e179ecb8260027e21e45846"
+    },
+    {
+      "date": 1771240390590,
+      "name": "logs/error/rrd10-sas-api-2026-02-16.log",
+      "hash": "07613cf66bc73ad19f5e21997a2e1611290e210e8a6d7c34c0c874452f386351"
+    },
+    {
+      "date": 1771305546457,
+      "name": "logs/error/rrd10-sas-api-2026-02-17.log",
+      "hash": "3dd3656742cbf1995f1c6d86a53fffd522cd21ccd40feccb23edf994b368eec8"
+    }
+  ],
+  "hashType": "sha256"
 }
