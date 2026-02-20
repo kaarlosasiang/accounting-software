@@ -136,4 +136,23 @@ export const paymentService = {
       method: "POST",
     });
   },
+
+  /**
+   * Void a payment (reverse the transaction)
+   */
+  async voidPayment(paymentId: string): Promise<{
+    success: boolean;
+    data: Payment;
+    message?: string;
+    error?: string;
+  }> {
+    return await apiFetch<{
+      success: boolean;
+      data: Payment;
+      message?: string;
+      error?: string;
+    }>(`/payments/${paymentId}/void`, {
+      method: "POST",
+    });
+  },
 };

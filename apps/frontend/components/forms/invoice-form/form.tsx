@@ -100,10 +100,10 @@ const invoiceFormSchema = z
     dueDate: z.date({
       message: "Due date is required",
     }),
-    paymentTerms: z.string().default("net30"),
+    paymentTerms: z.string(),
     items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
-    taxRate: z.string().default("12"),
-    discount: z.string().default("0"),
+    taxRate: z.string(),
+    discount: z.string(),
     notes: z.string().optional(),
     terms: z.string().optional(),
   })
@@ -269,7 +269,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
     return subtotal - discount + tax;
   };
 
-  async function onSubmit(data: InvoiceFormValues, saveAsDraft = false) {
+  async function submitInvoice(data: InvoiceFormValues, saveAsDraft = false) {
     setIsSubmitting(true);
     try {
       // Convert form data to API format - always create as Draft first
@@ -324,6 +324,12 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
       setIsSubmitting(false);
     }
   }
+
+  const onSubmit = (data: InvoiceFormValues) => submitInvoice(data, false);
+
+  const handleSaveAsDraft = () => {
+    form.handleSubmit((data) => submitInvoice(data, true))();
+  };
 
   return (
     <>
@@ -1109,9 +1115,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                 variant="outline"
                 size="lg"
                 disabled={isSubmitting}
-                onClick={() => {
-                  form.handleSubmit((data) => onSubmit(data, true))();
-                }}
+                onClick={handleSaveAsDraft}
               >
                 {isSubmitting ? "Saving..." : "Save as draft"}
               </Button>

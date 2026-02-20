@@ -1,30 +1,30 @@
 {
-    "keep": {
-        "days": true,
-        "amount": 7
+  "keep": {
+    "days": true,
+    "amount": 7
+  },
+  "auditLog": "logs/.ee1f74ac8b5ed23cf5ad7797017c3c728eaad2ae-audit.json",
+  "files": [
+    {
+      "date": 1770908583944,
+      "name": "logs/rrd10-sas-api-2026-02-12.log",
+      "hash": "abe8d453b206bc051f13e4d97e25816c97d694525b882045c0a7a64efa45572c"
     },
-    "auditLog": "logs/.ee1f74ac8b5ed23cf5ad7797017c3c728eaad2ae-audit.json",
-    "files": [
-        {
-            "date": 1770908583944,
-            "name": "logs/rrd10-sas-api-2026-02-12.log",
-            "hash": "abe8d453b206bc051f13e4d97e25816c97d694525b882045c0a7a64efa45572c"
-        },
-        {
-            "date": 1770912296730,
-            "name": "logs/rrd10-sas-api-2026-02-13.log",
-            "hash": "47167bdf18f8eba658ee1ee527c803960f1f13c7e60b868b535cf4210f5937b4"
-        },
-        {
-            "date": 1771240390592,
-            "name": "logs/rrd10-sas-api-2026-02-16.log",
-            "hash": "e2ea83ab7133f174561486b63aad5e3f3e177013e3aab60f0d408aaefd639538"
-        },
-        {
-            "date": 1771305546459,
-            "name": "logs/rrd10-sas-api-2026-02-17.log",
-            "hash": "75244ae2cfcbd66c91726cf24797671d832c6a0b060eb1731e30d5e35c08ba47"
-        }
-    ],
-    "hashType": "sha256"
+    {
+      "date": 1770912296730,
+      "name": "logs/rrd10-sas-api-2026-02-13.log",
+      "hash": "47167bdf18f8eba658ee1ee527c803960f1f13c7e60b868b535cf4210f5937b4"
+    },
+    {
+      "date": 1771240390592,
+      "name": "logs/rrd10-sas-api-2026-02-16.log",
+      "hash": "e2ea83ab7133f174561486b63aad5e3f3e177013e3aab60f0d408aaefd639538"
+    },
+    {
+      "date": 1771305546459,
+      "name": "logs/rrd10-sas-api-2026-02-17.log",
+      "hash": "75244ae2cfcbd66c91726cf24797671d832c6a0b060eb1731e30d5e35c08ba47"
+    }
+  ],
+  "hashType": "sha256"
 }
