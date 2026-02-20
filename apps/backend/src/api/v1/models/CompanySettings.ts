@@ -3,6 +3,7 @@ import mongoose, { Schema } from "mongoose";
 import {
   AccountingMethod,
   IAccountingSettings,
+  IBankingSettings,
   IBillingSettings,
   ICompanySettings,
   ICompanySettingsDocument,
@@ -109,7 +110,7 @@ const InvoicingSettingsSchema = new Schema<IInvoicingSettings>(
     defaultTaxRate: {
       type: Number,
       required: [true, "Default tax rate is required"],
-      default: 0,
+      default: 12, // 12% VAT (Philippine standard rate)
       min: [0, "Tax rate cannot be negative"],
       max: [100, "Tax rate cannot exceed 100%"],
     },
@@ -238,6 +239,72 @@ const NotificationsSettingsSchema = new Schema<INotificationsSettings>(
 );
 
 /**
+ * Bank Account Info Schema (for record-keeping)
+ */
+const BankAccountInfoSchema = new Schema(
+  {
+    id: {
+      type: String,
+      required: [true, "Bank account ID is required"],
+    },
+    bankName: {
+      type: String,
+      required: [true, "Bank name is required"],
+      trim: true,
+    },
+    accountName: {
+      type: String,
+      required: [true, "Account name is required"],
+      trim: true,
+    },
+    accountNumber: {
+      type: String,
+      required: [true, "Account number is required"],
+      trim: true,
+    },
+    accountType: {
+      type: String,
+      required: [true, "Account type is required"],
+      enum: ["Checking", "Savings", "Credit Card", "Other"],
+      default: "Checking",
+    },
+    currency: {
+      type: String,
+      required: [true, "Currency is required"],
+      default: "PHP",
+    },
+    linkedAccountId: {
+      type: Schema.Types.ObjectId,
+      ref: "Account",
+      required: false,
+    },
+    isActive: {
+      type: Boolean,
+      required: [true, "Active status is required"],
+      default: true,
+    },
+    notes: {
+      type: String,
+      trim: true,
+    },
+  },
+  { _id: false },
+);
+
+/**
+ * Banking Settings Schema
+ */
+const BankingSettingsSchema = new Schema<IBankingSettings>(
+  {
+    accounts: {
+      type: [BankAccountInfoSchema],
+      default: [],
+    },
+  },
+  { _id: false },
+);
+
+/**
  * Company Settings Schema
  */
 const CompanySettingsSchema = new Schema<ICompanySettings>(
@@ -273,6 +340,11 @@ const CompanySettingsSchema = new Schema<ICompanySettings>(
       type: PaymentSettingsSchema,
       required: false,
       default: () => ({}),
+    },
+    banking: {
+      type: BankingSettingsSchema,
+      required: false,
+      default: () => ({ accounts: [] }),
     },
     reporting: {
       type: ReportingSettingsSchema,
@@ -352,6 +424,65 @@ CompanySettingsSchema.methods.updateNotificationsSettings = function (
 };
 
 /**
+ * Instance method: Add bank account
+ */
+CompanySettingsSchema.methods.addBankAccount = function (bankAccount: any) {
+  if (!this.banking) {
+    this.banking = { accounts: [] };
+  }
+  const newAccount = {
+    ...bankAccount,
+    id: bankAccount.id || `bank_${Date.now()}`,
+    isActive: bankAccount.isActive !== undefined ? bankAccount.isActive : true,
+  };
+  this.banking.accounts.push(newAccount);
+  return this.save();
+};
+
+/**
+ * Instance method: Update bank account
+ */
+CompanySettingsSchema.methods.updateBankAccount = function (
+  accountId: string,
+  updates: any,
+) {
+  if (!this.banking || !this.banking.accounts) {
+    throw new Error("No banking settings found");
+  }
+  const accountIndex = this.banking.accounts.findIndex(
+    (acc: any) => acc.id === accountId,
+  );
+  if (accountIndex === -1) {
+    throw new Error("Bank account not found");
+  }
+  Object.assign(this.banking.accounts[accountIndex], updates);
+  return this.save();
+};
+
+/**
+ * Instance method: Remove bank account
+ */
+CompanySettingsSchema.methods.removeBankAccount = function (accountId: string) {
+  if (!this.banking || !this.banking.accounts) {
+    throw new Error("No banking settings found");
+  }
+  this.banking.accounts = this.banking.accounts.filter(
+    (acc: any) => acc.id !== accountId,
+  );
+  return this.save();
+};
+
+/**
+ * Instance method: Get bank account by ID
+ */
+CompanySettingsSchema.methods.getBankAccount = function (accountId: string) {
+  if (!this.banking || !this.banking.accounts) {
+    return null;
+  }
+  return this.banking.accounts.find((acc: any) => acc.id === accountId);
+};
+
+/**
  * Instance method: Reset to default settings
  */
 CompanySettingsSchema.methods.resetToDefaults = function () {
@@ -370,7 +501,7 @@ CompanySettingsSchema.methods.resetToDefaults = function () {
     invoicePrefix: "INV",
     invoiceStartNumber: 1,
     defaultPaymentTerms: "Net 30",
-    defaultTaxRate: 0,
+    defaultTaxRate: 12, // 12% VAT (Philippine standard rate)
     showCompanyLogo: true,
   };
   this.billing = {

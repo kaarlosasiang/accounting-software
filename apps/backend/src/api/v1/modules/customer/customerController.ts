@@ -251,6 +251,20 @@ const customerController = {
         });
       }
 
+      if ((error as Error).message === "Customer email already exists") {
+        return res.status(409).json({
+          success: false,
+          message: "Customer email already exists",
+        });
+      }
+
+      if ((error as Error).message === "Customer tax ID already exists") {
+        return res.status(409).json({
+          success: false,
+          message: "Customer tax ID already exists",
+        });
+      }
+
       return res.status(500).json({
         success: false,
         message: "Failed to create customer",
@@ -313,6 +327,20 @@ const customerController = {
         return res.status(409).json({
           success: false,
           message: "Customer code already exists",
+        });
+      }
+
+      if ((error as Error).message === "Customer email already exists") {
+        return res.status(409).json({
+          success: false,
+          message: "Customer email already exists",
+        });
+      }
+
+      if ((error as Error).message === "Customer tax ID already exists") {
+        return res.status(409).json({
+          success: false,
+          message: "Customer tax ID already exists",
         });
       }
 

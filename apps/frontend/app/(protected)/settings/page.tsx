@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -23,7 +24,16 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Building2, CreditCard, Bell, Globe, Mail, Save } from "lucide-react";
+import {
+  Building2,
+  CreditCard,
+  Bell,
+  Globe,
+  Mail,
+  Save,
+  Building,
+  ArrowRight,
+} from "lucide-react";
 
 export default function SettingsPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -52,6 +62,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="company">Company</TabsTrigger>
+          <TabsTrigger value="banking">Banking</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
@@ -264,6 +275,43 @@ export default function SettingsPage() {
                   <Save className="mr-2 h-4 w-4" />
                   {isLoading ? "Saving..." : "Save Changes"}
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="banking" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Building className="h-5 w-5" />
+                Banking Settings
+              </CardTitle>
+              <CardDescription>
+                Manage your company's bank accounts and payment methods
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col items-center justify-center py-8 space-y-4">
+                <div className="rounded-full bg-muted p-4">
+                  <Building className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <div className="text-center space-y-2">
+                  <h3 className="font-semibold text-lg">
+                    Configure Bank Accounts
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Add and manage your company's bank accounts, link them to
+                    your chart of accounts, and track transactions with detailed
+                    banking settings.
+                  </p>
+                </div>
+                <Link href="/settings/banking">
+                  <Button className="gap-2">
+                    Go to Banking Settings
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
               </div>
             </CardContent>
           </Card>

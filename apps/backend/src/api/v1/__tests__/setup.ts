@@ -1,4 +1,6 @@
+import { vi, beforeAll, afterAll } from "vitest";
 import { config } from "dotenv";
+import mongoose from "mongoose";
 
 // Load test environment variables
 config({ path: ".env" });
@@ -7,58 +9,80 @@ config({ path: ".env" });
 process.env.NODE_ENV = "test";
 
 // Mock env.ts to avoid import.meta.url issues
-jest.mock("../config/env.js", () => ({
-  default: { config: jest.fn() },
+vi.mock("../config/env.js", () => ({
+  default: { config: vi.fn() },
 }));
 
 // Mock @sas/validators to avoid ESM transformation issues
-jest.mock("@sas/validators", () => ({
-  subscriptionActivationSchema: {},
-  subscriptionCancellationSchema: {},
-  // Add other schemas as needed
+// Provide passthrough safeParse mocks so controllers don't fail on validation
+const createPassthroughSchema = () => ({
+  safeParse: (data: any) => ({ success: true, data }),
+  partial: () => ({
+    safeParse: (data: any) => ({ success: true, data }),
+  }),
+});
+vi.mock("@sas/validators", () => ({
+  subscriptionActivationSchema: createPassthroughSchema(),
+  subscriptionCancellationSchema: createPassthroughSchema(),
+  accountSchema: createPassthroughSchema(),
+  customerSchema: createPassthroughSchema(),
+  supplierSchema: createPassthroughSchema(),
+  inventoryItemSchema: createPassthroughSchema(),
+  createBillSchema: createPassthroughSchema(),
+  updateBillSchema: createPassthroughSchema(),
+}));
+
+// Mock the authServer export so requireAuth middleware can call api.getSession
+vi.mock("../modules/auth/betterAuth.js", () => ({
+  authServer: {
+    api: {
+      getSession: vi.fn().mockResolvedValue(null),
+    },
+    handler: vi.fn(),
+  },
 }));
 
 // Mock better-auth modules before importing anything that uses them
-jest.mock(
-  "better-auth/node",
-  () => ({
-    toNodeHandler: jest.fn(() => (req: any, res: any, next: any) => {
-      // Mock auth handler that just calls next()
-      next();
-    }),
+vi.mock("better-auth/node", () => ({
+  toNodeHandler: vi.fn(() => (req: any, res: any, next: any) => {
+    next();
   }),
-  { virtual: true },
-);
+  fromNodeHeaders: vi.fn(() => ({})),
+}));
 
-jest.mock(
-  "better-auth/adapters/mongodb",
-  () => ({
-    mongodbAdapter: jest.fn(() => ({})),
-  }),
-  { virtual: true },
-);
+vi.mock("better-auth/adapters/mongodb", () => ({
+  mongodbAdapter: vi.fn(() => ({})),
+}));
 
-jest.mock(
-  "better-auth/plugins",
-  () => ({
-    admin: jest.fn(() => ({})),
-    emailOTP: jest.fn(() => ({})),
-    oneTap: jest.fn(() => ({})),
-    organization: jest.fn(() => ({})),
-  }),
-  { virtual: true },
-);
+vi.mock("better-auth/plugins", () => ({
+  admin: vi.fn(() => ({})),
+  emailOTP: vi.fn(() => ({})),
+  oneTap: vi.fn(() => ({})),
+  organization: vi.fn(() => ({})),
+}));
 
-jest.mock(
-  "better-auth",
-  () => ({
-    betterAuth: jest.fn(() => ({
-      handler: jest.fn(),
-      createAPIClient: jest.fn(),
-    })),
-  }),
-  { virtual: true },
-);
+vi.mock("better-auth", () => ({
+  betterAuth: vi.fn(() => ({
+    handler: vi.fn(),
+    createAPIClient: vi.fn(),
+    api: {
+      getSession: vi.fn().mockResolvedValue(null),
+    },
+  })),
+}));
 
-// Increase timeout for database operations
-jest.setTimeout(30000);
+// Connect Mongoose before all tests so Mongoose models can query the DB
+beforeAll(async () => {
+  const mongoUri = process.env.MONGODB_URI;
+  const dbName = process.env.DB_NAME || "rrd10-sas";
+  if (mongoUri && mongoose.connection.readyState === 0) {
+    await mongoose.connect(mongoUri, { dbName });
+  }
+});
+
+// Disconnect Mongoose after all tests
+afterAll(async () => {
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect();
+  }
+});

@@ -11,13 +11,20 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Edit, Trash2 } from "lucide-react";
+import {
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Archive,
+  ArchiveRestore,
+  RefreshCw,
+} from "lucide-react";
 import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, getCurrencySymbol } from "@/lib/format";
 import type { Account } from "@/lib/services/accounts.service";
 import Link from "next/link";
 
-export const columns: ColumnDef<Account>[] = [
+export const createColumns = (currency?: string): ColumnDef<Account>[] => [
   // Hidden combined search column for global search
   {
     id: "search",
@@ -169,16 +176,52 @@ export const columns: ColumnDef<Account>[] = [
     cell: ({ row }) => (
       <div className="text-right">
         <span className="font-mono font-semibold">
-          {formatCurrency(row.getValue<number>("balance") || 0)}
+          {formatCurrency(row.getValue<number>("balance") || 0, currency)}
         </span>
       </div>
     ),
     meta: {
       label: "Balance",
       variant: "number",
-      unit: "$",
+      unit: getCurrencySymbol(currency),
     },
     enableColumnFilter: false,
+    enableSorting: true,
+  },
+  {
+    id: "status",
+    accessorKey: "isActive",
+    header: ({ column }) => (
+      <div className="text-center">
+        <DataTableColumnHeader column={column} label="Status" />
+      </div>
+    ),
+    cell: ({ row }) => {
+      const isActive = row.getValue<boolean>("isActive") !== false; // Default to true if undefined
+      return (
+        <div className="flex justify-center">
+          <Badge
+            variant={isActive ? "default" : "secondary"}
+            className={
+              isActive
+                ? "bg-green-50 text-green-700 border-green-200"
+                : "bg-gray-100 text-gray-600 border-gray-200"
+            }
+          >
+            {isActive ? "Active" : "Archived"}
+          </Badge>
+        </div>
+      );
+    },
+    meta: {
+      label: "Status",
+      variant: "select",
+      options: [
+        { label: "Active", value: "true" },
+        { label: "Archived", value: "false" },
+      ],
+    },
+    enableColumnFilter: true,
     enableSorting: true,
   },
   {
@@ -188,38 +231,61 @@ export const columns: ColumnDef<Account>[] = [
         <DataTableColumnHeader column={column} label="Actions" />
       </div>
     ),
-    cell: ({ row, table }) => (
-      <div className="text-right">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() =>
-                (table.options.meta as any)?.onView?.(row.original)
-              }
-            >
-              <Edit className="mr-2 h-4 w-4" />
-              View/Edit
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() =>
-                (table.options.meta as any)?.onDelete?.(row.original)
-              }
-              className="text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    ),
+    cell: ({ row, table }) => {
+      const isActive = row.original.isActive !== false; // Default to true if undefined
+      return (
+        <div className="text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+              <DropdownMenuItem
+                onClick={() => table.options.meta?.onView?.(row.original)}
+              >
+                <Edit className="mr-2 h-4 w-4" />
+                View/Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => table.options.meta?.onReconcile?.(row.original)}
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reconcile Balance
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              {isActive ? (
+                <DropdownMenuItem
+                  onClick={() => table.options.meta?.onArchive?.(row.original)}
+                  className="text-orange-600"
+                >
+                  <Archive className="mr-2 h-4 w-4" />
+                  Archive
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  onClick={() => table.options.meta?.onRestore?.(row.original)}
+                  className="text-blue-600"
+                >
+                  <ArchiveRestore className="mr-2 h-4 w-4" />
+                  Restore
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem
+                onClick={() => table.options.meta?.onDelete?.(row.original)}
+                className="text-destructive"
+                disabled={!isActive}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      );
+    },
     enableSorting: false,
     enableHiding: false,
   },

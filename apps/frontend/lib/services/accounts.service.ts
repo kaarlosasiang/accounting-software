@@ -10,6 +10,7 @@ export interface Account {
   description?: string;
   normalBalance?: "Debit" | "Credit";
   parentAccount?: string;
+  isActive?: boolean; // Optional, defaults to true
   companyId?: string;
   createdAt?: Date | string;
   updatedAt?: Date | string;
@@ -73,10 +74,24 @@ class AccountsService {
    * Create a new account
    */
   async createAccount(accountData: Partial<Account>): Promise<AccountResponse> {
-    return apiFetch<AccountResponse>("/accounts", {
-      method: "POST",
-      body: JSON.stringify(accountData),
-    });
+    try {
+      const response = await apiFetch<AccountResponse>("/accounts", {
+        method: "POST",
+        body: JSON.stringify(accountData),
+      });
+      // Map message to error for consistent error handling
+      if (!response.success && response.message && !response.error) {
+        return { ...response, error: response.message };
+      }
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        data: {} as Account,
+        error:
+          error instanceof Error ? error.message : "Failed to create account",
+      };
+    }
   }
 
   /**
@@ -84,21 +99,49 @@ class AccountsService {
    */
   async updateAccount(
     id: string,
-    updateData: Partial<Account>
+    updateData: Partial<Account>,
   ): Promise<AccountResponse> {
-    return apiFetch<AccountResponse>(`/accounts/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(updateData),
-    });
+    try {
+      const response = await apiFetch<AccountResponse>(`/accounts/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(updateData),
+      });
+      // Map message to error for consistent error handling
+      if (!response.success && response.message && !response.error) {
+        return { ...response, error: response.message };
+      }
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        data: {} as Account,
+        error:
+          error instanceof Error ? error.message : "Failed to update account",
+      };
+    }
   }
 
   /**
    * Delete an account
    */
   async deleteAccount(id: string): Promise<AccountResponse> {
-    return apiFetch<AccountResponse>(`/accounts/${id}`, {
-      method: "DELETE",
-    });
+    try {
+      const response = await apiFetch<AccountResponse>(`/accounts/${id}`, {
+        method: "DELETE",
+      });
+      // Map message to error for consistent error handling
+      if (!response.success && response.message && !response.error) {
+        return { ...response, error: response.message };
+      }
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        data: {} as Account,
+        error:
+          error instanceof Error ? error.message : "Failed to delete account",
+      };
+    }
   }
 
   /**
@@ -113,7 +156,7 @@ class AccountsService {
    */
   async searchAccounts(query: string): Promise<AccountsResponse> {
     return apiFetch<AccountsResponse>(
-      `/accounts/search?q=${encodeURIComponent(query)}`
+      `/accounts/search?q=${encodeURIComponent(query)}`,
     );
   }
 
@@ -122,6 +165,134 @@ class AccountsService {
    */
   async getChartOfAccounts(): Promise<ChartOfAccountsResponse> {
     return apiFetch<ChartOfAccountsResponse>("/accounts/chart/view");
+  }
+
+  /**
+   * Archive an account (soft delete)
+   */
+  async archiveAccount(id: string): Promise<AccountResponse> {
+    try {
+      const response = await apiFetch<AccountResponse>(
+        `/accounts/${id}/archive`,
+        {
+          method: "PUT",
+        },
+      );
+      // Map message to error for consistent error handling
+      if (!response.success && response.message && !response.error) {
+        return { ...response, error: response.message };
+      }
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        data: {} as Account,
+        error:
+          error instanceof Error ? error.message : "Failed to archive account",
+      };
+    }
+  }
+
+  /**
+   * Restore an archived account
+   */
+  async restoreAccount(id: string): Promise<AccountResponse> {
+    try {
+      const response = await apiFetch<AccountResponse>(
+        `/accounts/${id}/restore`,
+        {
+          method: "PUT",
+        },
+      );
+      // Map message to error for consistent error handling
+      if (!response.success && response.message && !response.error) {
+        return { ...response, error: response.message };
+      }
+      return response;
+    } catch (error) {
+      return {
+        success: false,
+        data: {} as Account,
+        error:
+          error instanceof Error ? error.message : "Failed to restore account",
+      };
+    }
+  }
+
+  /**
+   * Reconcile account balance with ledger
+   */
+  async reconcileAccountBalance(id: string): Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+    data: {
+      accountId: string;
+      accountCode: string;
+      accountName: string;
+      previousBalance?: number;
+      actualBalance?: number;
+      difference?: number;
+      reconciled: boolean;
+      balance?: number;
+    };
+  }> {
+    try {
+      return await apiFetch(`/accounts/${id}/reconcile`, {
+        method: "POST",
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to reconcile account",
+        data: {
+          accountId: id,
+          accountCode: "",
+          accountName: "",
+          reconciled: false,
+        },
+      };
+    }
+  }
+
+  /**
+   * Reconcile all account balances
+   */
+  async reconcileAllAccountBalances(): Promise<{
+    success: boolean;
+    message?: string;
+    error?: string;
+    data: {
+      totalAccounts: number;
+      reconciledCount: number;
+      inSyncCount: number;
+      totalDifference: number;
+      results: any[];
+    };
+  }> {
+    try {
+      return await apiFetch(`/accounts/reconcile-all`, {
+        method: "POST",
+      });
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Failed to reconcile accounts",
+        data: {
+          totalAccounts: 0,
+          reconciledCount: 0,
+          inSyncCount: 0,
+          totalDifference: 0,
+          results: [],
+        },
+      };
+    }
   }
 }
 

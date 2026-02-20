@@ -81,16 +81,22 @@ export function InventoryItemForm({
     const defaultItemType = propItemType || initialData?.itemType || "Product";
     const baseData: InventoryItem = {
       itemType: defaultItemType,
-      sku: "",
-      itemName: "",
-      description: "",
+      sku: defaultItemType === "Service" ? "SVC-001" : "RICE-25KG",
+      itemName:
+        defaultItemType === "Service"
+          ? "Catering Service (per head)"
+          : "Premium Rice 25kg Sack",
+      description:
+        defaultItemType === "Service"
+          ? "Full catering service per person including food, setup, and service crew"
+          : "Premium Sinandomeng rice, 25kg sack - main ingredient for all rice meals",
       category: defaultItemType === "Service" ? "Service" : "Food",
-      unit: defaultItemType === "Service" ? "service" : "pcs",
-      quantityOnHand: defaultItemType === "Service" ? 0 : 0,
+      unit: defaultItemType === "Service" ? "service" : "sack",
+      quantityOnHand: defaultItemType === "Service" ? 0 : 10,
       quantityAsOfDate: new Date(),
-      reorderLevel: defaultItemType === "Service" ? 0 : 0,
-      unitCost: defaultItemType === "Service" ? 0 : 0,
-      sellingPrice: 0,
+      reorderLevel: defaultItemType === "Service" ? 0 : 5,
+      unitCost: defaultItemType === "Service" ? 0 : 1400,
+      sellingPrice: defaultItemType === "Service" ? 450 : 0,
       inventoryAccountId: "",
       cogsAccountId: "",
       incomeAccountId: "",

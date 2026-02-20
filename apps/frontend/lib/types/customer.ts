@@ -40,6 +40,7 @@ export interface Customer {
 /**
  * Form-specific type for customers
  * - Excludes _id, currentBalance, createdAt, updatedAt, virtual fields
+ * - customerCode is optional (auto-generated on backend)
  */
 export type CustomerForm = Omit<
   Customer,
@@ -50,7 +51,10 @@ export type CustomerForm = Omit<
   | "fullBillingAddress"
   | "fullShippingAddress"
   | "availableCredit"
->;
+  | "customerCode"
+> & {
+  customerCode?: string;
+};
 
 /**
  * Props for the CustomerForm component

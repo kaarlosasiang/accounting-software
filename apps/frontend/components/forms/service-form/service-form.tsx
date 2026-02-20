@@ -79,12 +79,13 @@ export function ServiceForm({
   const getDefaultValues = (): Partial<ServiceFormData> => {
     const baseData: Partial<ServiceFormData> = {
       itemType: "Service",
-      sku: "",
-      itemName: "",
-      description: "",
+      sku: "SVC-CATERING",
+      itemName: "Catering Service (per head)",
+      description:
+        "Full Filipino buffet catering - includes food preparation, delivery, setup, serving, and cleanup",
       category: "Service",
       unit: "service",
-      sellingPrice: 0,
+      sellingPrice: 450,
       incomeAccountId: "",
       salesTaxEnabled: false,
       salesTaxRate: undefined,

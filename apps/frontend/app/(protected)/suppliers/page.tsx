@@ -49,6 +49,7 @@ declare module "@tanstack/react-table" {
     onEdit?: (supplier: TData) => void;
     onView?: (supplier: TData) => void;
     onDelete?: (supplier: TData) => void;
+    onRestore?: (supplier: TData) => void;
   }
 }
 
@@ -58,9 +59,11 @@ export default function SuppliersPage() {
     loading: isLoading,
     fetchSuppliers,
     deleteSupplier,
+    updateSupplier,
   } = useSuppliers();
   // Keep lightweight search input wired to hidden column "search"
   const [searchQuery, setSearchQuery] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] =
     useState<ColumnsSupplier | null>(null);
@@ -86,7 +89,9 @@ export default function SuppliersPage() {
 
   // Transform suppliers from hook
   const suppliers = rawSuppliers.map(transformSupplier);
-  const filteredSuppliers = suppliers; // DataTable handles filters client-side
+  const filteredSuppliers = showInactive
+    ? suppliers
+    : suppliers.filter((supplier) => supplier.isActive);
 
   const totalSuppliers = suppliers.length;
   const activeSuppliers = suppliers.filter((s) => s.isActive).length;
@@ -169,7 +174,7 @@ export default function SuppliersPage() {
       onDelete: async (supplier: ColumnsSupplier) => {
         if (
           !confirm(
-            `Are you sure you want to delete ${supplier.supplierName}? This will deactivate the supplier.`,
+            `Are you sure you want to deactivate ${supplier.supplierName}?`,
           )
         ) {
           return;
@@ -177,8 +182,23 @@ export default function SuppliersPage() {
 
         try {
           await deleteSupplier(supplier.id);
+          await fetchSuppliers();
         } catch (error) {
           console.error("Error deleting supplier:", error);
+        }
+      },
+      onRestore: async (supplier: ColumnsSupplier) => {
+        if (
+          !confirm(`Are you sure you want to restore ${supplier.supplierName}?`)
+        ) {
+          return;
+        }
+
+        try {
+          await updateSupplier(supplier.id, { isActive: true });
+          await fetchSuppliers();
+        } catch (error) {
+          console.error("Error restoring supplier:", error);
         }
       },
     },
@@ -189,6 +209,9 @@ export default function SuppliersPage() {
     setIsSheetOpen(false);
     setEditingSupplier(null);
     setEditingFormData(undefined);
+
+    // Refresh table data after creating/updating supplier
+    await fetchSuppliers();
   };
 
   const handleNewSupplier = () => {
@@ -388,6 +411,14 @@ export default function SuppliersPage() {
               </div>
               <DataTableFilterMenu table={table} />
               <DataTableSortList table={table} />
+              <Button
+                variant={showInactive ? "default" : "outline"}
+                size="sm"
+                className="font-normal"
+                onClick={() => setShowInactive((prev) => !prev)}
+              >
+                {showInactive ? "Hide Inactive" : "Show Inactive"}
+              </Button>
               <Button
                 variant="outline"
                 size={"sm"}

@@ -113,7 +113,12 @@ const inventoryItemSchema = z
   .refine(
     (data) => {
       // Only validate selling price vs unit cost for products with unitCost
-      if (data.unitCost !== undefined && data.unitCost > 0) {
+      // Allow selling price of 0 for ingredients/raw materials not sold directly
+      if (
+        data.unitCost !== undefined &&
+        data.unitCost > 0 &&
+        data.sellingPrice > 0
+      ) {
         return data.sellingPrice >= data.unitCost;
       }
       return true;
