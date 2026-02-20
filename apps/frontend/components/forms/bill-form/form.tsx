@@ -112,32 +112,16 @@ export function BillForm({ open, onOpenChange, onSuccess }: BillFormProps) {
       dueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000), // 15 days (Net 15 from supplier)
       lineItems: [
         {
-          description: "Premium Rice 25kg Sack",
-          quantity: 5,
-          unitPrice: 1400,
-          amount: 7000,
-          accountId: "",
-          taxRate: 0,
-        },
-        {
-          description: "Fresh Vegetables Assorted (bulk)",
-          quantity: 10,
-          unitPrice: 350,
-          amount: 3500,
-          accountId: "",
-          taxRate: 0,
-        },
-        {
-          description: "Pork Belly 5kg",
-          quantity: 4,
-          unitPrice: 650,
-          amount: 2600,
+          description: "",
+          quantity: 1,
+          unitPrice: 0,
+          amount: 0,
           accountId: "",
           taxRate: 0,
         },
       ],
       taxRate: 0,
-      notes: "Weekly food supplies order - Week 1 February 2026",
+      notes: "",
       status: "Draft" as const,
     },
   });

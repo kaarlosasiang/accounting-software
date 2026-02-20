@@ -650,8 +650,10 @@ export default function RecordPaymentPage() {
               <CardContent>
                 {/* Payment Type Selection - only show if no URL params */}
                 {!invoiceId && !billId && (
-                  <FormItem className="mb-6">
-                    <FormLabel>Payment Type</FormLabel>
+                  <div className="mb-6 space-y-2">
+                    <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                      Payment Type
+                    </label>
                     <Select
                       value={paymentType}
                       onValueChange={(value) =>
@@ -670,7 +672,7 @@ export default function RecordPaymentPage() {
                         </SelectItem>
                       </SelectContent>
                     </Select>
-                  </FormItem>
+                  </div>
                 )}
 
                 <Form {...form}>

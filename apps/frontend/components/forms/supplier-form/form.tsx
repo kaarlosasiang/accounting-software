@@ -51,23 +51,23 @@ export function SupplierForm({
 
     const baseData: Partial<SupplierSchemaType> = {
       supplierCode: undefined,
-      supplierName: "Fresh Harvest Market",
-      displayName: "Fresh Harvest",
-      email: "orders@freshharvestmarket.ph",
-      phone: "+63 2 8234 5678",
+      supplierName: "",
+      displayName: "",
+      email: "",
+      phone: "",
       website: "",
       address: {
-        street: "Stall 42, Farmers Market",
-        city: "Quezon City",
-        state: "Metro Manila",
-        zipCode: "1100",
-        country: "Philippines",
+        street: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "",
       },
-      taxId: "789-012-345-000",
-      paymentTerms: "Net 15",
+      taxId: "",
+      paymentTerms: "",
       openingBalance: 0,
       isActive: true,
-      notes: "Main supplier for fresh vegetables, meat, and seafood",
+      notes: "",
     };
 
     if (initialData) {

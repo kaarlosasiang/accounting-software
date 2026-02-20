@@ -136,10 +136,10 @@ const data = {
           title: "Record Payment",
           url: "/payments/create",
         },
-        {
-          title: "Bank Reconciliation",
-          url: "/banking/reconciliation",
-        },
+        // {
+        //   title: "Bank Reconciliation",
+        //   url: "/banking/reconciliation",
+        // },
       ],
     },
     {
@@ -170,14 +170,14 @@ const data = {
           title: "Items & Products",
           url: "/inventory",
         },
-        {
-          title: "Stock Adjustments",
-          url: "/inventory/adjustments",
-        },
-        {
-          title: "Stock Valuation",
-          url: "/inventory/valuation",
-        },
+        // {
+        //   title: "Stock Adjustments",
+        //   url: "/inventory/adjustments",
+        // },
+        // {
+        //   title: "Stock Valuation",
+        //   url: "/inventory/valuation",
+        // },
         {
           title: "Movement History",
           url: "/inventory/transactions",

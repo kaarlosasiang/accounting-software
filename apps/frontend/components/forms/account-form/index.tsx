@@ -61,16 +61,14 @@ export function AccountForm({ initialData, isEdit = false }: AccountFormProps) {
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
-      accountCode: initialData?.accountCode || "1000",
-      accountName: initialData?.accountName || "Cash on Hand",
+      accountCode: initialData?.accountCode || "",
+      accountName: initialData?.accountName || "",
       accountType: initialData?.accountType || "Asset",
-      subType: initialData?.subType || "Current Asset",
+      subType: initialData?.subType || "",
       normalBalance: initialData?.normalBalance || "Debit",
       parentAccount: initialData?.parentAccount || "",
-      description:
-        initialData?.description ||
-        "Cash register and petty cash for daily restaurant operations",
-      balance: initialData?.balance || 50000,
+      description: initialData?.description || "",
+      balance: initialData?.balance || 0,
     },
   });
 

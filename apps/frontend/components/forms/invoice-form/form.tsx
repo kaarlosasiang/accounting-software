@@ -174,25 +174,18 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
       issueDate: new Date(),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
       paymentTerms: "net30",
-      taxRate: "12", // 12% VAT (standard Philippine rate)
+      taxRate: "0",
       discount: "0",
       items: [
         {
-          description: "Catering Service - 50 pax Corporate Lunch Buffet",
-          quantity: "50",
-          rate: "450",
-          accountId: "",
-        },
-        {
-          description: "Venue Setup & Event Coordination",
+          description: "",
           quantity: "1",
-          rate: "5000",
+          rate: "0",
           accountId: "",
         },
       ],
-      notes: "Salamat po! Thank you for choosing Kusina ni Maria.",
-      terms:
-        "Payment is due within 30 days of invoice date. Bank transfer preferred.",
+      notes: "",
+      terms: "",
     },
   });
 
