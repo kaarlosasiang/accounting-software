@@ -1,6 +1,15 @@
 ---
 import "../styles/global.css";
-import { LandingPage } from "@/components/LandingPage";
+import { Navigation } from "@/components/landing/Navigation";
+import { HeroSection } from "@/components/landing/HeroSection";
+import { FeaturesSection } from "@/components/landing/FeaturesSection";
+import { HowItWorksSection } from "@/components/landing/HowItWorksSection";
+import { MetricsSection } from "@/components/landing/MetricsSection";
+import { SecuritySection } from "@/components/landing/SecuritySection";
+import { PricingSection } from "@/components/landing/PricingSection";
+import { FaqSection } from "@/components/landing/FaqSection";
+import { CtaSection } from "@/components/landing/CtaSection";
+import { FooterSection } from "@/components/landing/FooterSection";
 ---
 
 <!doctype html>
@@ -11,14 +20,47 @@ import { LandingPage } from "@/components/LandingPage";
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" href="/favicon.ico" />
     <meta name="generator" content={Astro.generator} />
-    <title>AM FINTRASS - Close Your Books Faster</title>
+    <title>AM FINTRASS — Close Your Books Faster</title>
     <meta
       name="description"
-      content="Smart accounting built for growing businesses. Import bank statements via CSV, categorize transactions, and get up‑to‑date cash flow and profit insights."
+      content="Smart accounting built for growing businesses. Journal entries, invoices, reports, and real-time cash flow — all in one place."
     />
+    <!-- Prevent dark-mode flash: apply stored theme before first paint -->
+    <script is:inline>
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          if (
+            stored === "dark" ||
+            (!stored &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches)
+          ) {
+            document.documentElement.classList.add("dark");
+          } else {
+            document.documentElement.classList.remove("dark");
+          }
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
   </head>
 
-  <body>
-    <LandingPage client:load />
+  <body class="bg-background text-foreground antialiased">
+    <!-- Navigation: hydrated immediately for scroll listener + theme toggle -->
+    <Navigation client:load />
+
+    <!-- Hero: hydrated immediately (above the fold) -->
+    <HeroSection client:load />
+
+    <!-- All remaining sections: hydrated lazily when scrolled into view -->
+    <FeaturesSection client:visible />
+    <HowItWorksSection client:visible />
+    <MetricsSection client:visible />
+    <SecuritySection client:visible />
+    <PricingSection client:visible />
+    <FaqSection client:visible />
+    <CtaSection client:visible />
+    <FooterSection client:visible />
   </body>
 </html>
