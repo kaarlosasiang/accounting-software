@@ -413,7 +413,15 @@ export default function RecordPaymentPage() {
             organizationId!,
           );
 
-          setSuggestedAllocations(result.data?.allocations || []);
+          setSuggestedAllocations(
+            (result.data?.allocations || []).map((a) => ({
+              documentId: a.documentId,
+              documentNumber: a.documentNumber,
+              allocatedAmount: a.allocatedAmount,
+              documentBalance: a.invoiceBalance ?? 0,
+              remainingBalance: a.remainingBalance ?? 0,
+            })),
+          );
         } else {
           // For bill payments, clear suggestions since backend doesn't support it yet
           setSuggestedAllocations([]);

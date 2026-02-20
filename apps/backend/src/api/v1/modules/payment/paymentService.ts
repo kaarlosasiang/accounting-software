@@ -676,7 +676,7 @@ export const paymentService = {
 
             // Update bill status
             if (Math.abs(bill.balanceDue - bill.totalAmount) < 0.01) {
-              bill.status = BillStatus.OPEN; // Back to unpaid
+              bill.status = BillStatus.SENT; // Back to unpaid
             } else if (bill.balanceDue > 0 && bill.amountPaid > 0) {
               bill.status = BillStatus.PARTIAL;
             }

@@ -241,7 +241,7 @@ export class JournalEntryService {
     // Validate period is not closed
     await this.validatePeriodNotClosed(
       companyId,
-      invoice.issueDate || new Date(),
+      invoice.invoiceDate || new Date(),
       false,
     );
 
@@ -363,7 +363,7 @@ export class JournalEntryService {
     // Validate period is not closed
     await this.validatePeriodNotClosed(
       companyId,
-      bill.billDate || new Date(),
+      bill.createdAt || new Date(),
       false,
     );
 
