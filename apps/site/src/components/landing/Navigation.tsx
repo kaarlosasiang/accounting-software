@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Menu, X, TrendingUp, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon } from "lucide-react";
 
 export function Navigation() {
   const [scrolled, setScrolled] = useState(false);
@@ -53,19 +53,16 @@ export function Navigation() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2.5 group">
-            <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-primary-foreground text-sm font-bold flex-shrink-0"
-              style={{
-                background:
-                  "linear-gradient(135deg, oklch(0.7 0.18 170), oklch(0.55 0.18 170))",
-              }}
-            >
-              <TrendingUp size={16} />
-            </div>
-            <span className="font-semibold text-foreground text-sm tracking-tight">
-              AM FINTRASS
-            </span>
+          <a href="/" className="flex items-center group">
+            <img
+              src={
+                theme === "dark"
+                  ? "/am-fintrass-logo-light.png"
+                  : "/am-fintrass-logo.png"
+              }
+              alt="AM FINTRASS"
+              className="h-12 w-auto"
+            />
           </a>
 
           {/* Desktop Nav */}

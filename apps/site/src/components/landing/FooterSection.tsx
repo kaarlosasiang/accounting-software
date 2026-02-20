@@ -1,4 +1,4 @@
-import { TrendingUp, Twitter, Linkedin, Github } from "lucide-react";
+import { Twitter, Linkedin, Github } from "lucide-react";
 
 const links = {
   Product: [
@@ -35,19 +35,17 @@ export function FooterSection() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <a href="/" className="flex items-center gap-2.5 mb-4">
-              <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-primary-foreground flex-shrink-0"
-                style={{
-                  background:
-                    "linear-gradient(135deg, oklch(0.7 0.18 170), oklch(0.55 0.18 170))",
-                }}
-              >
-                <TrendingUp size={16} />
-              </div>
-              <span className="font-semibold text-foreground text-sm tracking-tight">
-                AM FINTRASS
-              </span>
+            <a href="/" className="flex items-center mb-4">
+              <img
+                src="/am-fintrass-logo.png"
+                alt="AM FINTRASS"
+                className="h-12 w-auto dark:hidden"
+              />
+              <img
+                src="/am-fintrass-logo-light.png"
+                alt="AM FINTRASS"
+                className="h-12 w-auto hidden dark:block"
+              />
             </a>
             <p className="text-sm text-muted-foreground leading-relaxed max-w-xs">
               Smart accounting for growing businesses. Close your books faster.
