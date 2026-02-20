@@ -39,7 +39,7 @@ export const authServer = betterAuth({
     constants.corsOrigin,
     "https://www.amfintrass.com",
     "https://amfintrass.com",
-    "https://app.fintrass.com",
+    "https://app.amfintrass.com",
   ],
   emailAndPassword: {
     enabled: true,
