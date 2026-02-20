@@ -297,7 +297,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
         // If user wants to send (not just save as draft), call sendInvoice endpoint
         if (!saveAsDraft && response.data?._id) {
           const companyName = company?.name || "Your Company";
-          
+
           try {
             await invoiceService.sendInvoice(response.data._id, companyName);
             toast.success("Invoice created and sent successfully!");
@@ -310,7 +310,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
         } else {
           toast.success("Invoice saved as draft successfully");
         }
-        
+
         onSuccess?.();
       } else {
         throw new Error(response.error || "Failed to create invoice");
