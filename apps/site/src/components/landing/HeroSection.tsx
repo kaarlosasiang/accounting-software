@@ -43,8 +43,8 @@ export function HeroSection() {
             visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-mono font-medium border border-primary/40 rounded-full bg-primary/10 text-primary mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+          <span className="inline-flex items-center gap-2 px-3 py-1 text-xs font-mono font-medium border border-primary/40 rounded-full bg-primary/10 text-green-600 mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
             Launching Soon
           </span>
         </div>
