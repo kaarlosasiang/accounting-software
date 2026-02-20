@@ -20,11 +20,11 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, getCurrencySymbol } from "@/lib/format";
 import type { Account } from "@/lib/services/accounts.service";
 import Link from "next/link";
 
-export const columns: ColumnDef<Account>[] = [
+export const createColumns = (currency?: string): ColumnDef<Account>[] => [
   // Hidden combined search column for global search
   {
     id: "search",
@@ -176,14 +176,14 @@ export const columns: ColumnDef<Account>[] = [
     cell: ({ row }) => (
       <div className="text-right">
         <span className="font-mono font-semibold">
-          {formatCurrency(row.getValue<number>("balance") || 0)}
+          {formatCurrency(row.getValue<number>("balance") || 0, currency)}
         </span>
       </div>
     ),
     meta: {
       label: "Balance",
       variant: "number",
-      unit: "$",
+      unit: getCurrencySymbol(currency),
     },
     enableColumnFilter: false,
     enableSorting: true,

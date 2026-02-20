@@ -36,6 +36,11 @@ import { useCustomers } from "@/hooks/use-customers";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { usePeriods } from "@/hooks/use-periods";
 import { formatCurrency, parseAmount } from "@/lib/utils";
+import { accountsService, type Account } from "@/lib/services/accounts.service";
+import { companySettingsService } from "@/lib/services/company-settings.service";
+import { invoiceService } from "@/lib/services/invoice.service";
+import { billService } from "@/lib/services/bill.service";
+import { paymentService } from "@/lib/services/payment.service";
 import {
   AlertCircle,
   Check,
@@ -79,7 +84,7 @@ const paymentFormSchema = z
       "Credit Card",
       "Other",
     ]),
-    referenceNumber: z.string().min(1, "Reference number is required"),
+    referenceNumber: z.string().optional(),
     bankAccountId: z.string().min(1, "Bank account is required"),
     notes: z.string().optional(),
   })
@@ -90,7 +95,16 @@ const paymentFormSchema = z
   .refine((data) => !(data.customerId && data.supplierId), {
     message: "Cannot select both Customer and Supplier",
     path: ["customerId"],
-  });
+  })
+  .refine(
+    (data) => {
+      return data.paymentMethod === "Cash" || !!data.referenceNumber?.trim();
+    },
+    {
+      message: "Reference number is required",
+      path: ["referenceNumber"],
+    },
+  );
 
 type PaymentFormData = z.infer<typeof paymentFormSchema>;
 
@@ -124,8 +138,6 @@ export default function RecordPaymentPage() {
   const amount = searchParams?.get("amount");
 
   const [paymentType, setPaymentType] = useState<"invoice" | "bill">("invoice");
-  const [selectedCustomer, setSelectedCustomer] = useState<string>("");
-  const [selectedSupplier, setSelectedSupplier] = useState<string>("");
   const [paymentAmount, setPaymentAmount] = useState<number>(0);
   const [allocations, setAllocations] = useState<PaymentAllocation[]>([]);
   const [suggestedAllocations, setSuggestedAllocations] = useState<
@@ -134,7 +146,7 @@ export default function RecordPaymentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState(false);
-  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<Account[]>([]);
   const [periodWarning, setPeriodWarning] = useState<{
     show: boolean;
     periodName: string;
@@ -217,24 +229,167 @@ export default function RecordPaymentPage() {
     });
   };
 
-  // Fetch bank accounts on mount
+  const selectedPaymentMethod = form.watch("paymentMethod");
+  const selectedCustomerId = form.watch("customerId");
+  const selectedSupplierId = form.watch("supplierId");
+
   useEffect(() => {
-    const fetchBankAccounts = async () => {
+    if (selectedPaymentMethod === "Cash") {
+      form.setValue("referenceNumber", "");
+    }
+  }, [selectedPaymentMethod, form]);
+
+  // Prefill allocation for direct invoice/bill payment links
+  useEffect(() => {
+    const prefillFromDocument = async () => {
+      if (!organizationId || allocations.length > 0) return;
+
       try {
-        const response = await fetch(
-          `/api/v1/accounts?companyId=${organizationId}&type=Asset&subType=Bank`,
-        );
-        const data = await response.json();
-        setBankAccounts(data.data || []);
+        if (invoiceId) {
+          const result = await invoiceService.getInvoiceById(invoiceId);
+          const invoice = result?.data;
+          if (!invoice) return;
+
+          const customerValue =
+            typeof invoice.customerId === "string"
+              ? invoice.customerId
+              : invoice.customerId?._id;
+
+          if (customerValue) {
+            form.setValue("customerId", customerValue);
+            form.setValue("supplierId", "");
+          }
+
+          const allocationAmount = Math.min(
+            paymentAmount,
+            invoice.balanceDue ?? invoice.totalAmount ?? paymentAmount,
+          );
+
+          setAllocations([
+            {
+              documentId: invoice._id || invoiceId,
+              documentNumber: invoice.invoiceNumber || invoiceId,
+              documentBalance:
+                invoice.balanceDue ?? invoice.totalAmount ?? paymentAmount,
+              allocatedAmount: allocationAmount,
+              remaining:
+                (invoice.balanceDue ?? invoice.totalAmount ?? paymentAmount) -
+                allocationAmount,
+            },
+          ]);
+          return;
+        }
+
+        if (billId) {
+          const result = await billService.getBillById(billId);
+          const bill = result?.data;
+          if (!bill) return;
+
+          const supplierValue =
+            typeof bill.supplierId === "string"
+              ? bill.supplierId
+              : bill.supplierId?._id;
+
+          if (supplierValue) {
+            form.setValue("supplierId", supplierValue);
+            form.setValue("customerId", "");
+          }
+
+          const allocationAmount = Math.min(
+            paymentAmount,
+            bill.balanceDue ?? bill.totalAmount ?? paymentAmount,
+          );
+
+          setAllocations([
+            {
+              documentId: bill._id || billId,
+              documentNumber: bill.billNumber || billId,
+              documentBalance:
+                bill.balanceDue ?? bill.totalAmount ?? paymentAmount,
+              allocatedAmount: allocationAmount,
+              remaining:
+                (bill.balanceDue ?? bill.totalAmount ?? paymentAmount) -
+                allocationAmount,
+            },
+          ]);
+        }
       } catch (err) {
-        console.error("Failed to fetch bank accounts:", err);
+        console.error("Failed to prefill payment allocation:", err);
+      }
+    };
+
+    prefillFromDocument();
+  }, [
+    invoiceId,
+    billId,
+    organizationId,
+    paymentAmount,
+    form,
+    allocations.length,
+  ]);
+
+  // Fetch bank/cash accounts based on payment method
+  useEffect(() => {
+    const fetchPaymentAccounts = async () => {
+      try {
+        const [accountsResult, settingsResult] = await Promise.all([
+          accountsService.getAccountsByType("Asset"),
+          companySettingsService.getCompanySettings(),
+        ]);
+
+        const allAssetAccounts = (accountsResult.data || []).filter(
+          (account) => account.isActive !== false,
+        );
+
+        const linkedBankAccountIds = new Set(
+          (settingsResult.data?.banking?.accounts || [])
+            .filter((bankAccount) => bankAccount.isActive !== false)
+            .map((bankAccount) => bankAccount.linkedAccountId)
+            .filter((value): value is string => Boolean(value)),
+        );
+
+        const filterByKeywords = (account: Account, keywords: string[]) => {
+          const text =
+            `${account.subType || ""} ${account.accountName || ""}`.toLowerCase();
+          return keywords.some((keyword) => text.includes(keyword));
+        };
+
+        const filteredAccounts =
+          selectedPaymentMethod === "Cash"
+            ? allAssetAccounts.filter((account) =>
+                filterByKeywords(account, [
+                  "cash",
+                  "petty cash",
+                  "cash on hand",
+                ]),
+              )
+            : allAssetAccounts.filter((account) => {
+                if (linkedBankAccountIds.size > 0) {
+                  return linkedBankAccountIds.has(account._id);
+                }
+                return filterByKeywords(account, [
+                  "bank",
+                  "checking",
+                  "savings",
+                  "cash equivalent",
+                ]);
+              });
+
+        const accountOptions =
+          filteredAccounts.length > 0 ? filteredAccounts : allAssetAccounts;
+
+        setBankAccounts(accountOptions);
+        form.setValue("bankAccountId", "");
+      } catch (err) {
+        console.error("Failed to fetch payment accounts:", err);
+        setBankAccounts([]);
       }
     };
 
     if (organizationId) {
-      fetchBankAccounts();
+      fetchPaymentAccounts();
     }
-  }, [organizationId]);
+  }, [organizationId, selectedPaymentMethod, form]);
 
   /**
    * Fetch suggested allocations when customer/supplier and amount change
@@ -242,7 +397,7 @@ export default function RecordPaymentPage() {
   useEffect(() => {
     const fetchSuggestedAllocations = async () => {
       const selectedParty =
-        paymentType === "invoice" ? selectedCustomer : selectedSupplier;
+        paymentType === "invoice" ? selectedCustomerId : selectedSupplierId;
 
       if (!selectedParty || paymentAmount <= 0 || !organizationId) {
         setSuggestedAllocations([]);
@@ -250,33 +405,18 @@ export default function RecordPaymentPage() {
       }
 
       try {
-        const endpoint =
-          paymentType === "invoice"
-            ? "/api/v1/payments/suggest-allocations"
-            : "/api/v1/bill-payments/suggest-allocations"; // Assuming this endpoint exists for bills
+        // Only fetch suggestions for invoice payments (customer payments)
+        if (paymentType === "invoice") {
+          const result = await paymentService.getPaymentSuggestions(
+            selectedCustomerId!,
+            paymentAmount,
+            organizationId!,
+          );
 
-        const payload =
-          paymentType === "invoice"
-            ? {
-                companyId: organizationId,
-                customerId: selectedCustomer,
-                paymentAmount,
-              }
-            : {
-                companyId: organizationId,
-                supplierId: selectedSupplier,
-                paymentAmount,
-              };
-
-        const response = await fetch(endpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setSuggestedAllocations(data.data?.allocations || data.data || []);
+          setSuggestedAllocations(result.data?.allocations || []);
+        } else {
+          // For bill payments, clear suggestions since backend doesn't support it yet
+          setSuggestedAllocations([]);
         }
       } catch (err) {
         console.error("Failed to fetch suggested allocations:", err);
@@ -286,8 +426,8 @@ export default function RecordPaymentPage() {
     const timer = setTimeout(fetchSuggestedAllocations, 500);
     return () => clearTimeout(timer);
   }, [
-    selectedCustomer,
-    selectedSupplier,
+    selectedCustomerId,
+    selectedSupplierId,
     paymentAmount,
     paymentType,
     organizationId,
@@ -309,6 +449,32 @@ export default function RecordPaymentPage() {
 
     setAllocations(newAllocations);
   };
+
+  /**
+   * Auto-allocate when opened from a specific invoice/bill link
+   */
+  useEffect(() => {
+    if (allocations.length > 0 || suggestedAllocations.length === 0) return;
+
+    const targetDocumentId = invoiceId || billId;
+    if (!targetDocumentId) return;
+
+    const targetAllocation = suggestedAllocations.find(
+      (sugg) => sugg.documentId.toString() === targetDocumentId,
+    );
+
+    if (!targetAllocation) return;
+
+    setAllocations([
+      {
+        documentId: targetAllocation.documentId.toString(),
+        documentNumber: targetAllocation.documentNumber,
+        documentBalance: targetAllocation.documentBalance,
+        allocatedAmount: targetAllocation.allocatedAmount,
+        remaining: targetAllocation.remainingBalance,
+      },
+    ]);
+  }, [invoiceId, billId, suggestedAllocations, allocations.length]);
 
   /**
    * Add manual allocation
@@ -387,14 +553,14 @@ export default function RecordPaymentPage() {
 
     try {
       const isInvoicePayment = paymentType === "invoice";
-      const endpoint = isInvoicePayment
-        ? "/api/v1/payments/received"
-        : "/api/v1/payments/made";
       const payload = {
         companyId: organizationId,
         paymentDate: values.paymentDate,
         paymentMethod: values.paymentMethod,
-        referenceNumber: values.referenceNumber,
+        referenceNumber:
+          values.paymentMethod === "Cash"
+            ? `CASH-${Date.now()}`
+            : values.referenceNumber,
         amount: paymentAmount,
         bankAccountId: values.bankAccountId,
         allocations: allocations.map((a) => ({
@@ -409,16 +575,9 @@ export default function RecordPaymentPage() {
           : { supplierId: values.supplierId }),
       };
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to record payment");
-      }
+      await (isInvoicePayment
+        ? paymentService.recordPaymentReceived(payload)
+        : paymentService.recordPaymentMade(payload));
 
       setSuccess(true);
       setTimeout(() => {
@@ -524,8 +683,7 @@ export default function RecordPaymentPage() {
                                 value={field.value}
                                 onValueChange={(value) => {
                                   field.onChange(value);
-                                  setSelectedCustomer(value);
-                                  setSelectedSupplier(""); // Clear supplier when customer is selected
+                                  form.setValue("supplierId", ""); // Clear supplier when customer is selected
                                   setAllocations([]);
                                   setSuggestedAllocations([]);
                                 }}
@@ -561,8 +719,7 @@ export default function RecordPaymentPage() {
                                 value={field.value}
                                 onValueChange={(value) => {
                                   field.onChange(value);
-                                  setSelectedSupplier(value);
-                                  setSelectedCustomer(""); // Clear customer when supplier is selected
+                                  form.setValue("customerId", ""); // Clear customer when supplier is selected
                                   setAllocations([]);
                                   setSuggestedAllocations([]);
                                 }}
@@ -659,44 +816,61 @@ export default function RecordPaymentPage() {
                     />
 
                     {/* Reference Number */}
-                    <FormField
-                      control={form.control}
-                      name="referenceNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Reference Number</FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="Check #, Transaction ID, etc."
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormDescription>
-                            Bank transfer ID, check number, or transaction
-                            reference
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {selectedPaymentMethod !== "Cash" && (
+                      <FormField
+                        control={form.control}
+                        name="referenceNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Reference Number</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="Check #, Transaction ID, etc."
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              Bank transfer ID, check number, or transaction
+                              reference
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
 
-                    {/* Bank Account */}
+                    {/* Bank/Cash Account */}
                     <FormField
                       control={form.control}
                       name="bankAccountId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Deposit To Account</FormLabel>
+                          <FormLabel>
+                            {selectedPaymentMethod === "Cash"
+                              ? "Cash Account"
+                              : "Deposit To Account"}
+                          </FormLabel>
                           <FormControl>
                             <Select
                               value={field.value}
                               onValueChange={field.onChange}
                             >
                               <SelectTrigger>
-                                <SelectValue placeholder="Select bank account" />
+                                <SelectValue
+                                  placeholder={
+                                    selectedPaymentMethod === "Cash"
+                                      ? "Select cash account"
+                                      : "Select bank account"
+                                  }
+                                />
                               </SelectTrigger>
                               <SelectContent>
-                                {bankAccounts?.map((account: any) => (
+                                {bankAccounts?.length === 0 && (
+                                  <SelectItem value="__no_accounts__" disabled>
+                                    No matching accounts found
+                                  </SelectItem>
+                                )}
+                                {bankAccounts?.map((account) => (
                                   <SelectItem
                                     key={account._id}
                                     value={account._id}
@@ -708,6 +882,11 @@ export default function RecordPaymentPage() {
                               </SelectContent>
                             </Select>
                           </FormControl>
+                          <FormDescription>
+                            {selectedPaymentMethod === "Cash"
+                              ? "Select the cash account where this payment is received"
+                              : "Select the bank account where this payment is deposited"}
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -740,6 +919,13 @@ export default function RecordPaymentPage() {
                       )}
                       Record Payment
                     </Button>
+
+                    {allocations.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        Add or apply at least one allocation to enable
+                        recording.
+                      </p>
+                    )}
                   </form>
                 </Form>
               </CardContent>

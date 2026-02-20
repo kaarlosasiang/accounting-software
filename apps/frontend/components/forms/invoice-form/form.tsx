@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useCustomers } from "@/hooks/use-customers";
 import { useAccounts } from "@/hooks/use-accounts";
 import { usePeriods } from "@/hooks/use-periods";
+import { useOrganization } from "@/hooks/use-organization";
 import { inventoryService } from "@/lib/services/inventory.service";
 import type { InventoryItem } from "@/lib/types/inventory";
 import {
@@ -57,12 +58,21 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
   Calendar as CalendarIcon,
   Plus,
   Trash2,
   Check,
   ChevronsUpDown,
   AlertTriangle,
+  Package,
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -76,21 +86,31 @@ const invoiceItemSchema = z.object({
   rate: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, {
     message: "Rate must be a positive number",
   }),
+  accountId: z.string().min(1, "Account is required"),
 });
 
-const invoiceFormSchema = z.object({
-  client: z.string().min(1, "Client is required"),
-  clientEmail: z.string().email("Please enter a valid email"),
-  issueDate: z.date({
-    message: "Issue date is required",
-  }),
-  dueDate: z.date({
-    message: "Due date is required",
-  }),
-  items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
-  notes: z.string().optional(),
-  terms: z.string().optional(),
-});
+const invoiceFormSchema = z
+  .object({
+    client: z.string().min(1, "Client is required"),
+    clientEmail: z.string().email("Please enter a valid email"),
+    invoiceNumber: z.string().optional(),
+    issueDate: z.date({
+      message: "Issue date is required",
+    }),
+    dueDate: z.date({
+      message: "Due date is required",
+    }),
+    paymentTerms: z.string().default("net30"),
+    items: z.array(invoiceItemSchema).min(1, "At least one item is required"),
+    taxRate: z.string().default("12"),
+    discount: z.string().default("0"),
+    notes: z.string().optional(),
+    terms: z.string().optional(),
+  })
+  .refine((data) => data.dueDate >= data.issueDate, {
+    message: "Due date must be on or after issue date",
+    path: ["dueDate"],
+  });
 
 type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
@@ -103,8 +123,12 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
   const { customers, fetchCustomers } = useCustomers();
   const { accounts } = useAccounts("Revenue"); // Auto-fetches revenue accounts
   const { checkDateInClosedPeriod } = usePeriods();
+  const { company } = useOrganization();
   const [inventoryItems, setInventoryItems] = useState<InventoryItem[]>([]);
   const [isLoadingInventory, setIsLoadingInventory] = useState(true);
+  const [inventorySheetOpen, setInventorySheetOpen] = useState<number | null>(
+    null,
+  );
   const [periodWarning, setPeriodWarning] = useState<{
     show: boolean;
     periodName: string;
@@ -146,22 +170,29 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
     defaultValues: {
       client: "",
       clientEmail: "",
+      invoiceNumber: "",
       issueDate: new Date(),
       dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      paymentTerms: "net30",
+      taxRate: "12", // 12% VAT (standard Philippine rate)
+      discount: "0",
       items: [
         {
-          description: "Web Development Services - January 2026",
-          quantity: "40",
-          rate: "2500",
+          description: "Catering Service - 50 pax Corporate Lunch Buffet",
+          quantity: "50",
+          rate: "450",
+          accountId: "",
         },
         {
-          description: "UI/UX Design Consultation",
-          quantity: "10",
-          rate: "3000",
+          description: "Venue Setup & Event Coordination",
+          quantity: "1",
+          rate: "5000",
+          accountId: "",
         },
       ],
-      notes: "Thank you for your business!",
-      terms: "Payment is due within 30 days of invoice date.",
+      notes: "Salamat po! Thank you for choosing Kusina ni Maria.",
+      terms:
+        "Payment is due within 30 days of invoice date. Bank transfer preferred.",
     },
   });
 
@@ -221,21 +252,27 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
     }, 0);
   };
 
-  const calculateTax = (subtotal: number) => {
-    // Assuming 8% tax rate
-    return subtotal * 0.08;
+  const calculateDiscount = (subtotal: number) => {
+    const discount = parseFloat(form.watch("discount") || "0");
+    return discount;
+  };
+
+  const calculateTax = (subtotal: number, discount: number) => {
+    const taxRate = parseFloat(form.watch("taxRate") || "0");
+    return (subtotal - discount) * (taxRate / 100);
   };
 
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
-    const tax = calculateTax(subtotal);
-    return subtotal + tax;
+    const discount = calculateDiscount(subtotal);
+    const tax = calculateTax(subtotal, discount);
+    return subtotal - discount + tax;
   };
 
-  async function onSubmit(data: InvoiceFormValues) {
+  async function onSubmit(data: InvoiceFormValues, saveAsDraft = false) {
     setIsSubmitting(true);
     try {
-      // Convert form data to API format
+      // Convert form data to API format - always create as Draft first
       const invoiceData: InvoiceFormData = {
         customerId: data.client,
         invoiceDate: data.issueDate,
@@ -244,20 +281,36 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
           description: item.description,
           quantity: parseFloat(item.quantity),
           unitPrice: parseFloat(item.rate),
-          accountId: accounts[0]?._id || "", // Default to first revenue account
+          accountId: item.accountId,
           amount: parseFloat(item.quantity) * parseFloat(item.rate),
         })),
-        taxRate: 8, // 8% tax rate
-        discount: 0,
+        taxRate: parseFloat(data.taxRate),
+        discount: parseFloat(data.discount || "0"),
         notes: data.notes,
         terms: data.terms,
-        status: "Draft", // Start as draft
+        status: "Draft", // Always create as draft
       };
 
       const response = await invoiceService.createInvoice(invoiceData);
 
       if (response.success) {
-        toast.success("Invoice created successfully");
+        // If user wants to send (not just save as draft), call sendInvoice endpoint
+        if (!saveAsDraft && response.data?._id) {
+          const companyName = company?.name || "Your Company";
+          
+          try {
+            await invoiceService.sendInvoice(response.data._id, companyName);
+            toast.success("Invoice created and sent successfully!");
+          } catch (sendError) {
+            toast.warning(
+              "Invoice created but failed to send email. You can send it later from the invoice list.",
+            );
+            console.error("Failed to send invoice email:", sendError);
+          }
+        } else {
+          toast.success("Invoice saved as draft successfully");
+        }
+        
         onSuccess?.();
       } else {
         throw new Error(response.error || "Failed to create invoice");
@@ -350,24 +403,57 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
             </div>
 
             {/* Balance Due Display - QuickBooks Style */}
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
-                Balance Due
-              </span>
-              <span className="text-4xl font-bold text-primary">
-                ₱
-                {calculateTotal().toLocaleString("en-PH", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
-              </span>
+            <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Balance Due
+                </span>
+                <span className="text-4xl font-bold text-primary">
+                  ₱
+                  {calculateTotal().toLocaleString("en-PH", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </span>
+              </div>
+              {form.watch("client") && (
+                <div className="flex flex-col items-end gap-1 pt-2 border-t">
+                  <span className="text-xs text-muted-foreground">
+                    Customer Balance
+                  </span>
+                  <span className="text-sm font-semibold">
+                    ₱
+                    {(
+                      customers.find((c) => c._id === form.watch("client"))
+                        ?.currentBalance || 0
+                    ).toLocaleString("en-PH", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
           <Separator />
 
           {/* Invoice Details Grid - QuickBooks Style */}
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-4">
+            <FormField
+              control={form.control}
+              name="invoiceNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Invoice No.</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Auto-generated" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <FormField
               control={form.control}
               name="issueDate"
@@ -452,34 +538,104 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
               )}
             />
 
-            <FormItem>
-              <FormLabel>Terms</FormLabel>
-              <Select defaultValue="net30">
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="net15">Net 15</SelectItem>
-                  <SelectItem value="net30">Net 30</SelectItem>
-                  <SelectItem value="net45">Net 45</SelectItem>
-                  <SelectItem value="net60">Net 60</SelectItem>
-                  <SelectItem value="due_on_receipt">Due on Receipt</SelectItem>
-                </SelectContent>
-              </Select>
-            </FormItem>
+            <FormField
+              control={form.control}
+              name="paymentTerms"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Payment Terms</FormLabel>
+                  <Select
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Auto-update due date based on terms
+                      const issueDate = form.getValues("issueDate");
+                      if (issueDate) {
+                        let daysToAdd = 30; // default
+                        switch (value) {
+                          case "net15":
+                            daysToAdd = 15;
+                            break;
+                          case "net30":
+                            daysToAdd = 30;
+                            break;
+                          case "net45":
+                            daysToAdd = 45;
+                            break;
+                          case "net60":
+                            daysToAdd = 60;
+                            break;
+                          case "due_on_receipt":
+                            daysToAdd = 0;
+                            break;
+                        }
+                        const newDueDate = new Date(issueDate);
+                        newDueDate.setDate(newDueDate.getDate() + daysToAdd);
+                        form.setValue("dueDate", newDueDate);
+                      }
+                    }}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select terms" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="net15">Net 15</SelectItem>
+                      <SelectItem value="net30">Net 30</SelectItem>
+                      <SelectItem value="net45">Net 45</SelectItem>
+                      <SelectItem value="net60">Net 60</SelectItem>
+                      <SelectItem value="due_on_receipt">
+                        Due on Receipt
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="taxRate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tax Rate</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select tax rate" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="0">No Tax (0%)</SelectItem>
+                      <SelectItem value="1">Percentage Tax (1%)</SelectItem>
+                      <SelectItem value="2">Percentage Tax (2%)</SelectItem>
+                      <SelectItem value="3">Percentage Tax (3%)</SelectItem>
+                      <SelectItem value="12">VAT (12%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           {/* Line Items Table - QuickBooks Style */}
           <div className="space-y-4">
             <div className="border rounded-lg overflow-hidden">
               {/* Table Header */}
-              <div className="grid grid-cols-12 gap-4 bg-muted/50 px-4 py-3 text-sm font-medium border-b">
-                <div className="col-span-1 text-center">#</div>
-                <div className="col-span-4">DESCRIPTION</div>
-                <div className="col-span-2 text-center">QTY</div>
-                <div className="col-span-2 text-center">RATE</div>
-                <div className="col-span-2 text-right">AMOUNT</div>
-                <div className="col-span-1"></div>
+              <div className="grid grid-cols-[50px_1fr_100px_120px_100px_120px_50px] gap-4 bg-muted/50 px-4 py-3 text-sm font-medium border-b">
+                <div className="text-center">#</div>
+                <div>DESCRIPTION</div>
+                <div className="text-center">QTY</div>
+                <div className="text-center">RATE</div>
+                <div className="text-center">ACCOUNT</div>
+                <div className="text-right">AMOUNT</div>
+                <div></div>
               </div>
 
               {/* Table Body */}
@@ -487,172 +643,204 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                 {fields.map((field, index) => (
                   <div
                     key={field.id}
-                    className="grid grid-cols-12 gap-4 px-4 py-4 items-center hover:bg-muted/20 transition-colors"
+                    className="grid grid-cols-[50px_1fr_100px_120px_100px_120px_50px] gap-4 px-4 py-4 items-start hover:bg-muted/20 transition-colors"
                   >
-                    <div className="col-span-1 text-center text-muted-foreground">
+                    <div className="text-center text-muted-foreground pt-2">
                       {index + 1}
                     </div>
 
-                    <div className="col-span-4">
+                    <div>
                       <FormField
                         control={form.control}
                         name={`items.${index}.description`}
                         render={({ field }) => (
-                          <FormItem className="flex flex-col">
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <FormControl>
-                                  <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    className={cn(
-                                      "justify-between  shadow-none focus:ring-1 font-normal",
-                                      !field.value && "text-muted-foreground",
-                                    )}
-                                  >
-                                    {field.value
-                                      ? inventoryItems.find(
-                                          (item) =>
-                                            item.itemName === field.value,
-                                        )?.itemName
-                                      : "Select item..."}
-                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                  </Button>
-                                </FormControl>
-                              </PopoverTrigger>
-                              <PopoverContent
-                                className="w-[400px] p-0"
-                                align="start"
+                          <FormItem>
+                            <div className="flex gap-2">
+                              <FormControl>
+                                <Input
+                                  placeholder="Enter item description"
+                                  className="shadow-none focus-visible:ring-1"
+                                  {...field}
+                                />
+                              </FormControl>
+                              <Sheet
+                                open={inventorySheetOpen === index}
+                                onOpenChange={(open) =>
+                                  setInventorySheetOpen(open ? index : null)
+                                }
                               >
-                                <Command>
-                                  <CommandInput placeholder="Search items..." />
-                                  <CommandList>
-                                    <CommandEmpty>
-                                      {isLoadingInventory
-                                        ? "Loading items..."
-                                        : "No items found."}
-                                    </CommandEmpty>
-                                    {inventoryItems.filter(
-                                      (item) => item.itemType === "Product",
-                                    ).length > 0 && (
-                                      <CommandGroup heading="Products">
-                                        {inventoryItems
-                                          .filter(
-                                            (item) =>
-                                              item.itemType === "Product",
-                                          )
-                                          .map((item) => (
-                                            <CommandItem
-                                              key={item._id}
-                                              value={item.itemName}
-                                              onSelect={() => {
-                                                // Update description
-                                                field.onChange(item.itemName);
-                                                // Auto-fill rate
-                                                form.setValue(
-                                                  `items.${index}.rate`,
-                                                  item.sellingPrice.toString(),
-                                                );
-                                                // Set quantity to 1 if empty
-                                                const currentQty =
-                                                  form.getValues(
-                                                    `items.${index}.quantity`,
-                                                  );
-                                                if (!currentQty) {
-                                                  form.setValue(
-                                                    `items.${index}.quantity`,
-                                                    "1",
-                                                  );
-                                                }
-                                              }}
-                                            >
-                                              <Check
-                                                className={cn(
-                                                  "mr-2 h-4 w-4",
-                                                  item.itemName === field.value
-                                                    ? "opacity-100"
-                                                    : "opacity-0",
-                                                )}
-                                              />
-                                              <div className="flex flex-col flex-1">
-                                                <span className="font-medium">
-                                                  {item.itemName}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                  ₱
-                                                  {item.sellingPrice.toFixed(2)}
-                                                </span>
-                                              </div>
-                                            </CommandItem>
-                                          ))}
-                                      </CommandGroup>
-                                    )}
-                                    {inventoryItems.filter(
-                                      (item) => item.itemType === "Service",
-                                    ).length > 0 && (
-                                      <CommandGroup heading="Services">
-                                        {inventoryItems
-                                          .filter(
-                                            (item) =>
-                                              item.itemType === "Service",
-                                          )
-                                          .map((item) => (
-                                            <CommandItem
-                                              key={item._id}
-                                              value={item.itemName}
-                                              onSelect={() => {
-                                                // Update description
-                                                field.onChange(item.itemName);
-                                                // Auto-fill rate
-                                                form.setValue(
-                                                  `items.${index}.rate`,
-                                                  item.sellingPrice.toString(),
-                                                );
-                                                // Set quantity to 1 if empty
-                                                const currentQty =
-                                                  form.getValues(
-                                                    `items.${index}.quantity`,
-                                                  );
-                                                if (!currentQty) {
-                                                  form.setValue(
-                                                    `items.${index}.quantity`,
-                                                    "1",
-                                                  );
-                                                }
-                                              }}
-                                            >
-                                              <Check
-                                                className={cn(
-                                                  "mr-2 h-4 w-4",
-                                                  item.itemName === field.value
-                                                    ? "opacity-100"
-                                                    : "opacity-0",
-                                                )}
-                                              />
-                                              <div className="flex flex-col flex-1">
-                                                <span className="font-medium">
-                                                  {item.itemName}
-                                                </span>
-                                                <span className="text-xs text-muted-foreground">
-                                                  ₱
-                                                  {item.sellingPrice.toFixed(2)}
-                                                </span>
-                                              </div>
-                                            </CommandItem>
-                                          ))}
-                                      </CommandGroup>
-                                    )}
-                                  </CommandList>
-                                </Command>
-                              </PopoverContent>
-                            </Popover>
+                                <SheetTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="icon"
+                                    className="shrink-0"
+                                    title="Select from inventory"
+                                  >
+                                    <Package className="h-4 w-4" />
+                                  </Button>
+                                </SheetTrigger>
+                                <SheetContent
+                                  side="right"
+                                  className="w-[400px] sm:w-[540px]"
+                                >
+                                  <SheetHeader>
+                                    <SheetTitle>
+                                      Select Inventory Item
+                                    </SheetTitle>
+                                    <SheetDescription>
+                                      Choose a product or service from your
+                                      inventory
+                                    </SheetDescription>
+                                  </SheetHeader>
+                                  <div className="mt-6">
+                                    <Command>
+                                      <CommandInput placeholder="Search items..." />
+                                      <CommandList>
+                                        <CommandEmpty>
+                                          {isLoadingInventory
+                                            ? "Loading items..."
+                                            : "No items found."}
+                                        </CommandEmpty>
+                                        {inventoryItems.filter(
+                                          (item) => item.itemType === "Product",
+                                        ).length > 0 && (
+                                          <CommandGroup heading="Products">
+                                            {inventoryItems
+                                              .filter(
+                                                (item) =>
+                                                  item.itemType === "Product",
+                                              )
+                                              .map((item) => (
+                                                <CommandItem
+                                                  key={item._id}
+                                                  value={item.itemName}
+                                                  onSelect={() => {
+                                                    // Update description
+                                                    field.onChange(
+                                                      item.itemName,
+                                                    );
+                                                    // Auto-fill rate
+                                                    form.setValue(
+                                                      `items.${index}.rate`,
+                                                      item.sellingPrice.toString(),
+                                                    );
+                                                    // Set quantity to 1 if empty
+                                                    const currentQty =
+                                                      form.getValues(
+                                                        `items.${index}.quantity`,
+                                                      );
+                                                    if (!currentQty) {
+                                                      form.setValue(
+                                                        `items.${index}.quantity`,
+                                                        "1",
+                                                      );
+                                                    }
+                                                    // Close sheet
+                                                    setInventorySheetOpen(null);
+                                                  }}
+                                                  className="cursor-pointer"
+                                                >
+                                                  <Check
+                                                    className={cn(
+                                                      "mr-2 h-4 w-4",
+                                                      item.itemName ===
+                                                        field.value
+                                                        ? "opacity-100"
+                                                        : "opacity-0",
+                                                    )}
+                                                  />
+                                                  <div className="flex flex-col flex-1">
+                                                    <span className="font-medium">
+                                                      {item.itemName}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                      SKU: {item.sku} • ₱
+                                                      {item.sellingPrice.toFixed(
+                                                        2,
+                                                      )}
+                                                    </span>
+                                                  </div>
+                                                </CommandItem>
+                                              ))}
+                                          </CommandGroup>
+                                        )}
+                                        {inventoryItems.filter(
+                                          (item) => item.itemType === "Service",
+                                        ).length > 0 && (
+                                          <CommandGroup heading="Services">
+                                            {inventoryItems
+                                              .filter(
+                                                (item) =>
+                                                  item.itemType === "Service",
+                                              )
+                                              .map((item) => (
+                                                <CommandItem
+                                                  key={item._id}
+                                                  value={item.itemName}
+                                                  onSelect={() => {
+                                                    // Update description
+                                                    field.onChange(
+                                                      item.itemName,
+                                                    );
+                                                    // Auto-fill rate
+                                                    form.setValue(
+                                                      `items.${index}.rate`,
+                                                      item.sellingPrice.toString(),
+                                                    );
+                                                    // Set quantity to 1 if empty
+                                                    const currentQty =
+                                                      form.getValues(
+                                                        `items.${index}.quantity`,
+                                                      );
+                                                    if (!currentQty) {
+                                                      form.setValue(
+                                                        `items.${index}.quantity`,
+                                                        "1",
+                                                      );
+                                                    }
+                                                    // Close sheet
+                                                    setInventorySheetOpen(null);
+                                                  }}
+                                                  className="cursor-pointer"
+                                                >
+                                                  <Check
+                                                    className={cn(
+                                                      "mr-2 h-4 w-4",
+                                                      item.itemName ===
+                                                        field.value
+                                                        ? "opacity-100"
+                                                        : "opacity-0",
+                                                    )}
+                                                  />
+                                                  <div className="flex flex-col flex-1">
+                                                    <span className="font-medium">
+                                                      {item.itemName}
+                                                    </span>
+                                                    <span className="text-xs text-muted-foreground">
+                                                      SKU: {item.sku} • ₱
+                                                      {item.sellingPrice.toFixed(
+                                                        2,
+                                                      )}
+                                                    </span>
+                                                  </div>
+                                                </CommandItem>
+                                              ))}
+                                          </CommandGroup>
+                                        )}
+                                      </CommandList>
+                                    </Command>
+                                  </div>
+                                </SheetContent>
+                              </Sheet>
+                            </div>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
                     </div>
 
-                    <div className="col-span-2">
+                    <div>
                       <FormField
                         control={form.control}
                         name={`items.${index}.quantity`}
@@ -672,7 +860,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                       />
                     </div>
 
-                    <div className="col-span-2">
+                    <div>
                       <FormField
                         control={form.control}
                         name={`items.${index}.rate`}
@@ -698,7 +886,45 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                       />
                     </div>
 
-                    <div className="col-span-2 text-right font-semibold">
+                    <div>
+                      <FormField
+                        control={form.control}
+                        name={`items.${index}.accountId`}
+                        render={({ field }) => (
+                          <FormItem>
+                            <Select
+                              onValueChange={field.onChange}
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="h-10 shadow-none focus-visible:ring-1">
+                                  <SelectValue placeholder="Account" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {accounts.length === 0 ? (
+                                  <SelectItem value="_empty" disabled>
+                                    No accounts
+                                  </SelectItem>
+                                ) : (
+                                  accounts.map((account) => (
+                                    <SelectItem
+                                      key={account._id}
+                                      value={account._id}
+                                    >
+                                      {account.accountName}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="text-right font-semibold pt-2">
                       ₱
                       {calculateItemTotal(
                         form.watch(`items.${index}.quantity`),
@@ -709,7 +935,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                       })}
                     </div>
 
-                    <div className="col-span-1 text-right">
+                    <div className="text-right pt-2">
                       {fields.length > 1 && (
                         <Button
                           type="button"
@@ -732,7 +958,12 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
               variant="outline"
               size="sm"
               onClick={() =>
-                append({ description: "", quantity: "1", rate: "" })
+                append({
+                  description: "",
+                  quantity: "1",
+                  rate: "",
+                  accountId: "",
+                })
               }
             >
               <Plus className="h-4 w-4 mr-2" />
@@ -742,7 +973,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
 
           {/* Summary - QuickBooks Style (Right Aligned) */}
           <div className="flex justify-end">
-            <div className="w-80 space-y-2 text-sm">
+            <div className="w-96 space-y-2 text-sm">
               <div className="flex justify-between py-2">
                 <span>Subtotal</span>
                 <span className="font-semibold">
@@ -753,11 +984,41 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                   })}
                 </span>
               </div>
+              <div className="flex justify-between py-2 items-center gap-2">
+                <span>Discount</span>
+                <div className="flex items-center gap-2">
+                  <FormField
+                    control={form.control}
+                    name="discount"
+                    render={({ field }) => (
+                      <FormItem className="mb-0">
+                        <FormControl>
+                          <div className="relative w-32">
+                            <span className="absolute left-2 top-2 text-muted-foreground text-xs">
+                              ₱
+                            </span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              placeholder="0.00"
+                              className="h-8 text-right text-sm pl-5 shadow-none focus-visible:ring-1"
+                              {...field}
+                            />
+                          </div>
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
               <div className="flex justify-between py-2 border-b">
-                <span>Tax (8%)</span>
+                <span>Tax ({form.watch("taxRate") || "0"}%)</span>
                 <span className="font-semibold">
                   ₱
-                  {calculateTax(calculateSubtotal()).toLocaleString("en-PH", {
+                  {calculateTax(
+                    calculateSubtotal(),
+                    calculateDiscount(calculateSubtotal()),
+                  ).toLocaleString("en-PH", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}
@@ -831,7 +1092,15 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
 
           {/* Action Buttons - QuickBooks Style */}
           <div className="flex items-center justify-between pt-4 border-t bg-muted/20 -mx-6 -mb-6 px-6 py-4 mt-6">
-            <Button type="button" variant="ghost" size="lg">
+            <Button
+              type="button"
+              variant="ghost"
+              size="lg"
+              onClick={() => {
+                form.reset();
+                onSuccess?.();
+              }}
+            >
               Cancel
             </Button>
             <div className="flex gap-2">
@@ -840,8 +1109,11 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                 variant="outline"
                 size="lg"
                 disabled={isSubmitting}
+                onClick={() => {
+                  form.handleSubmit((data) => onSubmit(data, true))();
+                }}
               >
-                Save
+                {isSubmitting ? "Saving..." : "Save as draft"}
               </Button>
               <Button
                 type="submit"
@@ -849,7 +1121,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                 className="bg-green-600 hover:bg-green-700 text-white shadow-md"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Creating..." : "Save and send"}
+                {isSubmitting ? "Sending..." : "Save and send"}
               </Button>
             </div>
           </div>

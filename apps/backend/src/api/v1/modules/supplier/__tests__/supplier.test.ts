@@ -107,11 +107,34 @@ describe("Supplier Module", () => {
       createdSupplierId = response.body.data._id;
     });
 
+    it("should auto-generate supplier code when not provided", async () => {
+      const response = await request(app)
+        .post("/api/v1/suppliers")
+        .send({
+          supplierName: "Auto Code Supplier",
+          email: "autocode@supplier.com",
+          phone: "555-1010",
+          address: {
+            street: "110 Auto Code St",
+            city: "Cebu City",
+            state: "Cebu",
+            zipCode: "6000",
+            country: "PH",
+          },
+          taxId: "STAX-AUTO",
+          paymentTerms: "Net 30",
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.supplierCode).toMatch(/^SUP-\d{3}$/);
+    });
+
     it("should auto-populate displayName from supplierName", async () => {
       const response = await request(app)
         .post("/api/v1/suppliers")
         .send({
-          supplierCode: "SUP-002",
+          supplierCode: "SUP-003",
           supplierName: "Raw Materials Co",
           email: "info@rawmaterials.com",
           phone: "555-1002",

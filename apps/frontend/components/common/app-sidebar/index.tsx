@@ -190,8 +190,8 @@ const data = {
       icon: "📈",
       items: [
         {
-          title: "Income Statement",
-          url: "/reports/income-statement",
+          title: "Profit & Loss",
+          url: "/reports/profit-loss",
         },
         {
           title: "Balance Sheet",
@@ -202,8 +202,8 @@ const data = {
           url: "/reports/cash-flow",
         },
         {
-          title: "Statement of Changes in Equity",
-          url: "/reports/equity-changes",
+          title: "Tax Summary",
+          url: "/reports/tax-summary",
         },
       ],
     },
@@ -242,6 +242,10 @@ const data = {
         {
           title: "Accounting Periods",
           url: "/periods",
+        },
+        {
+          title: "Bank Accounts",
+          url: "/settings/banking",
         },
         {
           title: "Fiscal Year",

@@ -302,14 +302,6 @@ const inventoryController = {
         });
       }
 
-      // Filter out services - they should be handled separately
-      if (validationResult.data.itemType === "Service") {
-        return res.status(400).json({
-          success: false,
-          message: "Services should be created using the service endpoint",
-        });
-      }
-
       // Create filtered data object that matches the service expectations
       const validUnits = [
         "pcs",
@@ -322,28 +314,50 @@ const inventoryController = {
         "set",
         "bundle",
         "liter",
+        "hour",
+        "session",
+        "service",
       ] as const;
-      const filteredData = {
+
+      const isService = validationResult.data.itemType === "Service";
+
+      const filteredData: any = {
+        itemType: validationResult.data.itemType,
         sku: validationResult.data.sku,
         itemName: validationResult.data.itemName,
         description: validationResult.data.description,
-        category: validationResult.data.category as "Food" | "Non-Food",
+        category: validationResult.data.category as
+          | "Food"
+          | "Non-Food"
+          | "Service",
         unit: (validUnits.includes(validationResult.data.unit as any)
           ? validationResult.data.unit
-          : "pcs") as any,
-        quantityOnHand: validationResult.data.quantityOnHand,
-        reorderLevel: validationResult.data.reorderLevel,
-        unitCost: validationResult.data.unitCost,
+          : isService
+            ? "service"
+            : "pcs") as any,
         sellingPrice: validationResult.data.sellingPrice,
-        inventoryAccountId: validationResult.data.inventoryAccountId || "",
-        cogsAccountId: validationResult.data.cogsAccountId || "",
-        incomeAccountId: validationResult.data.incomeAccountId || "",
+        incomeAccountId: validationResult.data.incomeAccountId || undefined,
         supplierId: validationResult.data.supplierId,
         salesTaxEnabled: validationResult.data.salesTaxEnabled,
         salesTaxRate: validationResult.data.salesTaxRate,
         purchaseTaxRate: validationResult.data.purchaseTaxRate,
         isActive: validationResult.data.isActive,
       };
+
+      // Only include Product-specific fields for Products
+      if (!isService) {
+        filteredData.quantityOnHand = validationResult.data.quantityOnHand;
+        filteredData.quantityAsOfDate = validationResult.data.quantityAsOfDate;
+        filteredData.reorderLevel = validationResult.data.reorderLevel;
+        filteredData.unitCost = validationResult.data.unitCost;
+        if (validationResult.data.inventoryAccountId) {
+          filteredData.inventoryAccountId =
+            validationResult.data.inventoryAccountId;
+        }
+        if (validationResult.data.cogsAccountId) {
+          filteredData.cogsAccountId = validationResult.data.cogsAccountId;
+        }
+      }
 
       const item = await inventoryService.createItem(companyId, filteredData);
 
@@ -401,14 +415,6 @@ const inventoryController = {
         });
       }
 
-      // Filter out services - they should be handled separately
-      if (validationResult.data.itemType === "Service") {
-        return res.status(400).json({
-          success: false,
-          message: "Services should be updated using the service endpoint",
-        });
-      }
-
       // Create filtered data object that matches the service expectations
       const validUnits = [
         "pcs",
@@ -421,8 +427,13 @@ const inventoryController = {
         "set",
         "bundle",
         "liter",
+        "hour",
+        "session",
+        "service",
       ] as const;
       const filteredData: any = {};
+      if (validationResult.data.itemType !== undefined)
+        filteredData.itemType = validationResult.data.itemType;
       if (validationResult.data.sku !== undefined)
         filteredData.sku = validationResult.data.sku;
       if (validationResult.data.itemName !== undefined)
@@ -440,20 +451,35 @@ const inventoryController = {
       }
       if (validationResult.data.quantityOnHand !== undefined)
         filteredData.quantityOnHand = validationResult.data.quantityOnHand;
+      if (validationResult.data.quantityAsOfDate !== undefined)
+        filteredData.quantityAsOfDate = validationResult.data.quantityAsOfDate;
       if (validationResult.data.reorderLevel !== undefined)
         filteredData.reorderLevel = validationResult.data.reorderLevel;
       if (validationResult.data.unitCost !== undefined)
         filteredData.unitCost = validationResult.data.unitCost;
       if (validationResult.data.sellingPrice !== undefined)
         filteredData.sellingPrice = validationResult.data.sellingPrice;
-      if (validationResult.data.inventoryAccountId !== undefined)
+      // Only set account IDs if they're valid (not empty strings)
+      if (
+        validationResult.data.inventoryAccountId &&
+        validationResult.data.inventoryAccountId !== ""
+      )
         filteredData.inventoryAccountId =
           validationResult.data.inventoryAccountId;
-      if (validationResult.data.cogsAccountId !== undefined)
+      if (
+        validationResult.data.cogsAccountId &&
+        validationResult.data.cogsAccountId !== ""
+      )
         filteredData.cogsAccountId = validationResult.data.cogsAccountId;
-      if (validationResult.data.incomeAccountId !== undefined)
+      if (
+        validationResult.data.incomeAccountId &&
+        validationResult.data.incomeAccountId !== ""
+      )
         filteredData.incomeAccountId = validationResult.data.incomeAccountId;
-      if (validationResult.data.supplierId !== undefined)
+      if (
+        validationResult.data.supplierId &&
+        validationResult.data.supplierId !== ""
+      )
         filteredData.supplierId = validationResult.data.supplierId;
       if (validationResult.data.salesTaxEnabled !== undefined)
         filteredData.salesTaxEnabled = validationResult.data.salesTaxEnabled;

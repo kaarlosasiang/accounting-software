@@ -61,15 +61,16 @@ export function AccountForm({ initialData, isEdit = false }: AccountFormProps) {
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema),
     defaultValues: {
-      accountCode: initialData?.accountCode || "1010",
-      accountName: initialData?.accountName || "Petty Cash",
+      accountCode: initialData?.accountCode || "1000",
+      accountName: initialData?.accountName || "Cash on Hand",
       accountType: initialData?.accountType || "Asset",
       subType: initialData?.subType || "Current Asset",
       normalBalance: initialData?.normalBalance || "Debit",
       parentAccount: initialData?.parentAccount || "",
       description:
-        initialData?.description || "Petty cash fund for small office expenses",
-      balance: initialData?.balance || 5000,
+        initialData?.description ||
+        "Cash register and petty cash for daily restaurant operations",
+      balance: initialData?.balance || 50000,
     },
   });
 
@@ -101,30 +102,27 @@ export function AccountForm({ initialData, isEdit = false }: AccountFormProps) {
   const onSubmit = async (data: AccountFormValues) => {
     setIsSubmitting(true);
 
-    try {
-      const result =
-        isEdit && initialData?._id
-          ? await accountsService.updateAccount(initialData._id, data)
-          : await accountsService.createAccount(data);
+    const result =
+      isEdit && initialData?._id
+        ? await accountsService.updateAccount(initialData._id, data)
+        : await accountsService.createAccount(data);
 
-      if (result.success) {
-        toast.success(`Account ${isEdit ? "updated" : "created"} successfully`);
-        router.push("/accounts");
-        router.refresh();
-      } else {
-        toast.error(
-          result.error || `Failed to ${isEdit ? "update" : "create"} account`,
-        );
-      }
-    } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : `Failed to ${isEdit ? "update" : "create"} account`,
-      );
-    } finally {
-      setIsSubmitting(false);
+    if (result.success) {
+      toast.success(`Account ${isEdit ? "updated" : "created"} successfully`, {
+        description: `${data.accountCode} - ${data.accountName}`,
+        className: "border-green-500",
+      });
+      router.push("/accounts");
+      router.refresh();
+    } else {
+      toast.error(`Failed to ${isEdit ? "update" : "create"} account`, {
+        description:
+          result.error || "An unknown error occurred. Please try again.",
+        className: "border-destructive",
+      });
     }
+
+    setIsSubmitting(false);
   };
 
   return (

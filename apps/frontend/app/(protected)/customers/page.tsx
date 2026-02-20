@@ -53,8 +53,13 @@ export default function CustomersPage() {
     null,
   );
 
-  const { customers, loading, deleteCustomer, toggleCustomerStatus } =
-    useCustomers();
+  const {
+    customers,
+    loading,
+    deleteCustomer,
+    toggleCustomerStatus,
+    fetchCustomers,
+  } = useCustomers();
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this customer?")) {
@@ -76,9 +81,15 @@ export default function CustomersPage() {
     setIsDetailsDialogOpen(true);
   };
 
+  const handleCreateSuccess = () => {
+    setIsDialogOpen(false);
+    fetchCustomers(); // Explicitly refetch to update table
+  };
+
   const handleEditSuccess = () => {
     setIsEditDialogOpen(false);
     setSelectedCustomer(null);
+    fetchCustomers(); // Explicitly refetch to update table
   };
 
   const handleDetailsClose = () => {
@@ -97,6 +108,22 @@ export default function CustomersPage() {
   // Define columns
   const columns = useMemo<ColumnDef<Customer>[]>(
     () => [
+      // Hidden combined search column for global search
+      {
+        id: "search",
+        accessorFn: (row) =>
+          `${row.customerCode} ${row.customerName} ${row.displayName || ""} ${row.email} ${row.phone || ""}`,
+        header: () => null,
+        cell: () => null,
+        meta: {
+          label: "Search",
+          placeholder: "🔎 Search customers...",
+          variant: "text",
+        },
+        enableColumnFilter: true,
+        enableSorting: false,
+        enableHiding: false,
+      },
       {
         id: "customerCode",
         accessorKey: "customerCode",
@@ -112,7 +139,8 @@ export default function CustomersPage() {
           variant: "text",
           icon: FileText,
         },
-        enableColumnFilter: true,
+        enableColumnFilter: false,
+        enableSorting: true,
       },
       {
         id: "customerName",
@@ -136,7 +164,8 @@ export default function CustomersPage() {
           variant: "text",
           icon: Users,
         },
-        enableColumnFilter: true,
+        enableColumnFilter: false,
+        enableSorting: true,
       },
       {
         id: "email",
@@ -151,7 +180,8 @@ export default function CustomersPage() {
           variant: "text",
           icon: Mail,
         },
-        enableColumnFilter: true,
+        enableColumnFilter: false,
+        enableSorting: true,
       },
       {
         id: "phone",
@@ -166,7 +196,8 @@ export default function CustomersPage() {
           variant: "text",
           icon: Phone,
         },
-        enableColumnFilter: true,
+        enableColumnFilter: false,
+        enableSorting: true,
       },
       {
         id: "paymentTerms",
@@ -192,7 +223,9 @@ export default function CustomersPage() {
         id: "currentBalance",
         accessorKey: "currentBalance",
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} label="Balance" />
+          <div className="text-right">
+            <DataTableColumnHeader column={column} label="Balance" />
+          </div>
         ),
         cell: ({ row }) => (
           <div className="text-right font-medium">
@@ -204,13 +237,16 @@ export default function CustomersPage() {
           variant: "number",
           icon: DollarSign,
         },
-        enableColumnFilter: true,
+        enableColumnFilter: false,
+        enableSorting: true,
       },
       {
         id: "creditLimit",
         accessorKey: "creditLimit",
         header: ({ column }) => (
-          <DataTableColumnHeader column={column} label="Credit Limit" />
+          <div className="text-right">
+            <DataTableColumnHeader column={column} label="Credit Limit" />
+          </div>
         ),
         cell: ({ row }) => (
           <div className="text-right font-medium">
@@ -222,7 +258,8 @@ export default function CustomersPage() {
           variant: "number",
           icon: CreditCard,
         },
-        enableColumnFilter: true,
+        enableColumnFilter: false,
+        enableSorting: true,
       },
       {
         id: "isActive",
@@ -324,7 +361,7 @@ export default function CustomersPage() {
                 account.
               </DialogDescription>
             </DialogHeader>
-            <CustomerForm onSuccess={() => setIsDialogOpen(false)} />
+            <CustomerForm onSuccess={handleCreateSuccess} />
           </DialogContent>
         </Dialog>
       </div>

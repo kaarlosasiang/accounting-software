@@ -3,12 +3,14 @@ import { Invoice } from "../../models/Invoice.js";
 import { Customer } from "../../models/Customer.js";
 import { InventoryItem } from "../../models/InventoryItem.js";
 import { InventoryTransaction } from "../../models/InventoryTransaction.js";
+import { CompanySettings } from "../../models/CompanySettings.js";
 import {
   InvoiceStatus,
   IInvoiceDocument,
 } from "../../shared/interface/IInvoice.js";
 import logger from "../../config/logger.js";
 import { EmailService } from "../../services/email.service.js";
+import { PDFService } from "../../services/pdf.service.js";
 // import { generateDocumentNumber } from "../../utils/documentNumberGenerator.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
 
@@ -111,12 +113,13 @@ export const invoiceService = {
           invoice.totalAmount,
           session,
         );
-        
+
         // Create automatic journal entry
-        const journalEntryId = await JournalEntryService.createInvoiceJournalEntry(
-          invoice,
-          new mongoose.Types.ObjectId(userId)
-        );
+        const journalEntryId =
+          await JournalEntryService.createInvoiceJournalEntry(
+            invoice,
+            new mongoose.Types.ObjectId(userId),
+          );
         invoice.journalEntryId = journalEntryId;
         await invoice.save({ session });
       }
@@ -188,12 +191,13 @@ export const invoiceService = {
             session,
           );
         }
-        
+
         // Create automatic journal entry
-        const journalEntryId = await JournalEntryService.createInvoiceJournalEntry(
-          invoice,
-          invoice.createdBy
-        );
+        const journalEntryId =
+          await JournalEntryService.createInvoiceJournalEntry(
+            invoice,
+            invoice.createdBy,
+          );
         invoice.journalEntryId = journalEntryId;
         await invoice.save({ session });
       }
@@ -551,12 +555,13 @@ export const invoiceService = {
           invoice.totalAmount,
           session,
         );
-        
+
         // Create automatic journal entry for newly sent invoice
-        const journalEntryId = await JournalEntryService.createInvoiceJournalEntry(
-          invoice,
-          invoice.createdBy
-        );
+        const journalEntryId =
+          await JournalEntryService.createInvoiceJournalEntry(
+            invoice,
+            invoice.createdBy,
+          );
         invoice.journalEntryId = journalEntryId;
         await invoice.save({ session });
       }
@@ -564,7 +569,37 @@ export const invoiceService = {
       // Calculate due date (invoice.dueDate is now a Date after our fix)
       const dueDate = new Date(invoice.dueDate);
 
-      // Send email
+      // Fetch company settings to get currency
+      const companySettings = await CompanySettings.findOne({ companyId });
+      const currency = companySettings?.accounting?.baseCurrency || "PHP";
+
+      // Prepare company info for PDF generation
+      const companyInfo = {
+        name: companyName,
+        address: process.env.COMPANY_ADDRESS,
+        phone: process.env.COMPANY_PHONE,
+        email: process.env.COMPANY_EMAIL || process.env.RESEND_FROM_EMAIL,
+        website: process.env.COMPANY_WEBSITE,
+        taxId: process.env.COMPANY_TAX_ID,
+      };
+
+      // Generate PDF attachment
+      logger.info(
+        `[Invoice Service] Generating PDF for invoice ${invoice.invoiceNumber}`,
+      );
+      const pdfBuffer = await PDFService.generateInvoicePDF(
+        invoice,
+        companyInfo,
+        currency,
+      );
+      logger.info(
+        `[Invoice Service] PDF generated successfully for invoice ${invoice.invoiceNumber}`,
+        {
+          pdfSize: pdfBuffer.length,
+        },
+      );
+
+      // Send email with PDF attachment
       await EmailService.sendInvoice({
         customerEmail: customer.email,
         customerName: customer.displayName || customer.customerName,
@@ -572,6 +607,8 @@ export const invoiceService = {
         totalAmount: invoice.totalAmount,
         dueDate: dueDate.toLocaleDateString(),
         companyName: companyName,
+        currency: currency,
+        pdfAttachment: pdfBuffer,
       });
 
       await session.commitTransaction();
@@ -618,7 +655,7 @@ export const invoiceService = {
   async getInvoicePayments(companyId: string, invoiceId: string) {
     try {
       const { Payment } = await import("../../models/Payment.js");
-      
+
       const payments = await Payment.find({
         companyId,
         "allocations.documentId": invoiceId,

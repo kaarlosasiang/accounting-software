@@ -94,7 +94,7 @@ export function useSuppliers() {
     async (id: string) => {
       try {
         await supplierService.deleteSupplier(id);
-        toast.success("Supplier deleted successfully");
+        toast.success("Supplier deactivated successfully");
         await fetchSuppliers(); // Refresh list
       } catch (err) {
         const errorMessage =

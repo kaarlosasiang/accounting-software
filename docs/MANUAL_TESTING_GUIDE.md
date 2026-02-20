@@ -1,546 +1,493 @@
-# Manual Testing Guide — AM FINTRASS Accounting Software
+# Manual Testing Guide — "Kusina ni Maria" Business Journey
 
-> **Prerequisites**: Backend running on `http://localhost:4000`, Frontend running on `http://localhost:3000`
+> **You are Maria Santos**, a Filipino entrepreneur opening a small restaurant and catering business in Makati City.
+> This guide walks you through setting up your accounting system from Day 1 as a new business owner.
+
+---
+
+## Prerequisites
+
+- Backend running on `http://localhost:4000`
+- Frontend running on `http://localhost:3000`
+- Start both with: `pnpm run dev:app` from the project root
+
+---
+
+## The Business Story
+
+**Kusina ni Maria** is a small Filipino restaurant in Poblacion, Makati. Maria also offers catering services for corporate events. Her first big client is **Mabuhay Events Corporation** — an events company that regularly orders catering for office lunches and corporate functions.
+
+Maria buys her ingredients from **Fresh Harvest Market** in Quezon City. She needs to track her inventory (rice, vegetables, meat), send invoices to her catering clients, pay her suppliers, and see if she's actually making money.
+
+---
+
+## Phase 1: Opening Day — Register & Set Up Your Business
+
+> _"I just registered my business with the DTI. Time to set up my books!"_
+
+### Step 1.1 — Create Your Account
+
+| Step | Action                                                      | Expected Result                                        |
+| ---- | ----------------------------------------------------------- | ------------------------------------------------------ |
+| 1    | Navigate to `http://localhost:3000/signup`                  | Registration form appears                              |
+| 2    | Fill in: **Maria** Santos, email, phone, username, password | All fields accept input                                |
+| 3    | Click **Sign Up**                                           | Email OTP verification screen appears                  |
+| 4    | Enter the 6-digit OTP from your email                       | Verification succeeds — redirected to `/company-setup` |
+
+### Step 1.2 — Set Up Your Company
+
+> The form is pre-filled with "Kusina ni Maria" details. Review and submit.
+
+| Step | Action                                                                               | Expected Result                                                          |
+| ---- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| 1    | You land on `/company-setup`                                                         | Company setup form appears — **pre-filled** with Kusina ni Maria details |
+| 2    | Review: Name = "Kusina ni Maria", Type = Sole Proprietorship, Industry = Hospitality | All fields pre-populated correctly                                       |
+| 3    | Review: Address = Poblacion Makati, Currency = PESO, Fiscal Year = Jan 1 2026        | Location and financial settings correct                                  |
+| 4    | Click **Create Company**                                                             | Organization created — redirected to `/plans`                            |
+
+### Step 1.3 — Choose a Plan
+
+| Step | Action                                                     | Expected Result                         |
+| ---- | ---------------------------------------------------------- | --------------------------------------- |
+| 1    | Three plan cards appear: Starter, Professional, Enterprise | Plans page loads with pricing           |
+| 2    | Click **Get Started** on any plan                          | Subscription activated                  |
+| 3    | Redirected to `/dashboard`                                 | Dashboard loads with sidebar navigation |
+
+---
+
+## Phase 2: Setting Up Your Books — Chart of Accounts & Starting Balances
+
+> _"My accountant said I need to set up my chart of accounts first. These are the 'buckets' where all my money transactions go."_
+
+### Step 2.1 — Create Your Essential Accounts
+
+Create these accounts **one at a time** (the form pre-fills with "Cash on Hand" — change the values for each):
+
+| Step | Navigate to        | Account Code | Account Name        | Type      | Normal Balance | Description                                                  |
+| ---- | ------------------ | ------------ | ------------------- | --------- | -------------- | ------------------------------------------------------------ |
+| 1    | `/accounts/create` | `1000`       | Cash on Hand        | Asset     | Debit          | Cash register and petty cash for daily restaurant operations |
+| 2    | `/accounts/create` | `1010`       | BDO Savings Account | Asset     | Debit          | Business bank account at BDO Makati branch                   |
+| 3    | `/accounts/create` | `1100`       | Accounts Receivable | Asset     | Debit          | Money owed by catering clients                               |
+| 4    | `/accounts/create` | `1200`       | Inventory           | Asset     | Debit          | Value of ingredients and supplies on hand                    |
+| 5    | `/accounts/create` | `2000`       | Accounts Payable    | Liability | Credit         | Money we owe to suppliers for ingredients                    |
+| 6    | `/accounts/create` | `3000`       | Owner's Equity      | Equity    | Credit         | Maria's capital investment in the business                   |
+| 7    | `/accounts/create` | `4000`       | Catering Revenue    | Revenue   | Credit         | Income from catering services                                |
+| 8    | `/accounts/create` | `4010`       | Dine-in Revenue     | Revenue   | Credit         | Income from dine-in restaurant sales                         |
+| 9    | `/accounts/create` | `5000`       | Cost of Goods Sold  | Expense   | Debit          | Cost of ingredients used in cooking                          |
+| 10   | `/accounts/create` | `5010`       | Rent Expense        | Expense   | Debit          | Monthly restaurant rent                                      |
+| 11   | `/accounts/create` | `5020`       | Utilities Expense   | Expense   | Debit          | Electric, water, gas bills                                   |
+| 12   | `/accounts/create` | `5030`       | Salaries Expense    | Expense   | Debit          | Kitchen staff and server wages                               |
+
+**Expected Result after each**: Success toast "Account created successfully" → redirected to accounts list.
+
+### Step 2.2 — Verify Your Chart of Accounts
+
+| Step | Action                                                      | Expected Result                                                                              |
+| ---- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| 1    | Navigate to **Chart of Accounts → All Accounts** in sidebar | All 12 accounts visible in the table                                                         |
+| 2    | Click the **Assets** filter tab                             | Shows: Cash on Hand (1000), BDO Savings (1010), Accounts Receivable (1100), Inventory (1200) |
+| 3    | Click the **Expense** filter tab                            | Shows: COGS (5000), Rent (5010), Utilities (5020), Salaries (5030)                           |
+| 4    | Click the **Revenue** filter tab                            | Shows: Catering Revenue (4000), Dine-in Revenue (4010)                                       |
+
+### Step 2.3 — Enter Starting Balances (Opening Balances)
+
+> _"I need my Day 1 balances in the system so reports and ledgers start correctly."_
+
+Use your **account opening balance** flow (or one opening journal entry, depending on your current UI):
+
+| Step | Account                    | Starting Balance | Side   | Expected Effect                               |
+| ---- | -------------------------- | ---------------- | ------ | --------------------------------------------- |
+| 1    | Cash on Hand (1000)        | ₱50,000          | Debit  | Cash asset starts with opening amount         |
+| 2    | BDO Savings Account (1010) | ₱150,000         | Debit  | Bank asset starts with opening amount         |
+| 3    | Inventory (1200)           | ₱40,000          | Debit  | Beginning stock value reflected               |
+| 4    | Accounts Payable (2000)    | ₱15,000          | Credit | Existing supplier obligations carried forward |
+| 5    | Owner's Equity (3000)      | ₱225,000         | Credit | Opening capital balances debits and credits   |
+
+**Expected Result**:
+
+- Opening balances save successfully
+- Total Debits = Total Credits (₱240,000 each)
+- No validation error about unbalanced entry
+
+### Step 2.4 — Validate Opening Balances in Journals and Ledger
+
+| Step | Action                                              | Expected Result                                                            |
+| ---- | --------------------------------------------------- | -------------------------------------------------------------------------- |
+| 1    | Go to **General Ledger → Journal Entries**          | One opening entry (or grouped opening entries) exists for Day 1            |
+| 2    | Open that entry                                     | Lines match opening balances and entry is balanced (debits = credits)      |
+| 3    | Go to **General Ledger → Ledger**                   | Each account shows opening balance as the first movement/beginning balance |
+| 4    | Check Cash on Hand (1000) and Owner's Equity (3000) | Cash shows +₱50,000 debit; Equity shows +₱225,000 credit                   |
+| 5    | Check Inventory (1200) and Accounts Payable (2000)  | Inventory debit and A/P credit appear correctly                            |
+
+> **Control point**: If opening balances do not appear in ledger, month-end reports will be wrong even if later transactions are correct.
+
+---
+
+## Phase 3: Know Your People — Customers & Suppliers
+
+> _"I need to add my first catering client and my ingredient supplier."_
+
+### Step 3.1 — Add Your First Customer (Catering Client)
+
+| Step | Action                                                                   | Expected Result                                                      |
+| ---- | ------------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| 1    | Click **Sales & Receivables → Customers** in sidebar                     | Customers page loads (empty table)                                   |
+| 2    | Click **Add Customer**                                                   | Customer form opens — **pre-filled** with Mabuhay Events Corporation |
+| 3    | Review: Code = `CUST-001`, Name = "Mabuhay Events Corporation"           | Corporate catering client details shown                              |
+| 4    | Review: Email = `events@mabuhayevents.ph`, Address = Ayala Tower, Makati | Contact details correct                                              |
+| 5    | Review: Payment Terms = Net 30, Credit Limit = ₱100,000                  | They pay within 30 days, up to ₱100k outstanding                     |
+| 6    | Click **Create**                                                         | Success toast — customer appears in table with "Active" status       |
+
+> **Why Net 30?** Corporate clients typically pay invoices within 30 days, not immediately.
+
+### Step 3.2 — Add a Second Customer
+
+| Step | Action                                                    | Expected Result                           |
+| ---- | --------------------------------------------------------- | ----------------------------------------- |
+| 1    | Click **Add Customer** again                              | Fresh form opens with pre-filled defaults |
+| 2    | Change to: Code = `CUST-002`, Name = "BPO Solutions Inc." | —                                         |
+| 3    | Email = `admin@bposolutions.ph`, Credit Limit = `75000`   | —                                         |
+| 4    | Click **Create**                                          | Second customer appears in table          |
+
+### Step 3.3 — Add Your Ingredient Supplier
+
+| Step | Action                                                     | Expected Result                                                  |
+| ---- | ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| 1    | Click **Purchases & Payables → Vendors** in sidebar        | Suppliers page loads (empty table)                               |
+| 2    | Click **Add Supplier**                                     | Slide-over form opens — **pre-filled** with Fresh Harvest Market |
+| 3    | Review: Code = `SUP-001`, Name = "Fresh Harvest Market"    | Quezon City vegetable/meat supplier                              |
+| 4    | Review: Payment Terms = Net 15, Tax ID = `789-012-345-000` | Supplier expects payment in 15 days                              |
+| 5    | Click **Save**                                             | Success toast — supplier appears in table                        |
+
+> **Why Net 15?** Fresh food suppliers need faster payment than corporate clients pay you (Net 30). This is normal cash flow pressure for restaurants.
+
+### Step 3.4 — Add a Second Supplier
+
+| Step | Action                                                              | Expected Result                     |
+| ---- | ------------------------------------------------------------------- | ----------------------------------- |
+| 1    | Click **Add Supplier** again                                        | Fresh form with pre-filled defaults |
+| 2    | Change to: Code = `SUP-002`, Name = "Manila Rice Trading Co."       | —                                   |
+| 3    | Email = `sales@manilarice.ph`, Notes = "Rice supplier, bulk orders" | —                                   |
+| 4    | Click **Save**                                                      | Second supplier appears in table    |
+
+---
+
+## Phase 4: Stock Your Kitchen — Inventory
+
+> _"I need to track what ingredients I have so I know when to reorder."_
+
+### Step 4.1 — Add Your Main Ingredient (Product)
+
+| Step | Action                                                                        | Expected Result                                                     |
+| ---- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| 1    | Click **Inventory → Products** in sidebar                                     | Inventory page loads                                                |
+| 2    | Click **Add Product**                                                         | Inventory form opens — **pre-filled** with "Premium Rice 25kg Sack" |
+| 3    | Review: SKU = `RICE-25KG`, Cost = ₱1,400/sack, Qty on Hand = 10               | Your current rice stock                                             |
+| 4    | Review: Reorder Level = 5                                                     | System alerts you when you drop below 5 sacks                       |
+| 5    | Select **Inventory Account** = Inventory (1200)                               | Where inventory value is tracked on your balance sheet              |
+| 6    | Select **COGS Account** = Cost of Goods Sold (5000)                           | Expense when you use the rice                                       |
+| 7    | Select **Income Account** = Catering Revenue (4000) or Dine-in Revenue (4010) | Revenue account when you sell dishes using this ingredient          |
+| 8    | Click **Save**                                                                | Success toast — rice appears in inventory list                      |
+
+### Step 4.2 — Add a Catering Service
+
+| Step | Action                                                                    | Expected Result                                                        |
+| ---- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| 1    | Click **Inventory → Services** or **Add Service**                         | Service form opens — **pre-filled** with "Catering Service (per head)" |
+| 2    | Review: SKU = `SVC-CATERING`, Price = ₱450/head                           | What you charge clients per person                                     |
+| 3    | Review: Description includes food prep, delivery, setup, serving, cleanup | Full service package                                                   |
+| 4    | Select **Income Account** = Catering Revenue (4000)                       | Revenue goes to the right account                                      |
+| 5    | Click **Save**                                                            | Success toast — service appears in list                                |
+
+> **Business insight**: Your catering costs about ₱180/head in ingredients. At ₱450/head, your gross margin is ~60%. That's healthy for food service.
+
+---
+
+## Phase 5: Your First Sale — Create an Invoice
+
+> _"Mabuhay Events just ordered catering for their office party — 50 people! Time to send them an invoice."_
+
+### Step 5.1 — Create the Catering Invoice
+
+| Step | Action                                                                                        | Expected Result                                                                      |
+| ---- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| 1    | Click **Sales & Receivables → Create Invoice** in sidebar                                     | Invoice form loads with empty line items                                             |
+| 2    | **Select Customer**: Choose "Mabuhay Events Corporation" from dropdown                        | Customer email auto-populates                                                        |
+| 3    | **Line Item 1**: Type "Catering Service - 50 pax Corporate Lunch Buffet" in description field | Custom text entry                                                                    |
+| 4    | **Or** click the 📦 button to select "Catering Service (per head)" from inventory             | Auto-fills description and rate (₱450)                                               |
+| 5    | Set Quantity = 50, Rate = ₱450 (if not auto-filled) → **₱22,500**                             | Main catering charge                                                                 |
+| 6    | Click **Add Line** for Line Item 2                                                            | New row appears                                                                      |
+| 7    | **Line Item 2**: Type "Venue Setup & Event Coordination" × 1 @ ₱5,000 = **₱5,000**            | Custom item not in inventory                                                         |
+| 8    | **Tax Rate**: Select "VAT (12%)" from dropdown (default)                                      | BIR-compliant Philippine VAT rate                                                    |
+| 9    | Subtotal = ₱27,500, Tax (12%) = ₱3,300, **Total = ₱30,800**                                   | Automatically calculated with 12% VAT                                                |
+| 10   | Click **Create** / **Save as Draft**                                                          | Invoice created with status **Draft**, number auto-generated (e.g., `INV-2026-0001`) |
+
+> **Feature highlight**: You can type any description freely OR click the package icon (📦) to quickly select items from your inventory. This lets you add custom line items like "Venue Setup" that aren't tracked inventory items.
+
+> **Tax rates (BIR-compliant)**: The system supports Philippine tax rates:
 >
-> Start both with: `pnpm run dev:app` from the project root
+> - **VAT (12%)** - Standard rate for VAT-registered businesses (default)
+> - **Percentage Tax (1-3%)** - For non-VAT registered businesses
+> - **No Tax (0%)** - For VAT-exempt or zero-rated transactions
+
+### Step 5.2 — Send the Invoice
+
+| Step | Action                                   | Expected Result                                                       |
+| ---- | ---------------------------------------- | --------------------------------------------------------------------- |
+| 1    | Click on the invoice in the list         | Invoice detail page opens                                             |
+| 2    | Click **Send Invoice**                   | Status changes from **Draft** → **Sent**                              |
+| 3    | A journal entry is automatically created | Debit: Accounts Receivable ₱30,800 / Credit: Catering Revenue ₱30,800 |
+
+> **Accounting principle**: When you send an invoice, you haven't received cash yet — but you've _earned_ the revenue. That's why AR (what they owe you) increases.
+
+### Step 5.3 — Later: Receive Payment on the Invoice
+
+> _"2 weeks later, Mabuhay Events pays half now."_
+
+| Step | Action                                          | Expected Result                                     |
+| ---- | ----------------------------------------------- | --------------------------------------------------- |
+| 1    | On the invoice detail, click **Record Payment** | Payment form appears                                |
+| 2    | Enter amount: `15400`, Method: Bank Transfer    | Partial payment (half of ₱30,800)                   |
+| 3    | Click **Save**                                  | Invoice status → **Partial**, Balance due = ₱15,400 |
+| 4    | Record another payment for `15400`              | Invoice status → **Paid**, Balance = ₱0             |
+
+> **Cash flow reality**: Clients rarely pay all at once. Partial payments are normal.
 
 ---
 
-## Table of Contents
+## Phase 6: Buying Ingredients — Create a Bill
 
-1. [Authentication Flow](#1-authentication-flow)
-2. [Company Setup](#2-company-setup)
-3. [Subscription / Plans](#3-subscription--plans)
-4. [Dashboard](#4-dashboard)
-5. [Chart of Accounts](#5-chart-of-accounts)
-6. [Customers](#6-customers)
-7. [Suppliers (Vendors)](#7-suppliers-vendors)
-8. [Invoices (Sales)](#8-invoices-sales)
-9. [Bills (Purchases)](#9-bills-purchases)
-10. [Payments](#10-payments)
-11. [Journal Entries](#11-journal-entries)
-12. [General Ledger](#12-general-ledger)
-13. [Inventory](#13-inventory)
-14. [Accounting Periods](#14-accounting-periods)
-15. [Financial Reports](#15-financial-reports)
-16. [Settings](#16-settings)
+> _"I need to order this week's ingredients from Fresh Harvest Market."_
 
----
+### Step 6.1 — Create the Purchase Bill
 
-## 1. Authentication Flow
+| Step | Action                                                                   | Expected Result                                           |
+| ---- | ------------------------------------------------------------------------ | --------------------------------------------------------- |
+| 1    | Click **Purchases & Payables → Purchase Bills** in sidebar               | Bills page loads                                          |
+| 2    | Click **Create Bill**                                                    | Bill form opens — **pre-filled** with 3 line items        |
+| 3    | **Select Supplier**: Choose "Fresh Harvest Market" from dropdown         | Supplier details populate                                 |
+| 4    | Review Line Item 1: "Premium Rice 25kg Sack" × 5 @ ₱1,400 = **₱7,000**   | Rice stock                                                |
+| 5    | Review Line Item 2: "Fresh Vegetables Assorted" × 10 @ ₱350 = **₱3,500** | Vegetables                                                |
+| 6    | Review Line Item 3: "Pork Belly 5kg" × 4 @ ₱650 = **₱2,600**             | Meat                                                      |
+| 7    | Select an **Expense Account** for each line item (e.g., COGS 5000)       | Links purchases to correct expense                        |
+| 8    | Total = **₱13,100**                                                      | Weekly supplies cost                                      |
+| 9    | Click **Create**                                                         | Bill created with status **Draft**, number auto-generated |
 
-### 1.1 — Sign Up (New User Registration)
+### Step 6.2 — Approve the Bill
 
-| Step | Action                                                              | Expected Result                                                                                             |
-| ---- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| 1    | Navigate to `http://localhost:3000/signup`                          | Registration form appears with fields: First Name, Middle Name, Last Name, Email, Phone, Username, Password |
-| 2    | Fill in all required fields with valid data, then click **Sign Up** | Form submits — email OTP verification screen appears                                                        |
-| 3    | Check your email inbox for the verification code                    | You receive a 6-digit OTP code via email                                                                    |
-| 4    | Enter the OTP code in the verification input                        | Verification succeeds — you are redirected to `/company-setup`                                              |
+| Step | Action                                | Expected Result                                                |
+| ---- | ------------------------------------- | -------------------------------------------------------------- |
+| 1    | On the bill detail, click **Approve** | Status changes from **Draft** → **Sent** (approved)            |
+| 2    | Journal entry auto-created            | Debit: COGS/Expense ₱13,100 / Credit: Accounts Payable ₱13,100 |
+| 3    | Supplier balance increases            | Fresh Harvest now shows ₱13,100 owed                           |
 
-### 1.2 — Login (Existing User)
+> **Accounting principle**: Approving a bill means you acknowledge you owe this money. AP (what you owe) increases.
 
-| Step | Action                                          | Expected Result                                                              |
-| ---- | ----------------------------------------------- | ---------------------------------------------------------------------------- |
-| 1    | Navigate to `http://localhost:3000/login`       | Login form with Email and Password fields appears                            |
-| 2    | Enter valid credentials and click **Sign In**   | Login succeeds — redirected to `/dashboard` (or `/plans` if no subscription) |
-| 3    | Enter invalid credentials and click **Sign In** | Error toast appears: "Invalid email or password"                             |
-| 4    | While logged in, navigate to `/login`           | You are automatically redirected to `/dashboard` (guest route guard)         |
+### Step 6.3 — Pay the Supplier
 
-### 1.3 — Logout
+> _"It's been 2 weeks, time to pay Fresh Harvest."_
 
-| Step | Action                                            | Expected Result                               |
-| ---- | ------------------------------------------------- | --------------------------------------------- |
-| 1    | Click your avatar/name in the bottom-left sidebar | User dropdown menu appears                    |
-| 2    | Click **Sign Out**                                | You are logged out and redirected to `/login` |
-| 3    | Try navigating to `/dashboard` while logged out   | You are redirected to `/login` (auth guard)   |
+| Step | Action                                            | Expected Result                      |
+| ---- | ------------------------------------------------- | ------------------------------------ |
+| 1    | On the bill, click **Record Payment**             | Payment form appears                 |
+| 2    | Enter full amount: `13100`, Method: Bank Transfer | Full payment                         |
+| 3    | Click **Save**                                    | Bill status → **Paid**, Balance = ₱0 |
 
 ---
 
-## 2. Company Setup
+## Phase 7: Record Your Monthly Expenses — Journal Entries
 
-| Step | Action                                                             | Expected Result                                             |
-| ---- | ------------------------------------------------------------------ | ----------------------------------------------------------- |
-| 1    | After signing up, you land on `/company-setup`                     | Company setup form appears (company name, business details) |
-| 2    | Fill in company name, address, industry, tax ID, fiscal year start | Form validates all required fields                          |
-| 3    | Click **Create Company** / **Submit**                              | Organization is created — you are redirected to `/plans`    |
+> _"I need to record my February rent and utilities."_
 
----
+### Step 7.1 — Record Rent Payment
 
-## 3. Subscription / Plans
+| Step | Action                                                              | Expected Result                                       |
+| ---- | ------------------------------------------------------------------- | ----------------------------------------------------- |
+| 1    | Click **General Ledger → Journal Entries** in sidebar               | Journal entries page loads                            |
+| 2    | Click **Create Journal Entry**                                      | Form loads with date, description, debit/credit lines |
+| 3    | Date: today, Description: `"February 2026 restaurant rent payment"` | Fields accept values                                  |
+| 4    | **Debit**: Rent Expense (5010) — Amount: `18000`                    | Expense increases                                     |
+| 5    | **Credit**: Cash on Hand (1000) — Amount: `18000`                   | Cash decreases                                        |
+| 6    | Verify: Debits (₱18,000) = Credits (₱18,000) — **Balanced**         | Green "Balanced" indicator                            |
+| 7    | Click **Save as Draft**                                             | Entry created with status Draft                       |
+| 8    | Click **Post** on the draft entry                                   | Status → **Posted**, account balances update          |
 
-| Step | Action                                               | Expected Result                                                                                     |
-| ---- | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| 1    | Navigate to `/plans`                                 | Three plan cards appear: **Starter** (₱49/mo), **Professional** (₱129/mo), **Enterprise** (₱399/mo) |
-| 2    | Click **Get Started** on any plan                    | Mock checkout processes — subscription is activated                                                 |
-| 3    | After activation, you are redirected to `/dashboard` | Dashboard loads with the sidebar and full navigation available                                      |
+### Step 7.2 — Record Utilities Payment
 
----
+| Step | Action                                                      | Expected Result               |
+| ---- | ----------------------------------------------------------- | ----------------------------- |
+| 1    | Create another journal entry                                | —                             |
+| 2    | Description: `"February utilities - Meralco electric bill"` | —                             |
+| 3    | **Debit**: Utilities Expense (5020) — `8500`                | —                             |
+| 4    | **Credit**: BDO Savings Account (1010) — `8500`             | Paid from bank account        |
+| 5    | Save and Post                                               | Entry posted, balances update |
 
-## 4. Dashboard
+### Step 7.3 — Record Staff Salaries
 
-| Step | Action                                         | Expected Result                                                                                    |
-| ---- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 1    | Navigate to `/dashboard`                       | Dashboard loads with KPI summary cards: Total Revenue, Total Expenses, Net Profit, Total Customers |
-| 2    | View the charts section                        | Revenue vs Expenses area chart, Income Category pie chart, Cash Flow bar chart are displayed       |
-| 3    | View Recent Invoices table                     | Table shows recent invoices with status badges (Paid, Pending, Overdue)                            |
-| 4    | View Recent Transactions table                 | Table shows recent transactions with amounts                                                       |
-| 5    | Click the period tabs (Month / Quarter / Year) | Charts and KPI cards update to reflect the selected period                                         |
-| 6    | Navigate to `/dashboard/analytics`             | Analytics page loads with Revenue Trend line chart, Expense Breakdown bar chart                    |
-| 7    | Navigate to `/dashboard/reports`               | Reports Center shows summary cards for P&L, Balance Sheet, Cash Flow                               |
+| Step | Action                                                 | Expected Result   |
+| ---- | ------------------------------------------------------ | ----------------- |
+| 1    | Create another journal entry                           | —                 |
+| 2    | Description: `"February salaries - 2 cooks, 1 server"` | —                 |
+| 3    | **Debit**: Salaries Expense (5030) — `45000`           | 3 staff × ₱15,000 |
+| 4    | **Credit**: Cash on Hand (1000) — `45000`              | Paid in cash      |
+| 5    | Save and Post                                          | Entry posted      |
 
-> **Note**: Dashboard currently uses hardcoded sample data. Values shown are static.
-
----
-
-## 5. Chart of Accounts
-
-### 5.1 — View Accounts
-
-| Step | Action                                                      | Expected Result                                                                                                                   |
-| ---- | ----------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | Click **Chart of Accounts → All Accounts** in sidebar       | Accounts page loads with summary cards per type (Assets, Liabilities, Equity, Revenue, Expenses) and a data table of all accounts |
-| 2    | If no accounts exist, table shows an empty state            | "No accounts found" or empty table message                                                                                        |
-| 3    | Click the **Assets** / **Liabilities** / etc. sub-nav items | Table filters to show only accounts of that type                                                                                  |
-
-### 5.2 — Create Account
-
-| Step | Action                                                                                                  | Expected Result                                                               |
-| ---- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 1    | Click **Create Account** button (top right)                                                             | Navigates to `/accounts/create` with the Account form                         |
-| 2    | Fill in: Account Code (`1000`), Account Name (`Cash on Hand`), Type (`Asset`), Normal Balance (`Debit`) | Form accepts all fields                                                       |
-| 3    | Click **Save** / **Create**                                                                             | Account is created — success toast appears — redirected back to accounts list |
-| 4    | The new account appears in the table                                                                    | Account code `1000`, name `Cash on Hand`, type `Asset` visible in the table   |
-
-### 5.3 — Edit / Delete Account
-
-| Step | Action                                     | Expected Result                                                          |
-| ---- | ------------------------------------------ | ------------------------------------------------------------------------ |
-| 1    | Click on an account row or the edit icon   | Account detail/edit page opens at `/accounts/[id]`                       |
-| 2    | Change the account name and click **Save** | Success toast: "Account updated successfully" — name updates in the list |
-| 3    | Click the **Delete** button on an account  | Confirmation dialog appears                                              |
-| 4    | Confirm deletion                           | Account is removed from the list — success toast appears                 |
-
-### 5.4 — Archive / Restore / Reconcile
-
-| Step | Action                                       | Expected Result                                                             |
-| ---- | -------------------------------------------- | --------------------------------------------------------------------------- |
-| 1    | Open account actions menu (⋯ or dropdown)    | Options: Archive, Reconcile Balance appear                                  |
-| 2    | Click **Archive**                            | Account status changes to inactive/archived — disappears from active list   |
-| 3    | View archived accounts and click **Restore** | Account becomes active again                                                |
-| 4    | Click **Reconcile Balance**                  | Account balance is recalculated from ledger entries — updated balance shown |
-
-### Suggested Test Accounts to Create
-
-| Code | Name                | Type      | Normal Balance |
-| ---- | ------------------- | --------- | -------------- |
-| 1000 | Cash on Hand        | Asset     | Debit          |
-| 1010 | Bank Account        | Asset     | Debit          |
-| 1100 | Accounts Receivable | Asset     | Debit          |
-| 2000 | Accounts Payable    | Liability | Credit         |
-| 3000 | Owner's Equity      | Equity    | Credit         |
-| 4000 | Sales Revenue       | Revenue   | Credit         |
-| 5000 | General Expenses    | Expense   | Debit          |
-| 5010 | Office Supplies     | Expense   | Debit          |
+> **Why journal entries?** Every transaction must have equal debits and credits — this is the fundamental rule of double-entry bookkeeping. The system enforces this.
 
 ---
 
-## 6. Customers
+## Phase 8: Check Your Books — General Ledger & Reports
 
-### 6.1 — Create Customer
+> _"End of the month. Let me see how the business did."_
 
-| Step | Action                                                                                                                                                                                                            | Expected Result                                                                         |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| 1    | Click **Sales & Receivables → Customers** in sidebar                                                                                                                                                              | Customers page loads with stats cards (Total, Active, Balance, Credit) and a data table |
-| 2    | Click **Add Customer** button                                                                                                                                                                                     | Create Customer dialog/form opens                                                       |
-| 3    | Fill in: Code (`CUST-001`), Name (`ABC Trading`), Email (`abc@example.com`), Phone (`09171234567`), Billing Address (street, city, state, zip, country), Tax ID, Payment Terms (`Net 30`), Credit Limit (`50000`) | All fields accept input                                                                 |
-| 4    | Click **Create** / **Save**                                                                                                                                                                                       | Success toast — customer appears in the table with status "Active"                      |
-| 5    | Create a second customer with Code `CUST-002`                                                                                                                                                                     | Second customer appears in the table                                                    |
+### Step 8.1 — View the General Ledger
 
-### 6.2 — Search / Filter Customers
+| Step | Action                                       | Expected Result                                                                   |
+| ---- | -------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1    | Click **General Ledger → Ledger** in sidebar | Ledger page loads with account-by-account transaction details                     |
+| 2    | Select "Cash on Hand (1000)"                 | Shows all cash transactions: rent paid (-₱18,000), salaries paid (-₱45,000), etc. |
+| 3    | Select "Accounts Receivable (1100)"          | Shows: Invoice sent (+₱30,800), payments received (-₱30,800)                      |
+| 4    | Select "Catering Revenue (4000)"             | Shows: Invoice income ₱30,800 (includes 12% VAT)                                  |
 
-| Step | Action                                           | Expected Result                               |
-| ---- | ------------------------------------------------ | --------------------------------------------- |
-| 1    | Type `ABC` in the search bar                     | Table filters to show only matching customers |
-| 2    | Type `CUST-001` in the search bar                | Customer with code CUST-001 appears           |
-| 3    | Clear search and navigate to `/customers/active` | Only active customers displayed               |
+### Step 8.2 — Run Financial Reports
 
-### 6.3 — Edit / Toggle / Delete Customer
+| Step | Action                                                     | Expected Result                                                                                   |
+| ---- | ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| 1    | Navigate to **Reports → Trial Balance**                    | All accounts with their debit/credit balances — must be balanced (total debits = total credits)   |
+| 2    | Navigate to **Reports → Income Statement** (Profit & Loss) | Revenue: ₱30,800 vs. Expenses (COGS + Rent + Utilities + Salaries) — shows **Net Profit or Loss** |
+| 3    | Navigate to **Reports → Balance Sheet**                    | Assets = Liabilities + Equity (the accounting equation)                                           |
+| 4    | Navigate to **Reports → Cash Flow Statement**              | Shows where cash came in (customer payments) and went out (rent, salaries, suppliers)             |
 
-| Step | Action                                     | Expected Result                                                 |
-| ---- | ------------------------------------------ | --------------------------------------------------------------- |
-| 1    | Click edit on a customer                   | Edit form opens with current data pre-filled                    |
-| 2    | Change the phone number and save           | Success toast — phone number updates                            |
-| 3    | Click **Toggle Status** (deactivate)       | Customer status changes to inactive — badge turns grey          |
-| 4    | Click **Toggle Status** again (reactivate) | Customer status changes back to active                          |
-| 5    | Click **Delete** on a customer             | Confirmation dialog → Confirm → Customer is permanently removed |
-
----
-
-## 7. Suppliers (Vendors)
-
-### 7.1 — Create Supplier
-
-| Step | Action                                                                                                                                             | Expected Result                                      |
-| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 1    | Click **Purchases & Payables → Vendors** in sidebar                                                                                                | Suppliers page loads with stats cards and data table |
-| 2    | Click **Add Supplier** button                                                                                                                      | Slide-over (Sheet) form opens from the right         |
-| 3    | Fill in: Code (`SUP-001`), Name (`Metro Supplies`), Email (`metro@supplies.com`), Phone (`09181234567`), Address, Tax ID, Payment Terms (`Net 30`) | All fields accept input                              |
-| 4    | Click **Save**                                                                                                                                     | Success toast — supplier appears in the table        |
-
-### 7.2 — Edit / Delete Supplier
-
-| Step | Action                           | Expected Result                                                   |
-| ---- | -------------------------------- | ----------------------------------------------------------------- |
-| 1    | Click edit on a supplier         | Edit form opens in a slide-over Sheet                             |
-| 2    | Update the phone number and save | Success toast — data updates                                      |
-| 3    | Click **Delete** on a supplier   | Supplier is soft-deleted (deactivated) — `isActive` becomes false |
+> **The big question**: _Is Kusina ni Maria profitable?_
+>
+> - Revenue: ₱30,800 (catering with 12% VAT)
+> - Expenses: ₱13,100 (ingredients) + ₱18,000 (rent) + ₱8,500 (utilities) + ₱45,000 (salaries) = **₱84,600**
+> - **Net Loss: -₱53,800** 😟
+>
+> _Don't panic!_ This is Month 1. You only had one catering event. As you get more clients and dine-in revenue comes in, the numbers will improve. This is exactly what the accounting system is for — to show you the truth about your business.
 
 ---
 
-## 8. Invoices (Sales)
+## Phase 9: Day-to-Day Operations — Ongoing Workflow
 
-### 8.1 — Create Invoice
+> _"Now that everything is set up, here's what I do every day/week/month."_
 
-| Step | Action                                                                                   | Expected Result                                                                                               |
-| ---- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| 1    | Click **Sales & Receivables → Create Invoice** in sidebar                                | Invoice creation form loads at `/invoices/create`                                                             |
-| 2    | Select a **Customer** from the dropdown                                                  | Customer details populate (name, email, address)                                                              |
-| 3    | Set **Invoice Date** and **Due Date**                                                    | Date fields accept values                                                                                     |
-| 4    | Add line items: Description (`Web Design Service`), Quantity (`1`), Unit Price (`15000`) | Line item row appears — subtotal calculates automatically                                                     |
-| 5    | Add another line item: Description (`Hosting`), Quantity (`12`), Unit Price (`500`)      | Second row added — subtotal updates to `21000`                                                                |
-| 6    | Set Tax Rate to `12` (%)                                                                 | Tax amount calculates (`2520`) — Total becomes `23520`                                                        |
-| 7    | Click **Save as Draft** or **Create**                                                    | Success toast — invoice created with status **Draft** — invoice number auto-generated (e.g., `INV-2026-0001`) |
-| 8    | You are redirected to the invoice list or detail page                                    | New invoice visible with correct amounts                                                                      |
+### Daily
 
-### 8.2 — View / Send Invoice
+| Task                        | Where                                             |
+| --------------------------- | ------------------------------------------------- |
+| Record cash sales (dine-in) | Journal Entry: Debit Cash, Credit Dine-in Revenue |
+| Check low inventory alerts  | Inventory → Products (reorder level warnings)     |
 
-| Step | Action                          | Expected Result                                                                                                   |
-| ---- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| 1    | Click on an invoice in the list | Invoice detail page opens at `/invoices/[id]` showing customer info, line items, totals                           |
-| 2    | Click **Send Invoice**          | Status changes from **Draft** to **Sent** — a journal entry is automatically created (Debit: AR, Credit: Revenue) |
-| 3    | Click **Download PDF**          | PDF file downloads with invoice details                                                                           |
+### Weekly
 
-### 8.3 — Record Payment on Invoice
+| Task                                  | Where                  |
+| ------------------------------------- | ---------------------- |
+| Create bills for ingredient purchases | Bills → Create Bill    |
+| Pay suppliers when due                | Bills → Record Payment |
 
-| Step | Action                                                                                  | Expected Result                                                                           |
-| ---- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1    | On the invoice detail page, click **Record Payment**                                    | Payment form appears                                                                      |
-| 2    | Enter amount (`10000`), select payment method (`Bank Transfer`), enter reference number | Fields accept input                                                                       |
-| 3    | Click **Save Payment**                                                                  | Payment recorded — invoice status changes to **Partial** — balance due updates to `13520` |
-| 4    | Record another payment for the remaining `13520`                                        | Invoice status changes to **Paid** — balance due becomes `0`                              |
+### Monthly
 
-### 8.4 — Void Invoice
-
-| Step | Action                                   | Expected Result                                                |
-| ---- | ---------------------------------------- | -------------------------------------------------------------- |
-| 1    | On a sent/unpaid invoice, click **Void** | Confirmation dialog appears                                    |
-| 2    | Confirm void                             | Invoice status changes to **Void** — journal entry is reversed |
-
-### 8.5 — Filter / Search Invoices
-
-| Step | Action                                                                      | Expected Result                                              |
-| ---- | --------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| 1    | Use the status filter dropdown (All / Draft / Sent / Paid / Overdue / Void) | Table filters to show only invoices matching selected status |
-| 2    | Type a customer name or invoice number in search                            | Table filters to matching results                            |
-| 3    | Navigate to `/invoices/paid`                                                | Shows only paid invoices                                     |
-| 4    | Navigate to `/invoices/pending`                                             | Shows only pending (unpaid) invoices                         |
+| Task                              | Where                                |
+| --------------------------------- | ------------------------------------ |
+| Send catering invoices            | Invoices → Create Invoice → Send     |
+| Record rent, utilities, salaries  | Journal Entries                      |
+| Run Trial Balance to verify books | Reports → Trial Balance              |
+| Review Income Statement           | Reports → P&L                        |
+| Follow up on unpaid invoices      | Invoices → filter by Pending/Overdue |
 
 ---
 
-## 9. Bills (Purchases)
+## Phase 10: Advanced Scenarios
 
-### 9.1 — Create Bill
+### 10.1 — Void a Mistake
 
-| Step | Action                                                                                                                 | Expected Result                                                                                          |
-| ---- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| 1    | Click **Purchases & Payables → Purchase Bills** in sidebar                                                             | Bills page loads at `/bills` with summary cards and table                                                |
-| 2    | Click **Create Bill** button                                                                                           | Bill creation form appears (inline or separate page)                                                     |
-| 3    | Select a **Supplier** from the dropdown                                                                                | Supplier details populate                                                                                |
-| 4    | Set **Bill Date** and **Due Date**                                                                                     | Dates accepted                                                                                           |
-| 5    | Add line items: Description (`Office Supplies`), Quantity (`10`), Unit Price (`250`), Account (`Office Supplies 5010`) | Line total = `2500`                                                                                      |
-| 6    | Click **Save** / **Create**                                                                                            | Success toast — bill created with status **Draft** — bill number auto-generated (e.g., `BILL-2026-0001`) |
+> _"I sent an invoice to the wrong client!"_
 
-### 9.2 — Approve Bill
+| Step | Action                       | Expected Result                                                 |
+| ---- | ---------------------------- | --------------------------------------------------------------- |
+| 1    | Go to the incorrect invoice  | Invoice detail page                                             |
+| 2    | Click **Void** → Confirm     | Invoice status → **Void**, journal entry reversed, AR decreases |
+| 3    | Create a new correct invoice | Fresh invoice with proper details                               |
 
-| Step | Action                                       | Expected Result                                                 |
-| ---- | -------------------------------------------- | --------------------------------------------------------------- |
-| 1    | On a draft bill, click **Approve**           | Bill status changes from **Draft** to **Sent** (approved)       |
-| 2    | A journal entry is automatically created     | Journal entry: Debit: Expense account, Credit: Accounts Payable |
-| 3    | Supplier balance increases by the bill total | Supplier's `currentBalance` field reflects the new bill amount  |
+### 10.2 — Archive an Old Account
 
-### 9.3 — Record Payment on Bill
+| Step | Action                                          | Expected Result                              |
+| ---- | ----------------------------------------------- | -------------------------------------------- |
+| 1    | Go to Chart of Accounts                         | List of all accounts                         |
+| 2    | Click ⋯ menu on an unused account → **Archive** | Account deactivated, hidden from active list |
+| 3    | Later, **Restore** if needed                    | Account becomes active again                 |
 
-| Step | Action                                        | Expected Result                                  |
-| ---- | --------------------------------------------- | ------------------------------------------------ |
-| 1    | On an approved bill, click **Record Payment** | Payment form appears                             |
-| 2    | Enter payment amount, method, reference       | Fields accept input                              |
-| 3    | Submit partial payment                        | Bill status → **Partial**, balance due decreases |
-| 4    | Submit remaining payment                      | Bill status → **Paid**, balance due = `0`        |
+### 10.3 — Deactivate a Customer
 
-### 9.4 — Void / Delete Bill
+> _"Mabuhay Events stopped ordering. I'll mark them inactive."_
 
-| Step | Action                                         | Expected Result                                                           |
-| ---- | ---------------------------------------------- | ------------------------------------------------------------------------- |
-| 1    | On an approved (non-paid) bill, click **Void** | Bill status → **Void**, journal entry reversed, supplier balance adjusted |
-| 2    | On a draft bill, click **Delete**              | Confirmation dialog → bill permanently removed                            |
-| 3    | Attempt to delete a paid bill                  | Error: "Cannot delete a paid bill"                                        |
+| Step | Action                                            | Expected Result                |
+| ---- | ------------------------------------------------- | ------------------------------ |
+| 1    | Go to Customers list                              | All customers shown            |
+| 2    | Click **Toggle Status** on Mabuhay Events         | Status → Inactive (grey badge) |
+| 3    | They won't appear in invoice customer dropdowns   | Prevents accidental invoicing  |
+| 4    | Click **Toggle Status** again to reactivate later | Status → Active                |
 
----
+### 10.4 — Adjust Inventory After Spoilage
 
-## 10. Payments
+> _"2 sacks of rice got wet and spoiled."_
 
-### 10.1 — View Payments
-
-| Step | Action                                              | Expected Result                                                                           |
-| ---- | --------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1    | Click **Cash Management → All Payments** in sidebar | Payments page loads with summary cards (Total, Received, Made, Net Cash Flow) and a table |
-| 2    | Filter by type: **Received**                        | Only received payments (from customers) shown                                             |
-| 3    | Filter by type: **Made**                            | Only made payments (to suppliers) shown                                                   |
-| 4    | Search by payment number or entity name             | Table filters to matching results                                                         |
-
-### 10.2 — Record a Payment
-
-| Step | Action                                                            | Expected Result                                             |
-| ---- | ----------------------------------------------------------------- | ----------------------------------------------------------- |
-| 1    | Click **Record Payment** button or navigate to `/payments/create` | Payment creation form loads                                 |
-| 2    | Select payment type: **Received**                                 | Customer selector appears with open invoices for allocation |
-| 3    | Select a customer                                                 | List of open invoices for that customer appears             |
-| 4    | Allocate payment to one or more invoices                          | Amount distributes across selected invoices                 |
-| 5    | Select bank account, payment method, enter reference number       | Fields accept input                                         |
-| 6    | Click **Save**                                                    | Payment recorded — invoices update their paid amounts       |
-
-### 10.3 — Void a Payment
-
-| Step | Action                                                     | Expected Result                                                               |
-| ---- | ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 1    | Click the ⋯ menu on a completed payment → **Void Payment** | Confirmation dialog: "Are you sure? This will reverse the journal entry..."   |
-| 2    | Click **Void Payment** to confirm                          | Payment status → **VOIDED**, badge turns grey, invoice/bill balances restored |
+| Step | Action                                          | Expected Result                          |
+| ---- | ----------------------------------------------- | ---------------------------------------- |
+| 1    | Go to Inventory → find "Premium Rice 25kg Sack" | Current qty shown                        |
+| 2    | Click **Adjust Quantity**                       | Adjustment form appears                  |
+| 3    | Reduce by 2, Reason: "Spoilage - water damage"  | Quantity decreases, transaction recorded |
 
 ---
 
-## 11. Journal Entries
+## Quick Reference: The Accounting Cycle
 
-### 11.1 — Create Manual Journal Entry
-
-| Step | Action                                                             | Expected Result                                                                              |
-| ---- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| 1    | Click **General Ledger → Journal Entries** in sidebar              | Journal entries list page loads with status/type filters                                     |
-| 2    | Click **Create Journal Entry**                                     | Form at `/journal-entries/create` loads with date, description, and debit/credit lines table |
-| 3    | Set date to today, description: `"Office rent payment"`            | Fields accept values                                                                         |
-| 4    | Add Debit line: Account = `Rent Expense (5000)`, Amount = `10000`  | Debit line appears — debit total = `10000`                                                   |
-| 5    | Add Credit line: Account = `Cash on Hand (1000)`, Amount = `10000` | Credit line appears — credit total = `10000`                                                 |
-| 6    | Verify: Debit total (`10000`) = Credit total (`10000`) — balanced  | Balance indicator shows "Balanced" / green                                                   |
-| 7    | Click **Save as Draft**                                            | Journal entry created with status **Draft** — entry number auto-generated                    |
-
-### 11.2 — Post Journal Entry
-
-| Step | Action                                                            | Expected Result                                                                           |
-| ---- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| 1    | Navigate to the journal entry detail page `/journal-entries/[id]` | Entry details with lines displayed                                                        |
-| 2    | Click **Post** button                                             | Status changes from **Draft** to **Posted** — ledger entries are created for each account |
-| 3    | Check the affected accounts in Chart of Accounts                  | Account balances updated: Rent Expense +10000, Cash on Hand -10000                        |
-
-### 11.3 — Void Journal Entry
-
-| Step | Action                                    | Expected Result                                                    |
-| ---- | ----------------------------------------- | ------------------------------------------------------------------ |
-| 1    | On a posted journal entry, click **Void** | Confirmation dialog appears                                        |
-| 2    | Confirm void                              | Status → **Void** — account balances are reversed back to original |
-
-### 11.4 — Filter / Search
-
-| Step | Action                           | Expected Result                                                         |
-| ---- | -------------------------------- | ----------------------------------------------------------------------- |
-| 1    | Filter by status: **Posted**     | Only posted entries shown                                               |
-| 2    | Filter by type: **Manual**       | Only manual entries shown (excludes auto-generated from invoices/bills) |
-| 3    | Filter by type: **Auto-Invoice** | Shows only auto-generated entries from invoice sending                  |
+```
+  ┌─────────────────────────────────────────────────────┐
+  │                  THE ACCOUNTING CYCLE                │
+  │                                                     │
+  │  1. 📝 Record Transactions (Journal Entries)        │
+  │         ↓                                           │
+  │  2. 📒 Post to Ledger (automatic)                  │
+  │         ↓                                           │
+  │  3. ⚖️  Trial Balance (verify debits = credits)     │
+  │         ↓                                           │
+  │  4. 📊 Financial Statements                         │
+  │      • Income Statement (are you profitable?)       │
+  │      • Balance Sheet (what do you own vs owe?)      │
+  │      • Cash Flow (where did the money go?)          │
+  │         ↓                                           │
+  │  5. 🔒 Close Period (lock the month)                │
+  │         ↓                                           │
+  │  6. 🔄 Start Next Period                            │
+  └─────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 12. General Ledger
+## Form Default Values Summary
 
-### 12.1 — View Ledger Entries
+All forms come **pre-filled** so you can just review and submit:
 
-| Step | Action                                                     | Expected Result                                                 |
-| ---- | ---------------------------------------------------------- | --------------------------------------------------------------- |
-| 1    | Click **General Ledger → Ledger Entries** in sidebar       | Ledger page loads at `/ledger` with account-grouped entries     |
-| 2    | Each account section shows debits and credits posted to it | Opening balance, individual entries with dates, running balance |
-| 3    | Set a date range filter                                    | Ledger re-filters to show only entries within the range         |
-| 4    | Select a specific account filter                           | Only that account's ledger entries shown                        |
-| 5    | Expand/collapse account groups                             | Entries toggle visibility per account                           |
-
-### 12.2 — Trial Balance
-
-| Step | Action                                                                       | Expected Result                                         |
-| ---- | ---------------------------------------------------------------------------- | ------------------------------------------------------- |
-| 1    | Click the **Trial Balance** tab (or navigate to `/ledger?tab=trial-balance`) | Trial balance report loads                              |
-| 2    | Each account shows a debit OR credit balance column                          | Columns populated per account                           |
-| 3    | Total Debits = Total Credits at the bottom                                   | The trial balance is in balance (key accounting check!) |
-
----
-
-## 13. Inventory
-
-### 13.1 — Create Inventory Item
-
-| Step | Action                                                                                                                                                                   | Expected Result                                                                                    |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| 1    | Click **Inventory → Items & Products** in sidebar                                                                                                                        | Inventory page loads with stats cards (Total Items, Total Value, Low Stock, Active) and data table |
-| 2    | Click **Add Item** button                                                                                                                                                | Slide-over Sheet form opens                                                                        |
-| 3    | Fill in: SKU (`ITEM-001`), Name (`Premium Rice`), Category (`Food`), Unit (`kg`), Quantity on Hand (`100`), Unit Cost (`50`), Selling Price (`75`), Reorder Level (`20`) | Fields accept input                                                                                |
-| 4    | Select linked accounts: Inventory Account, COGS Account, Income Account                                                                                                  | Accounts selectable from dropdown (must create accounts first)                                     |
-| 5    | Toggle **Sales Tax Enabled** on, set rate to `12%`                                                                                                                       | Tax fields appear and accept values                                                                |
-| 6    | Click **Save**                                                                                                                                                           | Success toast — item appears in table — Total Value card updates                                   |
-
-### 13.2 — Adjust Inventory Quantity
-
-| Step | Action                                                  | Expected Result                                                            |
-| ---- | ------------------------------------------------------- | -------------------------------------------------------------------------- |
-| 1    | Click the ⋯ menu on an item → **Adjust Quantity**       | Adjustment dialog opens                                                    |
-| 2    | Enter adjustment: `+50`, reason: `"New stock delivery"` | Fields accept input                                                        |
-| 3    | Click **Save**                                          | Quantity updates from `100` to `150`, an inventory transaction is recorded |
-| 4    | Enter adjustment: `-10`, reason: `"Damaged goods"`      | Quantity updates from `150` to `140`                                       |
-| 5    | Enter adjustment: `-200` (more than available)          | Error: "Insufficient inventory" — quantity unchanged                       |
-
-### 13.3 — Low Stock & Reorder
-
-| Step | Action                                                  | Expected Result                                |
-| ---- | ------------------------------------------------------- | ---------------------------------------------- |
-| 1    | Create an item with quantity `5` and reorder level `20` | Item is created                                |
-| 2    | Check the **Low Stock** stat card                       | Count increases by 1                           |
-| 3    | Navigate to `/inventory/low-stock` (or filter)          | Only items at or below reorder level are shown |
-
-### 13.4 — Inventory Transactions
-
-| Step | Action                                                                        | Expected Result                                                          |
-| ---- | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| 1    | Navigate to `/inventory/transactions`                                         | All inventory movement history displayed (purchases, sales, adjustments) |
-| 2    | Each transaction shows: date, type, quantity in/out, unit cost, balance after | Transaction records are visible                                          |
-
-### 13.5 — Delete (Deactivate) Item
-
-| Step | Action                                                   | Expected Result                                         |
-| ---- | -------------------------------------------------------- | ------------------------------------------------------- |
-| 1    | Click **Delete** on an inventory item                    | Item is soft-deleted (deactivated) — `isActive` → false |
-| 2    | Item disappears from the active items list               | Not visible in active view                              |
-| 3    | The item can still be viewed by including inactive items | Item shows with inactive status                         |
-
----
-
-## 14. Accounting Periods
-
-| Step | Action                                                                                             | Expected Result                                                                       |
-| ---- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| 1    | Click **Settings → Accounting Periods** in sidebar                                                 | Periods page loads at `/periods` with a table of periods                              |
-| 2    | Click **Create Period**                                                                            | Dialog opens with fields: Name, Type (Monthly/Quarterly/Annual), Start Date, End Date |
-| 3    | Create period: Name = `"January 2026"`, Type = `Monthly`, Start = `2026-01-01`, End = `2026-01-31` | Period created with status **Open**                                                   |
-| 4    | Click **Close Period**                                                                             | Period status → **Closed** — no new transactions can be posted to this period         |
-| 5    | Click **Reopen Period**                                                                            | Period status → **Open** again                                                        |
-| 6    | Click **Lock Period**                                                                              | Period status → **Locked** — a stricter lock than close                               |
-| 7    | Click **Delete** on an open period                                                                 | Period is removed                                                                     |
-
----
-
-## 15. Financial Reports
-
-### 15.1 — Balance Sheet
-
-| Step | Action                                                      | Expected Result                                                               |
-| ---- | ----------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| 1    | Navigate to `/reports/balance-sheet`                        | Balance sheet loads from API with three sections: Assets, Liabilities, Equity |
-| 2    | Each section shows account names and balances               | Individual accounts listed with amounts                                       |
-| 3    | Verify: **Total Assets = Total Liabilities + Total Equity** | The accounting equation balances (balanced indicator shown)                   |
-
-### 15.2 — Income Statement (Profit & Loss)
-
-| Step | Action                                          | Expected Result                                          |
-| ---- | ----------------------------------------------- | -------------------------------------------------------- |
-| 1    | Navigate to `/reports/profit-loss`              | Income statement loads with Revenue and Expense sections |
-| 2    | Revenue accounts listed with totals             | Total Revenue calculated                                 |
-| 3    | Expense accounts listed with totals             | Total Expenses calculated                                |
-| 4    | **Net Income = Total Revenue - Total Expenses** | Net income/loss displayed at the bottom                  |
-
-### 15.3 — Cash Flow Statement
-
-| Step | Action                                       | Expected Result                                                      |
-| ---- | -------------------------------------------- | -------------------------------------------------------------------- |
-| 1    | Navigate to `/reports/cash-flow`             | Cash flow report loads with Operating, Investing, Financing sections |
-| 2    | Each section shows cash inflows and outflows | Subtotals per section                                                |
-| 3    | **Net Change in Cash** displayed             | Total across all sections                                            |
-
-### 15.4 — A/R Aging Report
-
-| Step | Action                                            | Expected Result                                                        |
-| ---- | ------------------------------------------------- | ---------------------------------------------------------------------- |
-| 1    | Navigate to `/reports/ar-aging`                   | Aging report loads with columns: Current, 1-30, 31-60, 61-90, 90+ days |
-| 2    | Each customer with outstanding invoices is listed | Amounts bucketed by aging period                                       |
-| 3    | Total row shows aggregate per aging bucket        | Totals calculated correctly                                            |
-
-### 15.5 — A/P Aging Report
-
-| Step | Action                                         | Expected Result                           |
-| ---- | ---------------------------------------------- | ----------------------------------------- |
-| 1    | Navigate to `/reports/ap-aging`                | Aging report loads with supplier payables |
-| 2    | Each supplier with outstanding bills is listed | Amounts bucketed by aging period          |
-
-### 15.6 — Trial Balance
-
-| Step | Action                                  | Expected Result                                            |
-| ---- | --------------------------------------- | ---------------------------------------------------------- |
-| 1    | Navigate to `/ledger?tab=trial-balance` | Trial balance shows all accounts with debit/credit columns |
-| 2    | **Total Debits = Total Credits**        | The trial balance is in balance                            |
-
----
-
-## 16. Settings
-
-| Step | Action                                 | Expected Result                                                                                                            |
-| ---- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| 1    | Navigate to `/settings/general`        | General settings page with profile info (name, email), preferences (language, timezone, date format), notification toggles |
-| 2    | Update your name and click **Save**    | Success toast — name updates                                                                                               |
-| 3    | Navigate to `/settings/company`        | Company settings with business name, email, phone, address, industry, tax ID                                               |
-| 4    | Update company name and click **Save** | Success toast — company name updates                                                                                       |
-| 5    | Navigate to `/settings/billing`        | Current subscription plan displayed with upgrade options                                                                   |
-
----
-
-## End-to-End Workflow Test
-
-This tests the full accounting cycle from start to finish:
-
-| #   | Step                       | Action                                                                    | Expected Result                                                                                 |
-| --- | -------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| 1   | **Setup accounts**         | Create: Cash (1000), AR (1100), AP (2000), Revenue (4000), Expense (5000) | 5 accounts in Chart of Accounts                                                                 |
-| 2   | **Create customer**        | Create customer `ABC Corp` with code `CUST-001`                           | Customer appears in customer list                                                               |
-| 3   | **Create supplier**        | Create supplier `XYZ Supplies` with code `SUP-001`                        | Supplier appears in supplier list                                                               |
-| 4   | **Create invoice**         | Create invoice for ABC Corp: 1 item, qty 1, price ₱10,000, tax 12%        | Invoice created (Draft), total = ₱11,200                                                        |
-| 5   | **Send invoice**           | Send the invoice                                                          | Status → Sent, auto journal entry created (DR: AR ₱11,200, CR: Revenue ₱10,000, CR: Tax ₱1,200) |
-| 6   | **Check AR balance**       | View AR account in Chart of Accounts                                      | AR balance increases by ₱11,200                                                                 |
-| 7   | **Check trial balance**    | View trial balance                                                        | Debits = Credits (balanced)                                                                     |
-| 8   | **Record payment**         | Record ₱11,200 payment from ABC Corp                                      | Invoice status → Paid, AR decreases, Cash increases                                             |
-| 9   | **Create bill**            | Create bill from XYZ Supplies: Office Supplies, qty 10, unit price ₱250   | Bill created (Draft), total = ₱2,500                                                            |
-| 10  | **Approve bill**           | Approve the bill                                                          | Status → Sent, auto journal entry (DR: Expense, CR: AP)                                         |
-| 11  | **Check AP balance**       | View AP account                                                           | AP balance increases by ₱2,500                                                                  |
-| 12  | **Pay the bill**           | Record ₱2,500 payment to XYZ Supplies                                     | Bill status → Paid, AP decreases, Cash decreases                                                |
-| 13  | **Check balance sheet**    | View balance sheet report                                                 | Assets = Liabilities + Equity (balanced)                                                        |
-| 14  | **Check income statement** | View income statement                                                     | Revenue = ₱10,000, Expense = ₱2,500, Net Income = ₱7,500                                        |
-| 15  | **Create journal entry**   | Manual JE: DR Expense ₱1,000, CR Cash ₱1,000 (rent payment)               | JE created as Draft                                                                             |
-| 16  | **Post journal entry**     | Post the JE                                                               | Status → Posted, account balances update                                                        |
-| 17  | **Final trial balance**    | View trial balance                                                        | All debits = all credits                                                                        |
-| 18  | **Close period**           | Close the accounting period                                               | Period locked — prevents backdated entries                                                      |
+| Form              | Pre-filled As                                | Just Hit Submit?                           |
+| ----------------- | -------------------------------------------- | ------------------------------------------ |
+| Company Setup     | Kusina ni Maria, Sole Proprietorship, Makati | ✅ Yes                                     |
+| Account           | Cash on Hand (1000), ₱50,000 balance         | ⚠️ Change for each account                 |
+| Customer          | Mabuhay Events Corporation (CUST-001)        | ✅ Yes                                     |
+| Supplier          | Fresh Harvest Market (SUP-001)               | ✅ Yes                                     |
+| Invoice           | 50-pax catering + setup = ₱27,500            | ⚠️ Select customer first                   |
+| Bill              | Rice + Veggies + Pork = ₱13,100              | ⚠️ Select supplier & expense account first |
+| Inventory Product | Premium Rice 25kg, 10 sacks @ ₱1,400         | ⚠️ Select accounts from dropdowns          |
+| Service           | Catering Service, ₱450/head                  | ⚠️ Select income account                   |
+| Transaction       | Restaurant Rent ₱18,000                      | ✅ Yes                                     |
+| Journal Entry     | _(Manual — no defaults, you build it)_       | ❌ Fill in manually                        |
 
 ---
 
 ## Known Limitations
 
-| Area               | Limitation                                                                            |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| Dashboard          | Uses hardcoded sample data — not connected to real API data                           |
-| Transactions page  | Uses mock data — not connected to real API                                            |
-| Payments list      | List page uses mock data — create page uses real API                                  |
-| Reports main page  | `/reports` uses static data — sub-pages (`/reports/balance-sheet`, etc.) use real API |
-| Tax pages          | `/tax/*` routes do not have pages (will 404)                                          |
-| Some sidebar links | `/banking/reconciliation`, `/inventory/adjustments`, `/inventory/valuation` may 404   |
-| Google Sign-In     | Requires `NEXT_PUBLIC_GOOGLE_CLIENT_ID` env var and non-localhost domain              |
-| Email sending      | Invoice "Send" requires SMTP configuration on the backend                             |
+1. **Dashboard**: Uses hardcoded sample data — does not reflect your actual transactions
+2. **Dropdowns require existing data**: Invoice needs customers first, Bill needs suppliers first, Inventory needs accounts first — follow the phases in order
+3. **Some sidebar links will 404**: Banking/reconciliation, inventory adjustments, tax pages are not yet implemented
+4. **Invoice/Bill numbers**: Use global unique indexes — may conflict if testing with multiple organizations

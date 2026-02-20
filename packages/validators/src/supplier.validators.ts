@@ -15,12 +15,19 @@ const addressSchema = z.object({
  * Supplier schema
  */
 const supplierSchema = z.object({
-  supplierCode: z.string().min(1, "Supplier code is required"),
+  supplierCode: z.preprocess(
+    (val) => val || undefined,
+    z.string().trim().optional(),
+  ),
   supplierName: z.string().min(1, "Supplier name is required"),
   displayName: z.string().optional(),
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(1, "Phone is required"),
-  website: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  website: z
+    .string()
+    .url("Please enter a valid URL")
+    .optional()
+    .or(z.literal("")),
   address: addressSchema,
   taxId: z.string().min(1, "Tax ID is required"),
   paymentTerms: z.string().min(1, "Payment terms is required"),

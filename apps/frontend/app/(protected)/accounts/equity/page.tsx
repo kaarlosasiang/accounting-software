@@ -23,11 +23,13 @@ import { formatCurrency } from "@/lib/format";
 import { DataTable } from "@/components/common/data-table/data-table";
 import { DataTableToolbar } from "@/components/common/data-table/data-table-toolbar";
 import { useDataTable } from "@/hooks/use-data-table";
-import { columns } from "../columns";
+import { createColumns } from "../columns";
+import { useCurrency } from "@/hooks/use-currency";
 
 export default function EquityAccountsPage() {
   const router = useRouter();
   const { accounts, loading, error, refetch } = useAccounts();
+  const { currency } = useCurrency();
   const equityAccounts = accounts.filter((a) => a.accountType === "Equity");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -35,7 +37,7 @@ export default function EquityAccountsPage() {
   // Initialize DataTable
   const { table } = useDataTable<Account>({
     data: equityAccounts,
-    columns,
+    columns: createColumns(currency),
     pageCount: Math.max(1, Math.ceil(equityAccounts.length / 10)),
     initialState: {
       sorting: [{ id: "accountCode", desc: false }],
@@ -150,7 +152,7 @@ export default function EquityAccountsPage() {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">
-            {formatCurrency(totalBalance)}
+            {formatCurrency(totalBalance, currency)}
           </div>
           <p className="text-xs text-muted-foreground">
             {equityAccounts.length} equity accounts

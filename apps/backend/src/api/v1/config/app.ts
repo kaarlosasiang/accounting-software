@@ -20,7 +20,7 @@ export default (app: Application): Application => {
   app.use(
     helmet({
       contentSecurityPolicy: false,
-    })
+    }),
   );
 
   // CORS configuration
@@ -28,11 +28,10 @@ export default (app: Application): Application => {
     cors({
       origin: (origin, callback) => {
         const allowedOrigins = [
-          constants.corsOrigin,
-          constants.frontEndUrl,
-          "https://www.amfintrass.com",
-          "https://amfintrass.com",
           "http://localhost:3000",
+          "https://amfintrass.com",
+          "https://www.amfintrass.com",
+          "https://app.amfintrass.com",
         ];
         // Allow requests with no origin (mobile apps, curl, etc.)
         if (!origin || allowedOrigins.includes(origin)) {
@@ -45,7 +44,7 @@ export default (app: Application): Application => {
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
       optionsSuccessStatus: 200,
-    })
+    }),
   );
 
   // Cookie parsing - Better Auth needs this early
@@ -63,7 +62,7 @@ export default (app: Application): Application => {
             logger.info(message.trim());
           },
         },
-      })
+      }),
     );
   }
 

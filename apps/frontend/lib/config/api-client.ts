@@ -35,8 +35,8 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const message =
-      (payload as ApiError)?.message ||
       (payload as ApiError)?.error ||
+      (payload as ApiError)?.message ||
       response.statusText ||
       "Request failed";
     throw new Error(message);
@@ -59,4 +59,3 @@ export type AuthResponse = {
   redirect?: boolean;
   url?: string;
 };
-

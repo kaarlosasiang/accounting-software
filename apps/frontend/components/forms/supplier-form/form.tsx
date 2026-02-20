@@ -36,6 +36,9 @@ export function SupplierForm({
   cancelButtonText = "Cancel",
 }: SupplierFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditing = Boolean(
+    initialData && "_id" in initialData && initialData._id,
+  );
 
   const getDefaultValues = (): Partial<SupplierSchemaType> => {
     const defaultAddress = {
@@ -47,24 +50,24 @@ export function SupplierForm({
     };
 
     const baseData: Partial<SupplierSchemaType> = {
-      supplierCode: "SUP-001",
-      supplierName: "Manila Rice Trading Co.",
-      displayName: "Manila Rice Trading",
-      email: "accounts@manilarice.ph",
-      phone: "+63 2 1234 5678",
-      website: "https://www.manilarice.ph",
+      supplierCode: undefined,
+      supplierName: "Fresh Harvest Market",
+      displayName: "Fresh Harvest",
+      email: "orders@freshharvestmarket.ph",
+      phone: "+63 2 8234 5678",
+      website: "",
       address: {
-        street: "123 Rizal Avenue",
-        city: "Manila",
+        street: "Stall 42, Farmers Market",
+        city: "Quezon City",
         state: "Metro Manila",
-        zipCode: "1000",
+        zipCode: "1100",
         country: "Philippines",
       },
-      taxId: "987-654-321-000",
-      paymentTerms: "Net 30",
+      taxId: "789-012-345-000",
+      paymentTerms: "Net 15",
       openingBalance: 0,
       isActive: true,
-      notes: "Primary rice supplier for food items",
+      notes: "Main supplier for fresh vegetables, meat, and seafood",
     };
 
     if (initialData) {
@@ -103,13 +106,25 @@ export function SupplierForm({
   const handleSubmit = async (data: SupplierSchemaType) => {
     setIsSubmitting(true);
     try {
+      const formData: any = {
+        ...data,
+      };
+
       // Check if we're updating an existing supplier (has _id in initialData)
       const supplierId =
         initialData && "_id" in initialData ? initialData._id : undefined;
 
+      // Let backend auto-generate code for new suppliers
+      if (!supplierId) {
+        delete formData.supplierCode;
+      }
+
       if (supplierId && typeof supplierId === "string") {
         // Update existing supplier
-        const result = await supplierService.updateSupplier(supplierId, data);
+        const result = await supplierService.updateSupplier(
+          supplierId,
+          formData,
+        );
 
         if (result.success) {
           toast.success("Supplier updated successfully");
@@ -119,7 +134,7 @@ export function SupplierForm({
         }
       } else {
         // Create new supplier
-        const result = await supplierService.createSupplier(data);
+        const result = await supplierService.createSupplier(formData);
 
         if (result.success) {
           toast.success("Supplier created successfully");
@@ -147,22 +162,23 @@ export function SupplierForm({
         className="space-y-4 px-4"
       >
         {/* Basic Information */}
+        {isEditing && initialData?.supplierCode && (
+          <div className="bg-muted/50 p-3 rounded-md border">
+            <p className="text-sm text-muted-foreground mb-1">Supplier Code</p>
+            <p className="font-medium font-mono">{initialData.supplierCode}</p>
+          </div>
+        )}
+
+        {!isEditing && (
+          <div className="bg-muted/50 p-3 rounded-md border">
+            <p className="text-sm text-muted-foreground">
+              Supplier code will be auto-generated when you create this
+              supplier.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="supplierCode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  Supplier Code <span className="text-destructive">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input placeholder="e.g., SUP-001" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           <FormField
             control={form.control}
             name="supplierName"

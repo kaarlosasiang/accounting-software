@@ -65,6 +65,11 @@ export interface PaymentSuggestion {
   totalAllocated: number;
 }
 
+export interface PaymentSuggestionResponse {
+  success: boolean;
+  data: PaymentSuggestion;
+}
+
 export interface PaymentSummary {
   payment: Payment;
   invoicesUpdated?: number;

@@ -32,7 +32,8 @@ import { formatCurrency } from "@/lib/format";
 import { DataTable } from "@/components/common/data-table/data-table";
 import { DataTableToolbar } from "@/components/common/data-table/data-table-toolbar";
 import { useDataTable } from "@/hooks/use-data-table";
-import { columns } from "./columns";
+import { createColumns } from "./columns";
+import { useCurrency } from "@/hooks/use-currency";
 
 const accountTypeIcons = {
   Asset: Building,
@@ -45,6 +46,7 @@ const accountTypeIcons = {
 export default function ChartOfAccountsPage() {
   const router = useRouter();
   const { accounts, loading, error, refetch } = useAccounts();
+  const { currency } = useCurrency();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -52,7 +54,7 @@ export default function ChartOfAccountsPage() {
   // Initialize DataTable
   const { table } = useDataTable<Account>({
     data: accounts,
-    columns,
+    columns: createColumns(currency),
     pageCount: Math.max(1, Math.ceil(accounts.length / 10)),
     initialState: {
       sorting: [{ id: "accountCode", desc: false }],
@@ -122,7 +124,7 @@ export default function ChartOfAccountsPage() {
             const diff = result.data.difference || 0;
             toast.success(
               `Account "${account.accountName}" reconciled. ` +
-                `Difference: ${formatCurrency(Math.abs(diff))}`,
+                `Difference: ${formatCurrency(Math.abs(diff), currency)}`,
             );
             refetch();
           } else if (result.success && !result.data.reconciled) {
@@ -226,7 +228,7 @@ export default function ChartOfAccountsPage() {
       if (result.success) {
         toast.success(
           `Reconciled ${result.data.reconciledCount} of ${result.data.totalAccounts} accounts. ` +
-            `Total difference: ${formatCurrency(result.data.totalDifference)}`,
+            `Total difference: ${formatCurrency(result.data.totalDifference, currency)}`,
         );
         refetch();
       } else {
@@ -269,7 +271,7 @@ export default function ChartOfAccountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalAssets)}
+              {formatCurrency(totalAssets, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
               {accountsByType.Asset.length} accounts
@@ -285,7 +287,7 @@ export default function ChartOfAccountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalLiabilities)}
+              {formatCurrency(totalLiabilities, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
               {accountsByType.Liability.length} accounts
@@ -299,7 +301,7 @@ export default function ChartOfAccountsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {formatCurrency(totalEquity)}
+              {formatCurrency(totalEquity, currency)}
             </div>
             <p className="text-xs text-muted-foreground">
               {accountsByType.Equity.length} accounts

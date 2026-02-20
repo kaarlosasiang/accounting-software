@@ -6,7 +6,7 @@ import logger from "../../config/logger.js";
  * Customer Input type (inferred from validator)
  */
 type CustomerInput = {
-  customerCode: string;
+  customerCode?: string;
   customerName: string;
   displayName?: string;
   email: string;
@@ -65,7 +65,7 @@ const customerService = {
   getActiveCustomers: async (companyId: string) => {
     try {
       const customers = await Customer.findActive(
-        new mongoose.Types.ObjectId(companyId)
+        new mongoose.Types.ObjectId(companyId),
       );
 
       return customers;
@@ -110,7 +110,7 @@ const customerService = {
     try {
       const customer = await Customer.findByCustomerCode(
         new mongoose.Types.ObjectId(companyId),
-        customerCode
+        customerCode,
       );
 
       if (!customer) {
@@ -133,10 +133,48 @@ const customerService = {
    */
   createCustomer: async (companyId: string, customerData: CustomerInput) => {
     try {
+      const normalizedEmail = customerData.email.trim().toLowerCase();
+      const normalizedTaxId = customerData.taxId.trim();
+
+      const duplicateCustomer = await Customer.findOne({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        $or: [{ email: normalizedEmail }, { taxId: normalizedTaxId }],
+      });
+
+      if (duplicateCustomer) {
+        if (duplicateCustomer.email === normalizedEmail) {
+          throw new Error("Customer email already exists");
+        }
+
+        if (duplicateCustomer.taxId === normalizedTaxId) {
+          throw new Error("Customer tax ID already exists");
+        }
+      }
+
+      // Auto-generate customer code if not provided
+      let customerCode = customerData.customerCode;
+      if (!customerCode) {
+        const lastCustomer = await Customer.findOne({
+          companyId: new mongoose.Types.ObjectId(companyId),
+        })
+          .sort({ createdAt: -1 })
+          .limit(1);
+
+        if (lastCustomer && lastCustomer.customerCode) {
+          // Extract number from last code (e.g., "CUST-001" -> 1)
+          const match = lastCustomer.customerCode.match(/\d+$/);
+          const lastNumber = match ? parseInt(match[0]) : 0;
+          const nextNumber = lastNumber + 1;
+          customerCode = `CUST-${String(nextNumber).padStart(3, "0")}`;
+        } else {
+          customerCode = "CUST-001";
+        }
+      }
+
       // Check if customer code already exists
       const existingCustomer = await Customer.findOne({
         companyId: new mongoose.Types.ObjectId(companyId),
-        customerCode: customerData.customerCode,
+        customerCode,
       });
 
       if (existingCustomer) {
@@ -148,6 +186,9 @@ const customerService = {
 
       const customer = new Customer({
         ...customerData,
+        email: normalizedEmail,
+        taxId: normalizedTaxId,
+        customerCode,
         displayName,
         companyId: new mongoose.Types.ObjectId(companyId),
       });
@@ -176,9 +217,47 @@ const customerService = {
   updateCustomer: async (
     companyId: string,
     customerId: string,
-    updateData: CustomerUpdateInput
+    updateData: CustomerUpdateInput,
   ) => {
     try {
+      if (updateData.email || updateData.taxId) {
+        const email = updateData.email?.trim().toLowerCase();
+        const taxId = updateData.taxId?.trim();
+
+        const duplicateConditions: Array<Record<string, string>> = [];
+        if (email) {
+          duplicateConditions.push({ email });
+        }
+        if (taxId) {
+          duplicateConditions.push({ taxId });
+        }
+
+        if (duplicateConditions.length > 0) {
+          const duplicateCustomer = await Customer.findOne({
+            companyId: new mongoose.Types.ObjectId(companyId),
+            _id: { $ne: new mongoose.Types.ObjectId(customerId) },
+            $or: duplicateConditions,
+          });
+
+          if (duplicateCustomer) {
+            if (email && duplicateCustomer.email === email) {
+              throw new Error("Customer email already exists");
+            }
+
+            if (taxId && duplicateCustomer.taxId === taxId) {
+              throw new Error("Customer tax ID already exists");
+            }
+          }
+
+          if (email) {
+            updateData.email = email;
+          }
+          if (taxId) {
+            updateData.taxId = taxId;
+          }
+        }
+      }
+
       // Check if customer code is being updated and already exists
       if (updateData.customerCode) {
         const existingCustomer = await Customer.findOne({
@@ -198,7 +277,7 @@ const customerService = {
           companyId: new mongoose.Types.ObjectId(companyId),
         },
         { $set: updateData },
-        { new: true, runValidators: true }
+        { new: true, runValidators: true },
       );
 
       if (!customer) {
@@ -292,7 +371,7 @@ const customerService = {
     try {
       const customers = await Customer.searchCustomers(
         new mongoose.Types.ObjectId(companyId),
-        searchTerm
+        searchTerm,
       );
 
       return customers;
@@ -312,7 +391,7 @@ const customerService = {
   updateCustomerBalance: async (
     companyId: string,
     customerId: string,
-    amount: number
+    amount: number,
   ) => {
     try {
       const customer = await Customer.findOne({
@@ -350,7 +429,7 @@ const customerService = {
   checkCreditAvailability: async (
     companyId: string,
     customerId: string,
-    amount: number
+    amount: number,
   ) => {
     try {
       const customer = await Customer.findOne({

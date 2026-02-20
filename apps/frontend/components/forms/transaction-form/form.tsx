@@ -70,12 +70,12 @@ export function TransactionForm({ onSuccess }: TransactionFormProps) {
     defaultValues: {
       date: new Date(),
       type: "expense",
-      description: "Office Rent - February 2026",
+      description: "Restaurant Rent - February 2026",
       category: "office",
-      amount: "25000",
+      amount: "18000",
       paymentMethod: "bank-transfer",
       client: "",
-      notes: "Monthly office rent payment",
+      notes: "Monthly rent for restaurant space at Poblacion, Makati",
     },
   });
 

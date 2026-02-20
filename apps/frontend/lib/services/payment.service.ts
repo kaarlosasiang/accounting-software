@@ -2,7 +2,7 @@ import { apiFetch } from "@/lib/config/api-client";
 import {
   Payment,
   PaymentFormData,
-  PaymentSuggestion,
+  PaymentSuggestionResponse,
   PaymentSummary,
 } from "@/lib/types/payment";
 
@@ -53,42 +53,69 @@ export const paymentService = {
   async getPaymentSuggestions(
     customerId: string,
     amount: number,
-  ): Promise<PaymentSuggestion> {
-    return await apiFetch<PaymentSuggestion>(
-      "/api/v1/payments/suggest-allocations",
+    companyId: string,
+  ): Promise<PaymentSuggestionResponse> {
+    return await apiFetch<PaymentSuggestionResponse>(
+      "/payments/suggest-allocations",
       {
         method: "POST",
-        body: JSON.stringify({ customerId, paymentAmount: amount }),
+        body: JSON.stringify({ companyId, customerId, paymentAmount: amount }),
       },
     );
+  },
+
+  /**
+   * Record payment received with allocations
+   */
+  async recordPaymentReceived(payload: any): Promise<any> {
+    return await apiFetch("/payments/received", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Record payment made with allocations
+   */
+  async recordPaymentMade(payload: any): Promise<any> {
+    return await apiFetch("/payments/made", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   /**
    * Get all received payments
    */
   async getReceivedPayments(): Promise<Payment[]> {
-    return await apiFetch<Payment[]>("/api/v1/payments/received");
+    const response = await apiFetch<{ success: boolean; payments: Payment[] }>(
+      "/payments/received",
+    );
+    return response.payments;
   },
 
   /**
    * Get all made payments
    */
   async getMadePayments(): Promise<Payment[]> {
-    return await apiFetch<Payment[]>("/api/v1/payments/made");
+    const response = await apiFetch<{ success: boolean; payments: Payment[] }>(
+      "/payments/made",
+    );
+    return response.payments;
   },
 
   /**
    * Get payment by ID
    */
   async getPaymentById(paymentId: string): Promise<Payment> {
-    return await apiFetch<Payment>(`/api/v1/payments/${paymentId}`);
+    return await apiFetch<Payment>(`/payments/${paymentId}`);
   },
 
   /**
    * Get payments for a specific customer
    */
   async getCustomerPayments(customerId: string): Promise<Payment[]> {
-    return await apiFetch<Payment[]>(`/api/v1/payments/customer/${customerId}`);
+    return await apiFetch<Payment[]>(`/payments/customer/${customerId}`);
   },
 
   /**
