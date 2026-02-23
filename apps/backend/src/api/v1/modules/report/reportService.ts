@@ -32,9 +32,22 @@ export const reportService = {
             asOfDate,
           );
 
+          // Apply sign correction for contra accounts.
+          // Assets & Expenses expect Debit normal balance; Liabilities, Equity & Revenue expect Credit.
+          // If an account's normalBalance differs from the expected direction, negate the balance so
+          // contra accounts reduce (rather than inflate) their parent group total.
+          const expectedNormalBalance =
+            account.accountType === "Asset" || account.accountType === "Expense"
+              ? "Debit"
+              : "Credit";
+          const signedBalance =
+            account.normalBalance !== expectedNormalBalance
+              ? -balanceData.balance
+              : balanceData.balance;
+
           return {
             ...account,
-            balance: balanceData.balance,
+            balance: signedBalance,
           };
         }),
       );
@@ -115,15 +128,28 @@ export const reportService = {
         balance: a.balance,
       }));
 
-      // 7. Calculate totals
+      // 7. Compute current-period net income (not yet closed to retained earnings).
+      //    This must be added to equity so the accounting equation holds during an
+      //    active period before closing journal entries are posted.
+      const startOfYear = new Date(asOfDate.getFullYear(), 0, 1);
+      const currentYearIncome = await this.generateIncomeStatement(
+        companyId,
+        startOfYear,
+        asOfDate,
+      );
+      const currentYearNetIncome = currentYearIncome.summary.netIncome;
+
+      // 8. Calculate totals
       const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
       const totalLiabilities = liabilities.reduce(
         (sum, a) => sum + a.balance,
         0,
       );
-      const totalEquity = equity.reduce((sum, a) => sum + a.balance, 0);
+      const postedEquity = equity.reduce((sum, a) => sum + a.balance, 0);
+      // Add unposted current-year net income so equity reflects the full period
+      const totalEquity = postedEquity + currentYearNetIncome;
 
-      // 8. Verify accounting equation
+      // 9. Verify accounting equation
       const balanced =
         Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01;
 
@@ -143,6 +169,7 @@ export const reportService = {
         },
         equity: {
           accounts: equityAccounts,
+          currentYearNetIncome,
           total: totalEquity,
         },
         balanced,
@@ -238,6 +265,11 @@ export const reportService = {
       const otherIncome = revenueWithAmounts.filter(
         (r) => r.subType?.includes("Other") || r.subType?.includes("Interest"),
       );
+      // Contra Revenue (Sales Discounts, Returns & Allowances) are debit-normal so their
+      // computed amounts will be ≤ 0. Surface them separately for a clean P&L presentation.
+      const contraRevenue = revenueWithAmounts.filter((r) =>
+        r.subType?.includes("Contra Revenue"),
+      );
 
       // 6. Group expenses by subtype
       const costOfSales = expenseWithAmounts.filter((e) =>
@@ -268,11 +300,17 @@ export const reportService = {
         (sum, r) => sum + r.amount,
         0,
       );
+      // totalContraRevenue is ≤ 0; adding it to grossRevenue gives net revenue
+      const totalContraRevenue = contraRevenue.reduce(
+        (sum, r) => sum + r.amount,
+        0,
+      );
+      const netRevenue = grossRevenue + totalContraRevenue;
       const totalCostOfSales = costOfSales.reduce(
         (sum, e) => sum + e.amount,
         0,
       );
-      const grossProfit = grossRevenue - totalCostOfSales;
+      const grossProfit = netRevenue - totalCostOfSales;
 
       const totalOperatingExpenses = operatingExpenses.reduce(
         (sum, e) => sum + e.amount,
@@ -293,6 +331,7 @@ export const reportService = {
         period: { startDate, endDate },
         revenue: {
           operatingRevenue,
+          contraRevenue,
           otherIncome,
           total: totalRevenue,
         },
@@ -304,6 +343,8 @@ export const reportService = {
         },
         summary: {
           grossRevenue,
+          contraRevenue: totalContraRevenue,
+          netRevenue,
           costOfSales: totalCostOfSales,
           grossProfit,
           operatingExpenses: totalOperatingExpenses,
@@ -394,11 +435,33 @@ export const reportService = {
         (a) => a !== null,
       );
 
+      // 2b. Add back non-cash Depreciation & Amortization (indirect method requirement).
+      //     These reduce Net Income but involve no cash outflow, so they must be reversed.
+      const depreciationAccounts = await Account.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+        accountType: "Expense",
+        accountName: { $regex: /depreciation|amortization/i },
+      }).lean();
+
+      let totalDepreciation = 0;
+      for (const depAccount of depreciationAccounts) {
+        const depEntries = await Ledger.find({
+          companyId: new mongoose.Types.ObjectId(companyId),
+          accountId: depAccount._id,
+          transactionDate: { $gte: startDate, $lte: endDate },
+        }).lean();
+        totalDepreciation += depEntries.reduce(
+          (sum, e) => sum + parseFloat(e.debit) - parseFloat(e.credit),
+          0,
+        );
+      }
+
       // 3. Investing Activities - Get capital expenditures (purchases of fixed assets)
       const investingAccounts = await Account.find({
         companyId: new mongoose.Types.ObjectId(companyId),
         accountType: "Asset",
         subType: { $regex: /Fixed/i },
+        normalBalance: "Debit", // Exclude contra fixed-asset accounts (e.g. Accumulated Depreciation)
       }).lean();
 
       const investingActivities = await Promise.all(
@@ -475,7 +538,8 @@ export const reportService = {
         (sum, a) => sum + a.cashEffect,
         0,
       );
-      const operatingCashFlow = netIncome + operatingAdjustments;
+      const operatingCashFlow =
+        netIncome + totalDepreciation + operatingAdjustments;
 
       const investingCashFlow = investingActivities.reduce(
         (sum, a) => sum + a.netCashEffect,
@@ -499,11 +563,17 @@ export const reportService = {
       let beginningCash = 0;
       let endingCash = 0;
 
+      // Beginning cash must be the balance at close of the day *before* the period starts.
+      // Passing startDate directly includes same-day transactions in the opening balance,
+      // causing the beginning + netCashFlow ≠ ending reconciliation to break.
+      const beginningDate = new Date(startDate);
+      beginningDate.setDate(beginningDate.getDate() - 1);
+
       for (const cashAccount of cashAccounts) {
         const startBalance = await ledgerService.getAccountBalance(
           companyId,
           cashAccount._id.toString(),
-          startDate,
+          beginningDate,
         );
         const endBalance = await ledgerService.getAccountBalance(
           companyId,
@@ -519,6 +589,7 @@ export const reportService = {
         period: { startDate, endDate },
         operatingActivities: {
           netIncome,
+          depreciationAmortization: totalDepreciation,
           adjustments: validOperatingActivities,
           total: operatingCashFlow,
         },

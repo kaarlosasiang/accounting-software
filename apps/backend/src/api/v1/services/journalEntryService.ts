@@ -5,6 +5,7 @@ import {
   JournalEntryStatus,
 } from "../shared/interface/IJournalEntry.js";
 import Account from "../models/Account.js";
+import { Ledger } from "../models/Ledger.js";
 import { IInvoice } from "../shared/interface/IInvoice.js";
 import { IBill } from "../shared/interface/IBill.js";
 import { AccountingPeriod } from "../models/AccountingPeriod.js";
@@ -345,6 +346,7 @@ export class JournalEntryService {
     });
 
     const savedEntry = await journalEntry.save();
+    await JournalEntryService.postLinesToLedger(savedEntry);
     return savedEntry._id;
   }
 
@@ -484,6 +486,7 @@ export class JournalEntryService {
     });
 
     const savedEntry = await journalEntry.save();
+    await JournalEntryService.postLinesToLedger(savedEntry);
     return savedEntry._id;
   }
 
@@ -575,7 +578,63 @@ export class JournalEntryService {
     });
 
     const savedEntry = await journalEntry.save();
+    await JournalEntryService.postLinesToLedger(savedEntry);
     return savedEntry._id;
+  }
+
+  /**
+   * Post journal entry lines to the ledger with correct running balances.
+   * Called after every auto-generated entry (invoice, bill, payment) is saved
+   * so the General Ledger stays in sync immediately.
+   */
+  private static async postLinesToLedger(
+    savedEntry: mongoose.Document & {
+      _id: mongoose.Types.ObjectId;
+      entryNumber?: string;
+      companyId: mongoose.Types.ObjectId;
+      entryDate: Date;
+      lines: JournalEntryLineInput[];
+    },
+  ): Promise<void> {
+    // Process lines sequentially so each line sees the running balance
+    // updated by the previous line (important when the same account appears
+    // more than once in a single entry or on the same date).
+    for (const line of savedEntry.lines) {
+      const account = await Account.findById(line.accountId).lean();
+      if (!account) continue;
+
+      const latestEntry = await Ledger.findOne({
+        companyId: savedEntry.companyId,
+        accountId: line.accountId,
+        transactionDate: { $lte: savedEntry.entryDate },
+      })
+        .sort({ transactionDate: -1, createdAt: -1 })
+        .lean();
+
+      const previousBalance = latestEntry
+        ? parseFloat(latestEntry.runningBalance.toString())
+        : 0;
+
+      const isDebitNormal =
+        account.accountType === "Asset" || account.accountType === "Expense";
+      const change = isDebitNormal
+        ? line.debit - line.credit
+        : line.credit - line.debit;
+      const runningBalance = previousBalance + change;
+
+      await Ledger.create({
+        companyId: savedEntry.companyId,
+        accountId: line.accountId,
+        accountName: line.accountName,
+        journalEntryId: savedEntry._id,
+        entryNumber: savedEntry.entryNumber ?? "",
+        transactionDate: savedEntry.entryDate,
+        description: line.description ?? "",
+        debit: line.debit.toString(),
+        credit: line.credit.toString(),
+        runningBalance,
+      });
+    }
   }
 
   /**
