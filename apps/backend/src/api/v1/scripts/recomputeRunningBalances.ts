@@ -25,8 +25,8 @@ async function recompute() {
   await mongoose.connect(mongoUri);
   console.log("Connected to MongoDB\n");
 
-  const companies = await mongoose.connection.db!
-    .collection("company")
+  const companies = await mongoose.connection
+    .db!.collection("company")
     .find({}, { projection: { _id: 1, name: 1 } })
     .toArray();
 

@@ -32,16 +32,22 @@ async function backfill() {
     if (count === 0) missing.push(je);
   }
 
-  console.log(`${missing.length} entries have no ledger lines — backfilling...\n`);
+  console.log(
+    `${missing.length} entries have no ledger lines — backfilling...\n`,
+  );
 
   for (const je of missing) {
-    console.log(`Processing ${je.entryNumber} | ${je.description?.substring(0, 60)}`);
+    console.log(
+      `Processing ${je.entryNumber} | ${je.description?.substring(0, 60)}`,
+    );
 
     // Process lines sequentially to get correct running balances
     for (const line of je.lines) {
       const account = await Account.findById(line.accountId).lean();
       if (!account) {
-        console.log(`  ⚠️  Account ${line.accountId} not found — skipping line`);
+        console.log(
+          `  ⚠️  Account ${line.accountId} not found — skipping line`,
+        );
         continue;
       }
 
@@ -88,8 +94,8 @@ async function backfill() {
   // After backfilling, recompute ALL running balances in chronological order
   // to fix any cascading issues caused by ordering between same-date entries.
   console.log("\nRecomputing all running balances...");
-  const companies = await mongoose.connection.db!
-    .collection("company")
+  const companies = await mongoose.connection
+    .db!.collection("company")
     .find({}, { projection: { _id: 1, name: 1 } })
     .toArray();
 

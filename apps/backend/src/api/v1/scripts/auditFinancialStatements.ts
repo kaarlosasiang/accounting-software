@@ -18,15 +18,25 @@ const FAIL = "❌ FAIL";
 const WARN = "⚠️  WARN";
 
 function fmt(n: number) {
-  return n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString("en-PH", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
-function check(label: string, actual: number, expected: number, tolerance = 0.01) {
+function check(
+  label: string,
+  actual: number,
+  expected: number,
+  tolerance = 0.01,
+) {
   const diff = Math.abs(actual - expected);
   const status = diff <= tolerance ? PASS : FAIL;
   console.log(`  ${status} ${label}`);
   if (diff > tolerance) {
-    console.log(`         Expected: ${fmt(expected)}  |  Got: ${fmt(actual)}  |  Diff: ${fmt(actual - expected)}`);
+    console.log(
+      `         Expected: ${fmt(expected)}  |  Got: ${fmt(actual)}  |  Diff: ${fmt(actual - expected)}`,
+    );
   }
   return diff <= tolerance;
 }
@@ -40,8 +50,8 @@ async function audit() {
 
   // ─── Setup ────────────────────────────────────────────────────────────────
 
-  const company = await mongoose.connection.db!
-    .collection("company")
+  const company = await mongoose.connection
+    .db!.collection("company")
     .findOne({}, { projection: { _id: 1, name: 1 } });
 
   if (!company) throw new Error("No company found in database");
@@ -57,8 +67,14 @@ async function audit() {
     companyId: new mongoose.Types.ObjectId(companyId),
   }).lean();
 
-  const totalDebits = allLedger.reduce((s, e) => s + parseFloat(e.debit || "0"), 0);
-  const totalCredits = allLedger.reduce((s, e) => s + parseFloat(e.credit || "0"), 0);
+  const totalDebits = allLedger.reduce(
+    (s, e) => s + parseFloat(e.debit || "0"),
+    0,
+  );
+  const totalCredits = allLedger.reduce(
+    (s, e) => s + parseFloat(e.credit || "0"),
+    0,
+  );
 
   console.log(`  Total Ledger Entries: ${allLedger.length}`);
   console.log(`  Total Debits  : ${fmt(totalDebits)}`);
@@ -94,14 +110,16 @@ async function audit() {
       const stored = parseFloat(entry.runningBalance?.toString() || "0");
       if (Math.abs(stored - runningBalance) > 0.01) {
         console.log(
-          `  ${FAIL} ${acct.accountCode} ${acct.accountName}: stored runningBalance ${fmt(stored)} ≠ recomputed ${fmt(runningBalance)} on entry ${entry._id}`
+          `  ${FAIL} ${acct.accountCode} ${acct.accountName}: stored runningBalance ${fmt(stored)} ≠ recomputed ${fmt(runningBalance)} on entry ${entry._id}`,
         );
         runningBalanceErrors++;
       }
     }
   }
   if (runningBalanceErrors === 0) {
-    console.log(`  ${PASS} All stored runningBalance values match recomputed values`);
+    console.log(
+      `  ${PASS} All stored runningBalance values match recomputed values`,
+    );
   }
 
   // ─── 3. Balance Sheet Check ───────────────────────────────────────────────
@@ -125,19 +143,30 @@ async function audit() {
   // Sign each account's balance: contra accounts receive negative sign
   async function getSignedBalance(acct: (typeof accounts)[0]): Promise<number> {
     const raw = await getBalance(acct._id.toString());
-    const expected = acct.accountType === "Asset" || acct.accountType === "Expense" ? "Debit" : "Credit";
+    const expected =
+      acct.accountType === "Asset" || acct.accountType === "Expense"
+        ? "Debit"
+        : "Credit";
     return acct.normalBalance !== expected ? -raw : raw;
   }
 
   const assetAccounts = accounts.filter((a) => a.accountType === "Asset");
-  const liabilityAccounts = accounts.filter((a) => a.accountType === "Liability");
+  const liabilityAccounts = accounts.filter(
+    (a) => a.accountType === "Liability",
+  );
   const equityAccounts = accounts.filter((a) => a.accountType === "Equity");
   const revenueAccounts = accounts.filter((a) => a.accountType === "Revenue");
   const expenseAccounts = accounts.filter((a) => a.accountType === "Expense");
 
-  const totalAssets = (await Promise.all(assetAccounts.map(getSignedBalance))).reduce((s, b) => s + b, 0);
-  const totalLiabilities = (await Promise.all(liabilityAccounts.map(getSignedBalance))).reduce((s, b) => s + b, 0);
-  const postedEquity = (await Promise.all(equityAccounts.map(getSignedBalance))).reduce((s, b) => s + b, 0);
+  const totalAssets = (
+    await Promise.all(assetAccounts.map(getSignedBalance))
+  ).reduce((s, b) => s + b, 0);
+  const totalLiabilities = (
+    await Promise.all(liabilityAccounts.map(getSignedBalance))
+  ).reduce((s, b) => s + b, 0);
+  const postedEquity = (
+    await Promise.all(equityAccounts.map(getSignedBalance))
+  ).reduce((s, b) => s + b, 0);
 
   // Net income for current year (indirect — to add to equity before closing)
   const revenueForYear = await Promise.all(
@@ -147,8 +176,11 @@ async function audit() {
         accountId: a._id,
         transactionDate: { $gte: startOfYear, $lte: today },
       }).lean();
-      return entries.reduce((s, e) => s + parseFloat(e.credit || "0") - parseFloat(e.debit || "0"), 0);
-    })
+      return entries.reduce(
+        (s, e) => s + parseFloat(e.credit || "0") - parseFloat(e.debit || "0"),
+        0,
+      );
+    }),
   );
   const expenseForYear = await Promise.all(
     expenseAccounts.map(async (a) => {
@@ -157,8 +189,11 @@ async function audit() {
         accountId: a._id,
         transactionDate: { $gte: startOfYear, $lte: today },
       }).lean();
-      return entries.reduce((s, e) => s + parseFloat(e.debit || "0") - parseFloat(e.credit || "0"), 0);
-    })
+      return entries.reduce(
+        (s, e) => s + parseFloat(e.debit || "0") - parseFloat(e.credit || "0"),
+        0,
+      );
+    }),
   );
 
   const totalRevenue = revenueForYear.reduce((s, a) => s + a, 0);
@@ -172,7 +207,11 @@ async function audit() {
   console.log(`  Current Yr Net Inc: ${fmt(currentYearNetIncome)}`);
   console.log(`  Total Equity      : ${fmt(totalEquity)}`);
   console.log(`  L + E             : ${fmt(totalLiabilities + totalEquity)}`);
-  check("Assets = Liabilities + Equity (incl. current-year net income)", totalAssets, totalLiabilities + totalEquity);
+  check(
+    "Assets = Liabilities + Equity (incl. current-year net income)",
+    totalAssets,
+    totalLiabilities + totalEquity,
+  );
 
   // ─── 4. Income Statement Check ────────────────────────────────────────────
   console.log("\n📋  INCOME STATEMENT CHECKS");
@@ -180,11 +219,23 @@ async function audit() {
   // Revenue breakdown
   const contraRev = revenueAccounts
     .filter((a) => a.subType?.includes("Contra Revenue"))
-    .map((_, i) => revenueForYear[revenueAccounts.findIndex((a) => a.subType?.includes("Contra Revenue"))]);
+    .map(
+      (_, i) =>
+        revenueForYear[
+          revenueAccounts.findIndex((a) =>
+            a.subType?.includes("Contra Revenue"),
+          )
+        ],
+    );
 
   const grossRev = revenueAccounts
-    .filter((a) => a.subType?.includes("Operating") || a.subType?.includes("Service"))
-    .reduce((s, a, i) => s + (revenueForYear[revenueAccounts.indexOf(a)] ?? 0), 0);
+    .filter(
+      (a) => a.subType?.includes("Operating") || a.subType?.includes("Service"),
+    )
+    .reduce(
+      (s, a, i) => s + (revenueForYear[revenueAccounts.indexOf(a)] ?? 0),
+      0,
+    );
 
   const totalContraRev = revenueAccounts
     .filter((a) => a.subType?.includes("Contra Revenue"))
@@ -214,16 +265,30 @@ async function audit() {
   console.log(`  Total Revenue     : ${fmt(totalRevenue)}`);
   console.log(`  Total Expenses    : ${fmt(totalExpenses)}`);
   console.log(`  Net Income        : ${fmt(currentYearNetIncome)}`);
-  check("Net Revenue = Gross Revenue + Contra Revenue", netRevenue, grossRev + totalContraRev);
+  check(
+    "Net Revenue = Gross Revenue + Contra Revenue",
+    netRevenue,
+    grossRev + totalContraRev,
+  );
   check("Gross Profit = Net Revenue - COGS", grossProfit, netRevenue - cogsAmt);
-  check("Operating Income = Gross Profit - OpEx", opIncome, grossProfit - opexAmt);
-  check("Net Income = Total Revenue - Total Expenses", currentYearNetIncome, totalRevenue - totalExpenses);
+  check(
+    "Operating Income = Gross Profit - OpEx",
+    opIncome,
+    grossProfit - opexAmt,
+  );
+  check(
+    "Net Income = Total Revenue - Total Expenses",
+    currentYearNetIncome,
+    totalRevenue - totalExpenses,
+  );
 
   // ─── 5. Cash Flow Reconciliation ──────────────────────────────────────────
   console.log("\n📋  CASH FLOW RECONCILIATION");
 
   const cashAccountCodes = ["1000", "1010", "1020"];
-  const cashAccts = accounts.filter((a) => cashAccountCodes.includes(a.accountCode));
+  const cashAccts = accounts.filter((a) =>
+    cashAccountCodes.includes(a.accountCode),
+  );
 
   const beginningDate = new Date(startOfYear);
   beginningDate.setDate(beginningDate.getDate() - 1);
@@ -238,7 +303,9 @@ async function audit() {
     })
       .sort({ transactionDate: -1, createdAt: -1 })
       .lean();
-    beginningCash += bEntry ? parseFloat(bEntry.runningBalance?.toString() || "0") : 0;
+    beginningCash += bEntry
+      ? parseFloat(bEntry.runningBalance?.toString() || "0")
+      : 0;
 
     const eEntry = await Ledger.findOne({
       companyId: new mongoose.Types.ObjectId(companyId),
@@ -247,12 +314,16 @@ async function audit() {
     })
       .sort({ transactionDate: -1, createdAt: -1 })
       .lean();
-    endingCash += eEntry ? parseFloat(eEntry.runningBalance?.toString() || "0") : 0;
+    endingCash += eEntry
+      ? parseFloat(eEntry.runningBalance?.toString() || "0")
+      : 0;
   }
 
   // Depreciation add-back (non-cash)
-  const depAccts = accounts.filter((a) =>
-    a.accountType === "Expense" && /depreciation|amortization/i.test(a.accountName)
+  const depAccts = accounts.filter(
+    (a) =>
+      a.accountType === "Expense" &&
+      /depreciation|amortization/i.test(a.accountName),
   );
   let depAmount = 0;
   for (const da of depAccts) {
@@ -261,28 +332,42 @@ async function audit() {
       accountId: da._id,
       transactionDate: { $gte: startOfYear, $lte: today },
     }).lean();
-    depAmount += depEntries.reduce((s, e) => s + parseFloat(e.debit || "0") - parseFloat(e.credit || "0"), 0);
+    depAmount += depEntries.reduce(
+      (s, e) => s + parseFloat(e.debit || "0") - parseFloat(e.credit || "0"),
+      0,
+    );
   }
 
   const netCashFlow = endingCash - beginningCash;
 
-  console.log(`  Cash Account(s)   : ${cashAccts.map((a) => a.accountCode).join(", ") || "NONE FOUND"}`);
+  console.log(
+    `  Cash Account(s)   : ${cashAccts.map((a) => a.accountCode).join(", ") || "NONE FOUND"}`,
+  );
   console.log(`  Beginning Cash    : ${fmt(beginningCash)}`);
   console.log(`  Ending Cash       : ${fmt(endingCash)}`);
   console.log(`  Net Cash Movement : ${fmt(netCashFlow)}`);
   console.log(`  Depreciation/Amort: ${fmt(depAmount)}`);
 
   if (cashAccts.length === 0) {
-    console.log(`  ${WARN}  No cash accounts (1000/1010/1020) found — cash flow check skipped`);
+    console.log(
+      `  ${WARN}  No cash accounts (1000/1010/1020) found — cash flow check skipped`,
+    );
   } else {
-    check("Beginning + Net Cash = Ending Cash", beginningCash + netCashFlow, endingCash);
+    check(
+      "Beginning + Net Cash = Ending Cash",
+      beginningCash + netCashFlow,
+      endingCash,
+    );
   }
 
   // ─── 6. Contra Account Sign Check ─────────────────────────────────────────
   console.log("\n📋  CONTRA ACCOUNT SIGN CHECK");
 
   const contraAccounts = accounts.filter((a) => {
-    const expected = a.accountType === "Asset" || a.accountType === "Expense" ? "Debit" : "Credit";
+    const expected =
+      a.accountType === "Asset" || a.accountType === "Expense"
+        ? "Debit"
+        : "Credit";
     return a.normalBalance !== expected;
   });
 
@@ -294,7 +379,7 @@ async function audit() {
       const signed = await getSignedBalance(ca);
       const reducesParent = signed <= 0 || raw === 0;
       console.log(
-        `  ${reducesParent ? PASS : FAIL} ${ca.accountCode} ${ca.accountName}  raw: ${fmt(raw)}  signed: ${fmt(signed)}  (${ca.normalBalance}-normal ${ca.accountType})`
+        `  ${reducesParent ? PASS : FAIL} ${ca.accountCode} ${ca.accountName}  raw: ${fmt(raw)}  signed: ${fmt(signed)}  (${ca.normalBalance}-normal ${ca.accountType})`,
       );
     }
   }
@@ -304,10 +389,14 @@ async function audit() {
 
   const acct6910 = accounts.find((a) => a.accountCode === "6910");
   if (!acct6910) {
-    console.log(`  ${WARN}  Account 6910 (Interest Expense) not found in this company`);
+    console.log(
+      `  ${WARN}  Account 6910 (Interest Expense) not found in this company`,
+    );
   } else {
     const isNonOp = acct6910.subType === "Non-Operating Expense";
-    console.log(`  ${isNonOp ? PASS : FAIL} 6910 Interest Expense subType = "${acct6910.subType}" (expected "Non-Operating Expense")`);
+    console.log(
+      `  ${isNonOp ? PASS : FAIL} 6910 Interest Expense subType = "${acct6910.subType}" (expected "Non-Operating Expense")`,
+    );
   }
 
   // ─── Summary ─────────────────────────────────────────────────────────────

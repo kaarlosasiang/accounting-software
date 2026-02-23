@@ -538,7 +538,8 @@ export const reportService = {
         (sum, a) => sum + a.cashEffect,
         0,
       );
-      const operatingCashFlow = netIncome + totalDepreciation + operatingAdjustments;
+      const operatingCashFlow =
+        netIncome + totalDepreciation + operatingAdjustments;
 
       const investingCashFlow = investingActivities.reduce(
         (sum, a) => sum + a.netCashEffect,
