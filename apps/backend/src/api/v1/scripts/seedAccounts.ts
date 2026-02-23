@@ -789,7 +789,7 @@ const defaultAccounts: SeedAccount[] = [
     accountCode: "6910",
     accountName: "Interest Expense",
     accountType: "Expense",
-    subType: "Operating Expense",
+    subType: "Non-Operating Expense",
     normalBalance: "Debit",
     description: "Interest on loans and borrowings",
   },

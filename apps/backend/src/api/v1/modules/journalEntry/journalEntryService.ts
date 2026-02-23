@@ -555,7 +555,7 @@ export const journalEntryService = {
       const ledgerEntries = await Ledger.find({
         companyId: new mongoose.Types.ObjectId(companyId),
         accountId: new mongoose.Types.ObjectId(accountId),
-        transactionDate: { $lt: upToDate },
+        transactionDate: { $lte: upToDate }, // $lte so same-date prior entries are included
       })
         .sort({ transactionDate: -1, createdAt: -1 })
         .limit(1);
