@@ -94,6 +94,19 @@ export const authServer = betterAuth({
       async sendInvitationEmail(data) {
         // Send company invitation email
         const inviteLink = `${constants.frontEndUrl}/accept-invitation/${data.id}`;
+
+        // Always log the invite link so local dev works without email service
+        logger.info(
+          "━━━ INVITATION LINK (dev) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+          {
+            to: data.email,
+            role: data.role,
+            company: data.organization.name,
+            invitedBy: data.inviter.user.email,
+            link: inviteLink,
+          },
+        );
+
         EmailService.sendCompanyInvitation({
           email: data.email,
           invitedByUsername: data.inviter.user.name,
@@ -113,6 +126,8 @@ export const authServer = betterAuth({
       membershipLimit: 100, // Max 100 members per organization
       invitationExpiresIn: 60 * 60 * 24 * 7, // 7 days
       requireEmailVerificationOnInvitation: false,
+      // Custom member roles for per-company RBAC
+      memberRoles: ["owner", "admin", "accountant", "staff", "viewer"],
       // Map organization to Company entity with additional fields
       schema: {
         organization: {
@@ -158,7 +173,7 @@ export const authServer = betterAuth({
     }),
     admin({
       defaultRole: "user",
-      // adminRoles: ["admin"], // TODO: Configure admin roles properly
+      adminRoles: ["admin", "super_admin"],
       impersonationSessionDuration: 60 * 60, // 1 hour
       defaultBanReason: "Violated terms of service",
       bannedUserMessage:

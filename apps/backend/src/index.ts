@@ -6,6 +6,7 @@ import express from "express";
 import configureApp from "./api/v1/config/app.js";
 import logger from "./api/v1/config/logger.js";
 import { constants, dbConnection } from "./api/v1/config/index.js";
+import { seedRoles } from "./api/v1/shared/auth/seed-roles.js";
 
 const app = express();
 
@@ -16,6 +17,9 @@ const startServer = async () => {
   try {
     // Connect to database first
     await dbConnection.connect();
+
+    // Seed system roles (idempotent)
+    await seedRoles();
 
     // Then start the server
     app.listen(constants.port, () => {

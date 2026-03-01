@@ -20,7 +20,7 @@ export function withAuth<P extends object>(
     redirectTo?: string;
     allowUnverified?: boolean;
     requireSubscription?: boolean;
-  }
+  },
 ) {
   const {
     redirectTo = "/login",
@@ -29,7 +29,7 @@ export function withAuth<P extends object>(
   } = options || {};
 
   return function AuthenticatedComponent(props: P) {
-    const { user, isLoading } = useAuth();
+    const { user, session, isLoading } = useAuth();
     const router = useRouter();
 
     // console.log("[withAuth] render:", {
@@ -62,12 +62,16 @@ export function withAuth<P extends object>(
         return;
       }
 
-      // Check if subscription is required
+      // Check if subscription is required.
+      // Invited members are covered by their org's subscription — allow through
+      // if they have an active organization, even without a personal subscription.
+      const hasOrgAccess = !!(session as any)?.activeOrganizationId;
       if (
         !isLoading &&
         user &&
         requireSubscription &&
-        !(user as any).hasActiveSubscription
+        !(user as any).hasActiveSubscription &&
+        !hasOrgAccess
       ) {
         console.log(
           "[withAuth] User not subscribed, redirecting to plans. User data:",
@@ -77,12 +81,13 @@ export function withAuth<P extends object>(
             hasActiveSubscription: (user as any).hasActiveSubscription,
             subscriptionStatus: (user as any).subscriptionStatus,
             subscriptionPlan: (user as any).subscriptionPlan,
-          }
+            activeOrganizationId: (session as any)?.activeOrganizationId,
+          },
         );
         router.replace("/plans");
         return;
       }
-    }, [user, isLoading, router, requireSubscription]);
+    }, [user, session, isLoading, router, requireSubscription]);
 
     // Show loading state while checking authentication
     if (isLoading) {
@@ -107,7 +112,13 @@ export function withAuth<P extends object>(
     }
 
     // Don't render if subscription is required and user is not subscribed
-    if (requireSubscription && !(user as any).hasActiveSubscription) {
+    // (org members are covered by the org owner's subscription)
+    const hasOrgAccess = !!(session as any)?.activeOrganizationId;
+    if (
+      requireSubscription &&
+      !(user as any).hasActiveSubscription &&
+      !hasOrgAccess
+    ) {
       return null;
     }
 
@@ -137,7 +148,7 @@ export function useProtectedRoute(options?: {
     allowUnverified = true,
     requireSubscription = true,
   } = options || {};
-  const { user, isLoading } = useAuth();
+  const { user, session, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -152,18 +163,21 @@ export function useProtectedRoute(options?: {
       return;
     }
 
-    // Check if subscription is required
+    // Check if subscription is required (org members are covered by the org)
+    const hasOrgAccess = !!(session as any)?.activeOrganizationId;
     if (
       !isLoading &&
       user &&
       requireSubscription &&
-      !(user as any).hasActiveSubscription
+      !(user as any).hasActiveSubscription &&
+      !hasOrgAccess
     ) {
       router.replace("/plans");
       return;
     }
   }, [
     user,
+    session,
     isLoading,
     router,
     redirectTo,
@@ -189,25 +203,28 @@ export function useProtectedRoute(options?: {
  */
 export function useGuestRoute(options?: { redirectTo?: string }) {
   const { redirectTo = "/dashboard" } = options || {};
-  const { user, isLoading } = useAuth();
+  const { user, session, isLoading } = useAuth();
   const router = useRouter();
 
   console.log("[useGuestRoute] check:", { isLoading, hasUser: !!user });
 
   useEffect(() => {
     console.log("[useGuestRoute] effect:", { isLoading, hasUser: !!user });
-    if (!isLoading && user && (user as any).hasActiveSubscription) {
-      console.log(
-        "[useGuestRoute] User has subscription, redirecting to dashboard"
-      );
-      router.replace(redirectTo);
-    } else if (!isLoading && user && !(user as any).hasActiveSubscription) {
-      console.log(
-        "[useGuestRoute] User logged in but no subscription, redirecting to plans"
-      );
-      router.replace("/plans");
+    if (!isLoading && user) {
+      const hasOrgAccess = !!(session as any)?.activeOrganizationId;
+      if ((user as any).hasActiveSubscription || hasOrgAccess) {
+        console.log(
+          "[useGuestRoute] User has access, redirecting to dashboard",
+        );
+        router.replace(redirectTo);
+      } else {
+        console.log(
+          "[useGuestRoute] User logged in but no subscription, redirecting to plans",
+        );
+        router.replace("/plans");
+      }
     }
-  }, [user, isLoading, router, redirectTo]);
+  }, [user, session, isLoading, router, redirectTo]);
 
   return { isLoading };
 }

@@ -17,7 +17,7 @@ export default function GeneralSettingsPage() {
   const [isLoading] = useState(false);
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div className="flex flex-col gap-6 px-6">
       <div>
         <h1 className="text-xl font-bold tracking-tight bg-linear-to-r from-primary via-primary/80 to-primary/60 bg-clip-text text-transparent dark:bg-none dark:text-white">
           General Settings

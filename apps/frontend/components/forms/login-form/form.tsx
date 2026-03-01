@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -31,6 +31,8 @@ export function LoginForm({
   ...props
 }: React.ComponentProps<"div">) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const { signIn } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -48,7 +50,7 @@ export function LoginForm({
     try {
       await signIn.email(values);
       toast.success("Welcome back! You are now signed in.");
-      router.push("/dashboard");
+      router.push(callbackUrl);
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to sign in right now.";
@@ -127,7 +129,7 @@ export function LoginForm({
         </FieldGroup>
         {/* Social Login */}
         <AuthDivider />
-        <GoogleSignInButton callbackURL="/dashboard" mode="signin" />
+        <GoogleSignInButton callbackURL={callbackUrl} mode="signin" />
       </form>
       <FieldDescription className="px-6 text-center text-sm">
         By clicking continue, you agree to our{" "}

@@ -6,3 +6,6 @@ export * from "./bill.validators.js";
 export * from "./subscription.validators.js";
 export * from "./supplier.validators.js";
 export * from "./customer.validators.js";
+
+// RBAC shared types and enums
+export * from "./permissions.js";

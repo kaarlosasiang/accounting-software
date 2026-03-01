@@ -1,6 +1,10 @@
 import express, { Router } from "express";
 import inventoryController from "./inventoryController.js";
-import { requireAuth } from "../../shared/middleware/auth.middleware.js";
+import {
+  requireAuth,
+  requirePermission,
+} from "../../shared/middleware/auth.middleware.js";
+import { Action, Resource } from "../../shared/auth/permissions.js";
 
 const inventoryRoutes: Router = express.Router();
 
@@ -8,72 +12,122 @@ const inventoryRoutes: Router = express.Router();
 inventoryRoutes.use(requireAuth);
 
 // Get all inventory items
-inventoryRoutes.get("/", inventoryController.getAllItems);
+inventoryRoutes.get(
+  "/",
+  requirePermission(Resource.inventory, Action.read),
+  inventoryController.getAllItems,
+);
 
 // Get active inventory items
-inventoryRoutes.get("/active", inventoryController.getActiveItems);
+inventoryRoutes.get(
+  "/active",
+  requirePermission(Resource.inventory, Action.read),
+  inventoryController.getActiveItems,
+);
 
 // Get items needing reorder
 inventoryRoutes.get(
   "/reorder/needed",
+  requirePermission(Resource.inventory, Action.read),
   inventoryController.getItemsNeedingReorder,
 );
 
 // Get total inventory value
-inventoryRoutes.get("/value/total", inventoryController.getTotalInventoryValue);
+inventoryRoutes.get(
+  "/value/total",
+  requirePermission(Resource.inventory, Action.read),
+  inventoryController.getTotalInventoryValue,
+);
 
 // Get inventory valuation report
 inventoryRoutes.get(
   "/reports/valuation",
+  requirePermission(Resource.inventory, Action.read),
   inventoryController.getInventoryValuation,
 );
 
 // Get all transactions
 inventoryRoutes.get(
   "/transactions/all",
+  requirePermission(Resource.inventory, Action.read),
   inventoryController.getAllTransactions,
 );
 
 // Search inventory items
-inventoryRoutes.get("/search", inventoryController.searchItems);
+inventoryRoutes.get(
+  "/search",
+  requirePermission(Resource.inventory, Action.read),
+  inventoryController.searchItems,
+);
 
 // Get inventory item by SKU
-inventoryRoutes.get("/sku/:sku", inventoryController.getItemBySku);
+inventoryRoutes.get(
+  "/sku/:sku",
+  requirePermission(Resource.inventory, Action.read),
+  inventoryController.getItemBySku,
+);
 
 // Get inventory items by category
 inventoryRoutes.get(
   "/category/:category",
+  requirePermission(Resource.inventory, Action.read),
   inventoryController.getItemsByCategory,
 );
 
 // Create new inventory item
-inventoryRoutes.post("/", inventoryController.createItem);
+inventoryRoutes.post(
+  "/",
+  requirePermission(Resource.inventory, Action.create),
+  inventoryController.createItem,
+);
 
 // Get single inventory item
-inventoryRoutes.get("/:id", inventoryController.getItemById);
+inventoryRoutes.get(
+  "/:id",
+  requirePermission(Resource.inventory, Action.read),
+  inventoryController.getItemById,
+);
 
 // Update inventory item
-inventoryRoutes.put("/:id", inventoryController.updateItem);
+inventoryRoutes.put(
+  "/:id",
+  requirePermission(Resource.inventory, Action.update),
+  inventoryController.updateItem,
+);
 
 // Delete (deactivate) inventory item
-inventoryRoutes.delete("/:id", inventoryController.deleteItem);
+inventoryRoutes.delete(
+  "/:id",
+  requirePermission(Resource.inventory, Action.delete),
+  inventoryController.deleteItem,
+);
 
 // Adjust inventory quantity
-inventoryRoutes.post("/:id/adjust", inventoryController.adjustQuantity);
+inventoryRoutes.post(
+  "/:id/adjust",
+  requirePermission(Resource.inventory, Action.update),
+  inventoryController.adjustQuantity,
+);
 
 // Get item transactions
 inventoryRoutes.get(
   "/:id/transactions",
+  requirePermission(Resource.inventory, Action.read),
   inventoryController.getItemTransactions,
 );
 
 // Get movement summary
 inventoryRoutes.get(
   "/:id/movement-summary",
+  requirePermission(Resource.inventory, Action.read),
   inventoryController.getMovementSummary,
 );
 
 // Calculate COGS
-inventoryRoutes.get("/:id/cogs", inventoryController.calculateCOGS);
+inventoryRoutes.get(
+  "/:id/cogs",
+  requirePermission(Resource.inventory, Action.read),
+  inventoryController.calculateCOGS,
+);
 
 export default inventoryRoutes;

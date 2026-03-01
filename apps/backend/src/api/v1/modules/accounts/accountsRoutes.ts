@@ -1,6 +1,10 @@
 import express, { Router } from "express";
 import accountsController from "./accountsController.js";
-import { requireAuth } from "../../shared/middleware/auth.middleware.js";
+import {
+  requireAuth,
+  requirePermission,
+} from "../../shared/middleware/auth.middleware.js";
+import { Action, Resource } from "../../shared/auth/permissions.js";
 
 const accountsRoutes: Router = express.Router();
 
@@ -8,44 +12,86 @@ const accountsRoutes: Router = express.Router();
 accountsRoutes.use(requireAuth);
 
 // Get all accounts for the company
-accountsRoutes.get("/", accountsController.getAllAccounts);
+accountsRoutes.get(
+  "/",
+  requirePermission(Resource.accounts, Action.read),
+  accountsController.getAllAccounts,
+);
 
 // Get chart of accounts
-accountsRoutes.get("/chart/view", accountsController.getChartOfAccounts);
+accountsRoutes.get(
+  "/chart/view",
+  requirePermission(Resource.accounts, Action.read),
+  accountsController.getChartOfAccounts,
+);
 
 // Reconcile all account balances
 accountsRoutes.post(
   "/reconcile-all",
+  requirePermission(Resource.accounts, Action.update),
   accountsController.reconcileAllAccountBalances,
 );
 
 // Search accounts
-accountsRoutes.get("/search", accountsController.searchAccounts);
+accountsRoutes.get(
+  "/search",
+  requirePermission(Resource.accounts, Action.read),
+  accountsController.searchAccounts,
+);
 
 // Get accounts by type
-accountsRoutes.get("/type/:accountType", accountsController.getAccountsByType);
+accountsRoutes.get(
+  "/type/:accountType",
+  requirePermission(Resource.accounts, Action.read),
+  accountsController.getAccountsByType,
+);
 
 // Create a new account
-accountsRoutes.post("/", accountsController.createAccount);
+accountsRoutes.post(
+  "/",
+  requirePermission(Resource.accounts, Action.create),
+  accountsController.createAccount,
+);
 
 // Get single account
-accountsRoutes.get("/:id", accountsController.getAccountById);
+accountsRoutes.get(
+  "/:id",
+  requirePermission(Resource.accounts, Action.read),
+  accountsController.getAccountById,
+);
 
 // Get account balance
-accountsRoutes.get("/:id/balance", accountsController.getAccountBalance);
+accountsRoutes.get(
+  "/:id/balance",
+  requirePermission(Resource.accounts, Action.read),
+  accountsController.getAccountBalance,
+);
 
 // Update account
-accountsRoutes.put("/:id", accountsController.updateAccount);
+accountsRoutes.put(
+  "/:id",
+  requirePermission(Resource.accounts, Action.update),
+  accountsController.updateAccount,
+);
 
 // Archive account (soft delete)
-accountsRoutes.put("/:id/archive", accountsController.archiveAccount);
+accountsRoutes.put(
+  "/:id/archive",
+  requirePermission(Resource.accounts, Action.update),
+  accountsController.archiveAccount,
+);
 
 // Restore account
-accountsRoutes.put("/:id/restore", accountsController.restoreAccount);
+accountsRoutes.put(
+  "/:id/restore",
+  requirePermission(Resource.accounts, Action.update),
+  accountsController.restoreAccount,
+);
 
 // Reconcile single account balance
 accountsRoutes.post(
   "/:id/reconcile",
+  requirePermission(Resource.accounts, Action.update),
   accountsController.reconcileAccountBalance,
 );
 

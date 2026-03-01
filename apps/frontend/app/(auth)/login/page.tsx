@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { AuthNavbar } from "@/components/common/auth-navbar";
 import { LoginForm } from "@/components/forms/login-form/form";
 import { useGuestRoute } from "@/lib/auth/protected-route";
@@ -7,7 +8,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAuth } from "@/lib/contexts/auth-context";
 
 export default function LoginPage() {
-  const { isLoading } = useGuestRoute();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const { isLoading } = useGuestRoute({ redirectTo: callbackUrl });
   const { user } = useAuth();
 
   // Show loader while checking auth or while redirect is in flight

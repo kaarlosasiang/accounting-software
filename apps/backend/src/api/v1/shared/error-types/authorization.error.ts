@@ -4,7 +4,7 @@ export class AuthorizationError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "AuthorizationError";
-    this.status = 401;
+    this.status = 403;
     Error.captureStackTrace(this, this.constructor);
   }
 }

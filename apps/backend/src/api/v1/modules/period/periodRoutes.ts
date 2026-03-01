@@ -1,6 +1,10 @@
 import express, { Router } from "express";
 import { periodController } from "./periodController.js";
-import { requireAuth } from "../../shared/middleware/auth.middleware.js";
+import {
+  requireAuth,
+  requirePermission,
+} from "../../shared/middleware/auth.middleware.js";
+import { Action, Resource } from "../../shared/auth/permissions.js";
 
 const periodRoutes: Router = express.Router();
 
@@ -8,33 +12,73 @@ const periodRoutes: Router = express.Router();
 periodRoutes.use(requireAuth);
 
 // Get all accounting periods (with optional filters)
-periodRoutes.get("/", periodController.getAllPeriods);
+periodRoutes.get(
+  "/",
+  requirePermission(Resource.period, Action.read),
+  periodController.getAllPeriods,
+);
 
 // Check if a date is in a closed/locked period
-periodRoutes.get("/check-date", periodController.checkDateInClosedPeriod);
+periodRoutes.get(
+  "/check-date",
+  requirePermission(Resource.period, Action.read),
+  periodController.checkDateInClosedPeriod,
+);
 
 // Find period for a specific date
-periodRoutes.get("/find-by-date", periodController.findPeriodForDate);
+periodRoutes.get(
+  "/find-by-date",
+  requirePermission(Resource.period, Action.read),
+  periodController.findPeriodForDate,
+);
 
 // Get period by ID
-periodRoutes.get("/:periodId", periodController.getPeriodById);
+periodRoutes.get(
+  "/:periodId",
+  requirePermission(Resource.period, Action.read),
+  periodController.getPeriodById,
+);
 
 // Create new accounting period
-periodRoutes.post("/", periodController.createPeriod);
+periodRoutes.post(
+  "/",
+  requirePermission(Resource.period, Action.create),
+  periodController.createPeriod,
+);
 
 // Close a period (creates closing entry)
-periodRoutes.post("/:periodId/close", periodController.closePeriod);
+periodRoutes.post(
+  "/:periodId/close",
+  requirePermission(Resource.period, Action.update),
+  periodController.closePeriod,
+);
 
 // Reopen a closed period (reverses closing entry)
-periodRoutes.post("/:periodId/reopen", periodController.reopenPeriod);
+periodRoutes.post(
+  "/:periodId/reopen",
+  requirePermission(Resource.period, Action.update),
+  periodController.reopenPeriod,
+);
 
 // Lock a period (prevent any modifications)
-periodRoutes.post("/:periodId/lock", periodController.lockPeriod);
+periodRoutes.post(
+  "/:periodId/lock",
+  requirePermission(Resource.period, Action.update),
+  periodController.lockPeriod,
+);
 
 // Update period details
-periodRoutes.put("/:periodId", periodController.updatePeriod);
+periodRoutes.put(
+  "/:periodId",
+  requirePermission(Resource.period, Action.update),
+  periodController.updatePeriod,
+);
 
 // Delete period (only if open and no transactions)
-periodRoutes.delete("/:periodId", periodController.deletePeriod);
+periodRoutes.delete(
+  "/:periodId",
+  requirePermission(Resource.period, Action.delete),
+  periodController.deletePeriod,
+);
 
 export default periodRoutes;

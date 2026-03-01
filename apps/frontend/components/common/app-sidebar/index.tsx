@@ -22,81 +22,79 @@ import { Button } from "@/components/ui/button";
 import { Crown } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { useOrganization } from "@/hooks/use-organization";
+import { usePermissions } from "@/hooks/use-permissions";
+import { Resource, Action } from "@sas/validators";
+
+// ─── Navigation item types ────────────────────────────────────────────────────
+type NavPermission = { resource: Resource; action: Action };
+
+type NavSubItem = {
+  title: string;
+  url: string;
+  /** When set, this sub-item is hidden if the user lacks the permission */
+  permission?: NavPermission;
+};
+
+type NavItem = {
+  title: string;
+  url: string;
+  icon?: string;
+  isActive?: boolean;
+  /** When set, the entire section is hidden if the user lacks the permission */
+  permission?: NavPermission;
+  items?: NavSubItem[];
+};
 
 // Accounting navigation structure
-const data = {
+const navData: { navMain: NavItem[] } = {
   navMain: [
     {
       title: "Dashboard",
       url: "/dashboard",
       icon: "📊",
       isActive: true,
+      // No permission gate — always visible
       items: [
-        {
-          title: "Overview",
-          url: "/dashboard",
-        },
-        {
-          title: "Financial Analytics",
-          url: "/dashboard/analytics",
-        },
-        {
-          title: "Reports Center",
-          url: "/dashboard/reports",
-        },
+        { title: "Overview", url: "/dashboard" },
+        { title: "Financial Analytics", url: "/dashboard/analytics" },
+        { title: "Reports Center", url: "/dashboard/reports" },
       ],
     },
     {
       title: "Chart of Accounts",
       url: "/accounts",
       icon: "📑",
+      permission: { resource: Resource.accounts, action: Action.read },
       items: [
-        {
-          title: "All Accounts",
-          url: "/accounts",
-        },
-        {
-          title: "Assets",
-          url: "/accounts/assets",
-        },
-        {
-          title: "Liabilities",
-          url: "/accounts/liabilities",
-        },
-        {
-          title: "Equity",
-          url: "/accounts/equity",
-        },
-        {
-          title: "Revenue",
-          url: "/accounts/revenue",
-        },
-        {
-          title: "Expenses",
-          url: "/accounts/expenses",
-        },
+        { title: "All Accounts", url: "/accounts" },
+        { title: "Assets", url: "/accounts/assets" },
+        { title: "Liabilities", url: "/accounts/liabilities" },
+        { title: "Equity", url: "/accounts/equity" },
+        { title: "Revenue", url: "/accounts/revenue" },
+        { title: "Expenses", url: "/accounts/expenses" },
       ],
     },
     {
       title: "Sales & Receivables",
       url: "/invoices",
       icon: "📄",
+      permission: { resource: Resource.invoice, action: Action.read },
       items: [
-        {
-          title: "Sales Invoices",
-          url: "/invoices",
-        },
+        { title: "Sales Invoices", url: "/invoices" },
         {
           title: "Create Invoice",
           url: "/invoices/create",
+          permission: { resource: Resource.invoice, action: Action.create },
         },
         {
           title: "Customers",
           url: "/customers",
+          permission: { resource: Resource.customer, action: Action.read },
         },
         {
           title: "A/R Aging Report",
           url: "/reports/ar-aging",
+          permission: { resource: Resource.report, action: Action.read },
         },
       ],
     },
@@ -104,22 +102,23 @@ const data = {
       title: "Purchases & Payables",
       url: "/bills",
       icon: "📋",
+      permission: { resource: Resource.bill, action: Action.read },
       items: [
-        {
-          title: "Purchase Bills",
-          url: "/bills",
-        },
+        { title: "Purchase Bills", url: "/bills" },
         {
           title: "Create Bill",
           url: "/bills/create",
+          permission: { resource: Resource.bill, action: Action.create },
         },
         {
           title: "Vendors",
           url: "/suppliers",
+          permission: { resource: Resource.supplier, action: Action.read },
         },
         {
           title: "A/P Aging Report",
           url: "/reports/ap-aging",
+          permission: { resource: Resource.report, action: Action.read },
         },
       ],
     },
@@ -127,160 +126,71 @@ const data = {
       title: "Cash Management",
       url: "/payments",
       icon: "💰",
+      permission: { resource: Resource.payment, action: Action.read },
       items: [
-        {
-          title: "All Payments",
-          url: "/payments",
-        },
+        { title: "All Payments", url: "/payments" },
         {
           title: "Record Payment",
           url: "/payments/create",
+          permission: { resource: Resource.payment, action: Action.create },
         },
-        // {
-        //   title: "Bank Reconciliation",
-        //   url: "/banking/reconciliation",
-        // },
       ],
     },
     {
       title: "General Ledger",
       url: "/ledger",
       icon: "📖",
+      permission: { resource: Resource.ledger, action: Action.read },
       items: [
-        {
-          title: "Ledger Entries",
-          url: "/ledger",
-        },
+        { title: "Ledger Entries", url: "/ledger" },
         {
           title: "Journal Entries",
           url: "/journal-entries",
+          permission: { resource: Resource.journalEntry, action: Action.read },
         },
-        {
-          title: "Trial Balance",
-          url: "/ledger?tab=trial-balance",
-        },
+        { title: "Trial Balance", url: "/ledger?tab=trial-balance" },
       ],
     },
     {
       title: "Inventory",
       url: "/inventory",
       icon: "📦",
+      permission: { resource: Resource.inventory, action: Action.read },
       items: [
-        {
-          title: "Items & Products",
-          url: "/inventory",
-        },
-        // {
-        //   title: "Stock Adjustments",
-        //   url: "/inventory/adjustments",
-        // },
-        // {
-        //   title: "Stock Valuation",
-        //   url: "/inventory/valuation",
-        // },
-        {
-          title: "Movement History",
-          url: "/inventory/transactions",
-        },
+        { title: "Items & Products", url: "/inventory" },
+        { title: "Movement History", url: "/inventory/transactions" },
       ],
     },
     {
       title: "Financial Statements",
       url: "/reports",
       icon: "📈",
+      permission: { resource: Resource.report, action: Action.read },
       items: [
-        {
-          title: "Profit & Loss",
-          url: "/reports/profit-loss",
-        },
-        {
-          title: "Balance Sheet",
-          url: "/reports/balance-sheet",
-        },
-        {
-          title: "Cash Flow Statement",
-          url: "/reports/cash-flow",
-        },
-        {
-          title: "Tax Summary",
-          url: "/reports/tax-summary",
-        },
+        { title: "Profit & Loss", url: "/reports/profit-loss" },
+        { title: "Balance Sheet", url: "/reports/balance-sheet" },
+        { title: "Cash Flow Statement", url: "/reports/cash-flow" },
+        { title: "Tax Summary", url: "/reports/tax-summary" },
       ],
     },
     {
       title: "Tax & Compliance",
       url: "/tax",
       icon: "🧾",
+      // No permission gate — always visible
       items: [
-        {
-          title: "VAT Returns",
-          url: "/tax/vat",
-        },
-        {
-          title: "Withholding Tax",
-          url: "/tax/withholding",
-        },
-        {
-          title: "BIR Forms",
-          url: "/tax/bir-forms",
-        },
-        {
-          title: "Tax Calendar",
-          url: "/tax/calendar",
-        },
+        { title: "VAT Returns", url: "/tax/vat" },
+        { title: "Withholding Tax", url: "/tax/withholding" },
+        { title: "BIR Forms", url: "/tax/bir-forms" },
+        { title: "Tax Calendar", url: "/tax/calendar" },
       ],
     },
     {
       title: "Settings",
       url: "/settings",
       icon: "⚙️",
-      items: [
-        {
-          title: "Company Profile",
-          url: "/settings/company",
-        },
-        {
-          title: "Accounting Periods",
-          url: "/periods",
-        },
-        {
-          title: "Bank Accounts",
-          url: "/settings/banking",
-        },
-        {
-          title: "Fiscal Year",
-          url: "/settings/fiscal-year",
-        },
-        {
-          title: "Numbering Series",
-          url: "/settings/numbering",
-        },
-        {
-          title: "User Preferences",
-          url: "/settings/general",
-        },
-        {
-          title: "Subscription",
-          url: "/settings/billing",
-        },
-      ],
-    },
-  ],
-  projects: [
-    {
-      name: "Q4 Tax Filing",
-      url: "/projects/q4-tax-filing",
-      icon: "🧮",
-    },
-    {
-      name: "Annual Audit 2025",
-      url: "/projects/annual-audit-2025",
-      icon: "📋",
-    },
-    {
-      name: "Payroll Processing",
-      url: "/projects/payroll-processing",
-      icon: "💰",
+      permission: { resource: Resource.companySetting, action: Action.read },
+      // No sub-items — settings has its own dedicated layout with sidebar
     },
   ],
 };
@@ -288,6 +198,25 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user: authUser } = useAuth();
   const { organizationName } = useOrganization();
+  const { can } = usePermissions();
+
+  // Filter nav items based on the current user's effective permissions.
+  // `can()` returns true while permissions are still loading (optimistic),
+  // so items won't flicker in/out on initial render.
+  const filteredNavMain = navData.navMain
+    .filter(
+      (item) =>
+        !item.permission ||
+        can(item.permission.resource, item.permission.action),
+    )
+    .map((item) => ({
+      ...item,
+      items: item.items?.filter(
+        (sub) =>
+          !sub.permission ||
+          can(sub.permission.resource, sub.permission.action),
+      ),
+    }));
 
   console.log("Active Organization Name:", organizationName);
 
@@ -328,8 +257,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        {/* <NavProjects projects={data.projects} /> */}
+        <NavMain items={filteredNavMain} />
+        {/* <NavProjects projects={[]} /> */}
       </SidebarContent>
       <SidebarFooter>
         <Card className="relative group overflow-hidden border-none  text-primary-foreground p-4 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
