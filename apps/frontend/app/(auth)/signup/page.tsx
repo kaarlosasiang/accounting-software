@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AuthNavbar } from "@/components/common/auth-navbar";
 import { SignupWithVerification } from "@/components/forms/register-form";
@@ -7,7 +8,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useGuestRoute } from "@/lib/auth/protected-route";
 import { useAuth } from "@/lib/contexts/auth-context";
 
-export default function SignupPage() {
+function SignupPageContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const { isLoading } = useGuestRoute({ redirectTo: callbackUrl });
@@ -29,5 +30,20 @@ export default function SignupPage() {
         <SignupWithVerification />
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-background flex h-svh flex-col items-center justify-center gap-3">
+          <Spinner className="size-8 text-primary" />
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        </div>
+      }
+    >
+      <SignupPageContent />
+    </Suspense>
   );
 }

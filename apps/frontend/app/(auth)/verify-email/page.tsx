@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { AuthNavbar } from "@/components/common/auth-navbar";
@@ -16,9 +16,7 @@ import {
 } from "@/components/ui/card";
 import { authClient } from "@/lib/config/auth-client";
 
-export default function VerifyEmailPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+function VerifyEmailContent() {
   const email = searchParams.get("email") ?? "";
 
   const [otp, setOtp] = useState("");
@@ -112,5 +110,13 @@ export default function VerifyEmailPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={null}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
