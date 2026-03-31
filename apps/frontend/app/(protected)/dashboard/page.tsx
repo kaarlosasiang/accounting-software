@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useProductTour } from "@/hooks/use-product-tour";
 import {
   Card,
   CardContent,
@@ -45,6 +47,7 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
+import { OnboardingChecklist } from "@/components/common/onboarding-checklist";
 import {
   Area,
   AreaChart,
@@ -116,6 +119,13 @@ const chartConfig = {
 };
 
 export default function DashboardPage() {
+  const { startTour } = useProductTour();
+
+  // TODO: remove for production — always triggers tour for testing
+  useEffect(() => {
+    startTour();
+  }, [startTour]);
+
   // return (
   //   <div className="flex flex-col gap-6 pb-8">
   //     {/* Header with Advanced Filters */}
@@ -1206,5 +1216,10 @@ export default function DashboardPage() {
   //   </div>
   // );
 
-  return <div>Dashboard Page</div>;
+  return (
+    <div className="flex flex-col gap-4 pb-8">
+      <OnboardingChecklist />
+      <div>Dashboard Page</div>
+    </div>
+  );
 }

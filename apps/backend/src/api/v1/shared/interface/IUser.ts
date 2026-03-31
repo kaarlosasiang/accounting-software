@@ -23,4 +23,8 @@ export interface IUser extends Document {
   subscriptionActivatedAt?: Date;
   subscriptionCancelledAt?: Date;
   companySetupCompletedAt?: Date;
+  // Onboarding tracking fields
+  profileSetupCompletedAt?: Date;
+  teamInviteCompletedAt?: Date;
+  onboardingCompletedAt?: Date;
 }

@@ -78,7 +78,7 @@ export function NavMain({
   };
 
   return (
-    <SidebarGroup>
+    <SidebarGroup data-tour="sidebar">
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
@@ -114,7 +114,12 @@ export function NavMain({
               onOpenChange={(open) => handleOpenChange(item.title, open)}
               className="group/collapsible"
             >
-              <SidebarMenuItem>
+              <SidebarMenuItem
+                data-tour={`nav-${item.title
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/-+$/, "")}`}
+              >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
                     tooltip={item.title}

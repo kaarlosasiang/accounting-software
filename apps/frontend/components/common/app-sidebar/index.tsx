@@ -23,6 +23,7 @@ import { Crown } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { useOrganization } from "@/hooks/use-organization";
 import { usePermissions } from "@/hooks/use-permissions";
+import { useActiveOrganization } from "@/lib/config/auth-client";
 import { Resource, Action } from "@sas/validators";
 
 // ─── Navigation item types ────────────────────────────────────────────────────
@@ -199,6 +200,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { user: authUser } = useAuth();
   const { organizationName } = useOrganization();
   const { can } = usePermissions();
+  const { data: activeOrgData } = useActiveOrganization();
+
+  // Check if the current user is an owner or admin in the active org.
+  // Owners/admins bypass permission-gating so all nav items are visible.
+  const currentMemberRole = (activeOrgData as any)?.members?.find(
+    (m: any) => m.userId === authUser?.id,
+  )?.role as string | undefined;
+  const isOrgOwnerOrAdmin =
+    currentMemberRole === "owner" || currentMemberRole === "admin";
 
   // Filter nav items based on the current user's effective permissions.
   // `can()` returns true while permissions are still loading (optimistic),
@@ -207,6 +217,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     .filter(
       (item) =>
         !item.permission ||
+        isOrgOwnerOrAdmin ||
         can(item.permission.resource, item.permission.action),
     )
     .map((item) => ({
@@ -214,6 +225,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       items: item.items?.filter(
         (sub) =>
           !sub.permission ||
+          isOrgOwnerOrAdmin ||
           can(sub.permission.resource, sub.permission.action),
       ),
     }));

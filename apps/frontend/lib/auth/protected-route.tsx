@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 
 /**
@@ -31,13 +31,7 @@ export function withAuth<P extends object>(
   return function AuthenticatedComponent(props: P) {
     const { user, session, isLoading } = useAuth();
     const router = useRouter();
-
-    // console.log("[withAuth] render:", {
-    //   isLoading,
-    //   hasUser: !!user,
-    //   hasActiveSubscription: user ? (user as any).hasActiveSubscription : undefined,
-    //   pathname: typeof window !== 'undefined' ? window.location.pathname : 'N/A'
-    // });
+    const pathname = usePathname();
 
     useEffect(() => {
       // console.log("[withAuth] effect check:", {
@@ -73,21 +67,26 @@ export function withAuth<P extends object>(
         !(user as any).hasActiveSubscription &&
         !hasOrgAccess
       ) {
-        console.log(
-          "[withAuth] User not subscribed, redirecting to plans. User data:",
-          {
-            id: user.id,
-            email: user.email,
-            hasActiveSubscription: (user as any).hasActiveSubscription,
-            subscriptionStatus: (user as any).subscriptionStatus,
-            subscriptionPlan: (user as any).subscriptionPlan,
-            activeOrganizationId: (session as any)?.activeOrganizationId,
-          },
-        );
         router.replace("/plans");
         return;
       }
-    }, [user, session, isLoading, router, requireSubscription]);
+
+      // Redirect to onboarding if not completed AND user has no organization yet.
+      // Users who already completed company setup via the old flow (have an active org)
+      // are allowed through — the dashboard checklist covers remaining steps.
+      const onboardingComplete = !!(user as any)?.onboardingCompletedAt;
+      if (
+        !isLoading &&
+        user &&
+        !onboardingComplete &&
+        !hasOrgAccess &&
+        !pathname?.startsWith("/onboarding")
+      ) {
+        console.log("[withAuth] No org yet, redirecting to /onboarding");
+        router.replace("/onboarding");
+        return;
+      }
+    }, [user, session, isLoading, router, requireSubscription, pathname]);
 
     // Show loading state while checking authentication
     if (isLoading) {

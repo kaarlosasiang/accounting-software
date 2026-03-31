@@ -16,7 +16,7 @@ export function SignupWithVerification() {
   };
 
   const handleVerificationSuccess = () => {
-    router.push("/dashboard");
+    router.push("/onboarding");
   };
 
   const handleCancelVerification = () => {

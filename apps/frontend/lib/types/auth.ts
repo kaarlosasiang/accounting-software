@@ -27,6 +27,11 @@ export interface User extends BetterAuthUser {
   subscriptionPlan?: string;
   subscriptionStatus?: string;
 
+  // Onboarding tracking fields
+  profileSetupCompletedAt?: string | null;
+  teamInviteCompletedAt?: string | null;
+  onboardingCompletedAt?: string | null;
+
   // Admin plugin fields
   banned?: boolean;
   banReason?: string;

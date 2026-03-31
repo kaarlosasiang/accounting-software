@@ -71,6 +71,10 @@ export const authServer = betterAuth({
       },
       subscriptionPlan: { type: "string", required: false },
       subscriptionStatus: { type: "string", required: false },
+      // Onboarding tracking fields
+      profileSetupCompletedAt: { type: "string", required: false },
+      teamInviteCompletedAt: { type: "string", required: false },
+      onboardingCompletedAt: { type: "string", required: false },
     },
   },
   session: {
