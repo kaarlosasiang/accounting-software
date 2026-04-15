@@ -90,6 +90,12 @@ export const authServer = betterAuth({
       httpOnly: true,
       sameSite: constants.nodeEnv === "production" ? "none" : "lax",
       secure: constants.nodeEnv === "production",
+      domain:
+        constants.nodeEnv === "production" ? ".amfintrass.com" : undefined,
+    },
+    crossSubdomainCookies: {
+      enabled: constants.nodeEnv === "production",
+      domain: ".amfintrass.com",
     },
   },
   database: mongodbAdapter(dbProxy as any, { client: mongoClient }),
