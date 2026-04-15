@@ -19,6 +19,7 @@ import {
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Download, Calendar, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { downloadCsv } from "@/lib/utils/csv-export";
 import { apiFetch } from "@/lib/config/api-client";
 
 interface AccountItem {
@@ -124,6 +125,51 @@ export default function BalanceSheetPage() {
   const debtToEquityRatio =
     data.equity.total !== 0 ? data.liabilities.total / data.equity.total : 0;
   const workingCapital = currentAssetTotal - currentLiabilityTotal;
+
+  const handleExport = () => {
+    if (!data) return;
+    const rows = [
+      ...data.assets.currentAssets.map((a) => ({
+        Section: "Current Assets",
+        Account: a.accountName,
+        Balance: a.balance,
+      })),
+      ...data.assets.fixedAssets.map((a) => ({
+        Section: "Fixed Assets",
+        Account: a.accountName,
+        Balance: a.balance,
+      })),
+      ...data.assets.otherAssets.map((a) => ({
+        Section: "Other Assets",
+        Account: a.accountName,
+        Balance: a.balance,
+      })),
+      { Section: "TOTAL", Account: "Total Assets", Balance: data.assets.total },
+      ...data.liabilities.currentLiabilities.map((a) => ({
+        Section: "Current Liabilities",
+        Account: a.accountName,
+        Balance: a.balance,
+      })),
+      ...data.liabilities.longTermLiabilities.map((a) => ({
+        Section: "Long-Term Liabilities",
+        Account: a.accountName,
+        Balance: a.balance,
+      })),
+      {
+        Section: "TOTAL",
+        Account: "Total Liabilities",
+        Balance: data.liabilities.total,
+      },
+      ...data.equity.accounts.map((a) => ({
+        Section: "Equity",
+        Account: a.accountName,
+        Balance: a.balance,
+      })),
+      { Section: "TOTAL", Account: "Total Equity", Balance: data.equity.total },
+    ];
+    downloadCsv(`balance-sheet-${selectedDate}.csv`, rows);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -147,9 +193,9 @@ export default function BalanceSheetPage() {
               <SelectItem value="2023">2023</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport} disabled={!data}>
             <Download className="mr-2 h-4 w-4" />
-            Export PDF
+            Export CSV
           </Button>
         </div>
       </div>

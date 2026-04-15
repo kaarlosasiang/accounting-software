@@ -17,9 +17,6 @@ export function useAccounts(
   const activeOrgId = activeOrganization?.id;
 
   const fetchAccounts = useCallback(async () => {
-    console.log("Active Organization:", activeOrganization);
-    console.log("Active Org ID:", activeOrgId);
-
     if (!activeOrgId) {
       setAccounts([]);
       setError("Select an organization to view accounts");

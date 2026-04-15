@@ -43,6 +43,7 @@ import {
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { generateInvoicePDF } from "@/lib/pdf/invoice-pdf";
+import { toast } from "sonner";
 
 export default function InvoiceViewPage() {
   const params = useParams();
@@ -103,7 +104,9 @@ export default function InvoiceViewPage() {
 
   const handleSend = async () => {
     if (!company?.name) {
-      alert("Company name is required. Please set up your company profile.");
+      toast.error(
+        "Company name is required. Please set up your company profile.",
+      );
       return;
     }
 

@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download, Calendar, TrendingUp } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { downloadCsv } from "@/lib/utils/csv-export";
 import { format } from "date-fns";
 
 export default function ARAgingReportPage() {
@@ -33,8 +34,30 @@ export default function ARAgingReportPage() {
   }, [asOfDate, fetchARAgingReport]);
 
   const handleExport = () => {
-    // TODO: Implement CSV/PDF export
-    alert("Export functionality coming soon!");
+    if (!arAgingReport) return;
+    const rows = [
+      ...arAgingReport.customers.map((c) => ({
+        Customer: c.customerName,
+        Invoices: c.invoices.length,
+        Current: c.totals.current,
+        "1-30 Days": c.totals.days1to30,
+        "31-60 Days": c.totals.days31to60,
+        "61-90 Days": c.totals.days61to90,
+        "90+ Days": c.totals.days90plus,
+        Total: c.totals.total,
+      })),
+      {
+        Customer: "GRAND TOTAL",
+        Invoices: arAgingReport.summary.totalInvoices,
+        Current: arAgingReport.grandTotals.current,
+        "1-30 Days": arAgingReport.grandTotals.days1to30,
+        "31-60 Days": arAgingReport.grandTotals.days31to60,
+        "61-90 Days": arAgingReport.grandTotals.days61to90,
+        "90+ Days": arAgingReport.grandTotals.days90plus,
+        Total: arAgingReport.grandTotals.total,
+      },
+    ];
+    downloadCsv(`ar-aging-${asOfDate}.csv`, rows);
   };
 
   if (isLoading) {

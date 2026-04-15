@@ -7,12 +7,17 @@ import {
   generateARAgingReport,
   generateAPAgingReport,
 } from "./reportController.js";
-import { requireAuth } from "../../shared/middleware/auth.middleware.js";
+import {
+  requireAuth,
+  requirePermission,
+} from "../../shared/middleware/auth.middleware.js";
+import { Action, Resource } from "../../shared/auth/permissions.js";
 
 export const reportRoutes = Router();
 
-// Apply auth middleware to all routes
+// Apply auth + read permission middleware to all report routes
 reportRoutes.use(requireAuth);
+reportRoutes.use(requirePermission(Resource.report, Action.read));
 
 /**
  * Financial Reports Routes

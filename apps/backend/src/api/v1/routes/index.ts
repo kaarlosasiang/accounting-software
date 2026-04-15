@@ -3,6 +3,8 @@ import { Application } from "express";
 import authRoutes from "../modules/auth/authRoutes.js";
 import subscriptionRoutes from "../modules/subscription/subscriptionRoutes.js";
 import accountsRoutes from "../modules/accounts/accountsRoutes.js";
+import roleRoutes from "../modules/roles/roleRoutes.js";
+import memberPermissionRoutes from "../modules/roles/memberPermissionRoutes.js";
 import inventoryRoutes from "../modules/inventory/inventoryRoutes.js";
 import supplierRoutes from "../modules/supplier/supplierRoutes.js";
 import customerRoutes from "../modules/customer/customerRoutes.js";
@@ -14,6 +16,7 @@ import ledgerRoutes from "../modules/ledger/ledgerRoutes.js";
 import { reportRoutes } from "../modules/report/reportRoutes.js";
 import periodRoutes from "../modules/period/periodRoutes.js";
 import companySettingsRoutes from "../modules/company-settings/companySettingsRoutes.js";
+import dashboardRoutes from "../modules/dashboard/dashboardRoutes.js";
 
 import userRoutes from "../modules/user/userRoutes.js";
 
@@ -69,6 +72,15 @@ export default (app: Application): void => {
 
   // Company Settings routes
   app.use(`${API_PREFIX}/company-settings`, companySettingsRoutes);
+
+  // Dashboard routes
+  app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
+
+  // Roles routes
+  app.use(`${API_PREFIX}/roles`, roleRoutes);
+
+  // Member permission routes
+  app.use(`${API_PREFIX}/members`, memberPermissionRoutes);
 
   // Add more routes here as needed
   // app.use(`${API_PREFIX}/transactions`, transactionRoutes);

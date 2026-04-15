@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Download, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { formatCurrency } from "@/lib/utils";
+import { downloadCsv } from "@/lib/utils/csv-export";
 import { apiFetch } from "@/lib/config/api-client";
 
 interface CashFlowItem {
@@ -163,6 +164,67 @@ export default function CashFlowPage() {
   const inflowPercentage =
     totalActivity > 0 ? (totalInflows / totalActivity) * 100 : 50;
 
+  const handleExport = () => {
+    if (!data) return;
+    const { startDate, endDate } = getDateRange();
+    const rows = [
+      {
+        Section: "Operating Activities",
+        Item: "Net Income",
+        Amount: data.operatingActivities.netIncome,
+      },
+      ...data.operatingActivities.adjustments.map((a) => ({
+        Section: "Operating Activities",
+        Item: a.accountName,
+        Amount: a.change ?? a.cashEffect ?? 0,
+      })),
+      {
+        Section: "Operating Activities",
+        Item: "Total Operating Cash Flow",
+        Amount: data.operatingActivities.total,
+      },
+      ...data.investingActivities.items.map((a) => ({
+        Section: "Investing Activities",
+        Item: a.accountName,
+        Amount: a.netCashEffect ?? a.cashEffect ?? 0,
+      })),
+      {
+        Section: "Investing Activities",
+        Item: "Total Investing Cash Flow",
+        Amount: data.investingActivities.total,
+      },
+      ...data.financingActivities.items.map((a) => ({
+        Section: "Financing Activities",
+        Item: a.accountName,
+        Amount:
+          a.increases !== undefined
+            ? a.increases - (a.decreases ?? 0)
+            : (a.cashEffect ?? 0),
+      })),
+      {
+        Section: "Financing Activities",
+        Item: "Total Financing Cash Flow",
+        Amount: data.financingActivities.total,
+      },
+      {
+        Section: "Summary",
+        Item: "Beginning Cash",
+        Amount: data.summary.beginningCash,
+      },
+      {
+        Section: "Summary",
+        Item: "Net Cash Flow",
+        Amount: data.summary.netCashFlow,
+      },
+      {
+        Section: "Summary",
+        Item: "Ending Cash",
+        Amount: data.summary.endingCash,
+      },
+    ];
+    downloadCsv(`cash-flow-${startDate}-to-${endDate}.csv`, rows);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -176,7 +238,7 @@ export default function CashFlowPage() {
         </div>
         <div className="flex gap-2">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-40">
               <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
@@ -185,9 +247,9 @@ export default function CashFlowPage() {
               <SelectItem value="quarter">This Quarter</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport} disabled={!data}>
             <Download className="mr-2 h-4 w-4" />
-            Export PDF
+            Export CSV
           </Button>
         </div>
       </div>

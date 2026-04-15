@@ -19,6 +19,7 @@ import {
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { downloadCsv } from "@/lib/utils/csv-export";
 import { apiFetch } from "@/lib/config/api-client";
 
 interface AccountItem {
@@ -141,6 +142,59 @@ export default function ProfitLossPage() {
     );
   }
 
+  const handleExport = () => {
+    if (!data) return;
+    const rows = [
+      ...data.revenue.operatingRevenue.map((a) => ({
+        Section: "Revenue",
+        Account: a.accountName,
+        Amount: a.amount,
+      })),
+      ...data.revenue.otherIncome.map((a) => ({
+        Section: "Other Income",
+        Account: a.accountName,
+        Amount: a.amount,
+      })),
+      {
+        Section: "SUMMARY",
+        Account: "Total Revenue",
+        Amount: data.revenue.total,
+      },
+      ...data.expenses.costOfSales.map((a) => ({
+        Section: "Cost of Sales",
+        Account: a.accountName,
+        Amount: a.amount,
+      })),
+      ...data.expenses.operatingExpenses.map((a) => ({
+        Section: "Operating Expenses",
+        Account: a.accountName,
+        Amount: a.amount,
+      })),
+      ...data.expenses.nonOperatingExpenses.map((a) => ({
+        Section: "Non-Operating Expenses",
+        Account: a.accountName,
+        Amount: a.amount,
+      })),
+      {
+        Section: "SUMMARY",
+        Account: "Gross Profit",
+        Amount: data.summary.grossProfit,
+      },
+      {
+        Section: "SUMMARY",
+        Account: "Operating Income",
+        Amount: data.summary.operatingIncome,
+      },
+      {
+        Section: "SUMMARY",
+        Account: "Net Income",
+        Amount: data.summary.netIncome,
+      },
+    ];
+    const date = new Date().toISOString().split("T")[0];
+    downloadCsv(`profit-loss-${period}-${date}.csv`, rows);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -154,7 +208,7 @@ export default function ProfitLossPage() {
         </div>
         <div className="flex gap-2">
           <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-40">
               <SelectValue placeholder="Period" />
             </SelectTrigger>
             <SelectContent>
@@ -163,9 +217,9 @@ export default function ProfitLossPage() {
               <SelectItem value="quarter">This Quarter</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport} disabled={!data}>
             <Download className="mr-2 h-4 w-4" />
-            Export PDF
+            Export CSV
           </Button>
         </div>
       </div>
