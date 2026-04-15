@@ -113,20 +113,6 @@ export function useOrganization(): UseOrganizationReturn {
   const { data: sessionData } = useSession();
   const { data: organizationsData } = useListOrganizations();
 
-  // Debug logging (only when data changes)
-  useEffect(() => {
-    console.log("[useOrganization] Hook state:", {
-      activeOrgData,
-      hasActiveOrg: !!activeOrgData,
-      isPending,
-      error,
-      sessionExists: !!sessionData,
-      organizationsCount: Array.isArray(organizationsData)
-        ? organizationsData.length
-        : 0,
-    });
-  }, [activeOrgData, isPending, error, sessionData, organizationsData]);
-
   // Better-auth's useActiveOrganization returns the organization directly in data
   // If null/undefined, it means no active organization is set
   const activeOrganization =

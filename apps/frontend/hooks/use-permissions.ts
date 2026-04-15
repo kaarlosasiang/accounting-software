@@ -8,7 +8,7 @@ import type { Resource, Action } from "@sas/validators";
 export type EffectivePermissionsMap = Record<string, string[]>;
 
 export function usePermissions() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, session, isLoading: authLoading } = useAuth();
   const [permissions, setPermissions] =
     useState<EffectivePermissionsMap | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -30,13 +30,17 @@ export function usePermissions() {
     }
   }, []);
 
+  const activeOrganizationId = (session as any)?.activeOrganizationId as
+    | string
+    | undefined;
+
   useEffect(() => {
     if (!authLoading && user?.id) {
       fetchPermissions(user.id);
     } else if (!authLoading && !user) {
       setIsLoading(false);
     }
-  }, [authLoading, user?.id, fetchPermissions]);
+  }, [authLoading, user?.id, activeOrganizationId, fetchPermissions]);
 
   /**
    * Check whether the current user has a specific permission.

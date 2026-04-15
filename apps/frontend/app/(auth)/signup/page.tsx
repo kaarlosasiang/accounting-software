@@ -1,9 +1,10 @@
 "use client";
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AuthNavbar } from "@/components/common/auth-navbar";
-import { SignupWithVerification } from "@/components/forms/register-form";
+import { SignupForm } from "@/components/forms/register-form/form";
+import { EmailOTPVerification } from "@/components/common/auth/email-otp-verification";
 import { Spinner } from "@/components/ui/spinner";
 import { useGuestRoute } from "@/lib/auth/protected-route";
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -13,9 +14,29 @@ function SignupPageContent() {
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const { isLoading } = useGuestRoute({ redirectTo: callbackUrl });
   const { user } = useAuth();
+  const router = useRouter();
 
-  // Show loader while checking auth or while redirect is in flight
-  if (isLoading || user) {
+  // Lifted state — survives the isLoading flip that happens when the new
+  // session is established after signUp.email() resolves.
+  const [step, setStep] = useState<"register" | "verify">("register");
+  const [pendingEmail, setPendingEmail] = useState("");
+
+  const handleRegistrationSuccess = (email: string) => {
+    setPendingEmail(email);
+    setStep("verify");
+  };
+
+  const handleVerificationSuccess = () => {
+    router.push("/onboarding");
+  };
+
+  const handleCancelVerification = () => {
+    setStep("register");
+    setPendingEmail("");
+  };
+
+  // Verified user → useGuestRoute is redirecting, show spinner.
+  if (user && user.emailVerified) {
     return (
       <div className="bg-background flex h-svh flex-col items-center justify-center gap-3">
         <Spinner className="size-8 text-primary" />
@@ -23,11 +44,39 @@ function SignupPageContent() {
       </div>
     );
   }
+
+  // Initial auth check — but don't show spinner once we're in the verify step
+  // (isLoading briefly flips true when the session is created after signup).
+  if (isLoading && step === "register") {
+    return (
+      <div className="bg-background flex h-svh flex-col items-center justify-center gap-3">
+        <Spinner className="size-8 text-primary" />
+        <p className="text-sm text-muted-foreground">Loading…</p>
+      </div>
+    );
+  }
+
+  if (step === "verify" && pendingEmail) {
+    return (
+      <div className="bg-background flex min-h-svh flex-col items-center pb-10">
+        <AuthNavbar />
+        <div className="flex flex-1 items-center justify-center p-6">
+          <EmailOTPVerification
+            email={pendingEmail}
+            type="email-verification"
+            onSuccess={handleVerificationSuccess}
+            onCancel={handleCancelVerification}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-background flex min-h-svh flex-col items-center pb-10">
       <AuthNavbar />
       <div className="w-full max-w-sm">
-        <SignupWithVerification />
+        <SignupForm onRegistrationSuccess={handleRegistrationSuccess} />
       </div>
     </div>
   );

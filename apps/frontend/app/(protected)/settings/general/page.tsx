@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -10,11 +12,40 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Save } from "lucide-react";
+import { useSession, authClient } from "@/lib/config/auth-client";
 
 export default function GeneralSettingsPage() {
-  const [isLoading] = useState(false);
+  const { data: session, isPending } = useSession();
+  const user = session?.user;
+
+  const [name, setName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user?.name) setName(user.name);
+  }, [user?.name]);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      toast.error("Name cannot be empty");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const result = await authClient.updateUser({ name: name.trim() });
+      if (result.error) {
+        toast.error(result.error.message ?? "Failed to update profile");
+      } else {
+        toast.success("Profile updated");
+      }
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-6 px-6">
@@ -33,26 +64,47 @@ export default function GeneralSettingsPage() {
           <CardDescription>Update your personal information</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input id="firstName" defaultValue="John" />
+          {isPending ? (
+            <div className="space-y-4">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input id="lastName" defaultValue="Accountant" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" defaultValue="john@rrd10.com" />
-          </div>
-          <div className="flex justify-end">
-            <Button disabled={isLoading}>
-              <Save className="mr-2 h-4 w-4" />
-              Save Changes
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={user?.email ?? ""}
+                  readOnly
+                  className="bg-muted cursor-not-allowed"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Email cannot be changed here. Contact support to update your
+                  email address.
+                </p>
+              </div>
+              <div className="flex justify-end">
+                <Button
+                  onClick={handleSave}
+                  disabled={isSaving || !name.trim()}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  {isSaving ? "Saving…" : "Save Changes"}
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

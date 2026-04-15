@@ -44,14 +44,12 @@ export function withAuth<P extends object>(
       // });
 
       if (!isLoading && !user) {
-        console.log("[withAuth] Redirecting to login");
         router.replace(redirectTo);
         return;
       }
 
       // Check if email verification is required
       if (!isLoading && user && !allowUnverified && !user.emailVerified) {
-        console.log("[withAuth] Redirecting to verify-email");
         router.replace("/verify-email");
         return;
       }
@@ -71,19 +69,16 @@ export function withAuth<P extends object>(
         return;
       }
 
-      // Redirect to onboarding if not completed AND user has no organization yet.
-      // Users who already completed company setup via the old flow (have an active org)
-      // are allowed through — the dashboard checklist covers remaining steps.
-      const onboardingComplete = !!(user as any)?.onboardingCompletedAt;
+      // If authenticated but no active organization, send to company-setup.
+      // Without an org, every API call returns a missing companyId error.
       if (
         !isLoading &&
         user &&
-        !onboardingComplete &&
         !hasOrgAccess &&
-        !pathname?.startsWith("/onboarding")
+        !pathname?.startsWith("/company-setup") &&
+        !pathname?.startsWith("/plans")
       ) {
-        console.log("[withAuth] No org yet, redirecting to /onboarding");
-        router.replace("/onboarding");
+        router.replace("/company-setup");
         return;
       }
     }, [user, session, isLoading, router, requireSubscription, pathname]);
@@ -205,23 +200,22 @@ export function useGuestRoute(options?: { redirectTo?: string }) {
   const { user, session, isLoading } = useAuth();
   const router = useRouter();
 
-  console.log("[useGuestRoute] check:", { isLoading, hasUser: !!user });
-
   useEffect(() => {
-    console.log("[useGuestRoute] effect:", { isLoading, hasUser: !!user });
-    if (!isLoading && user) {
+    // Only redirect fully verified users — an unverified user (just signed up)
+    // must stay on the auth page so the OTP verification step can be shown.
+    if (!isLoading && user && user.emailVerified) {
       const hasOrgAccess = !!(session as any)?.activeOrganizationId;
       if ((user as any).hasActiveSubscription || hasOrgAccess) {
-        console.log(
-          "[useGuestRoute] User has access, redirecting to dashboard",
-        );
         router.replace(redirectTo);
       } else {
-        console.log(
-          "[useGuestRoute] User logged in but no subscription, redirecting to plans",
-        );
         router.replace("/plans");
       }
+    }
+
+    // Unverified user trying to access a guest route (e.g. came back to login) —
+    // send them to the verify-email page so they can complete verification.
+    if (!isLoading && user && !user.emailVerified) {
+      router.replace(`/verify-email?email=${encodeURIComponent(user.email)}`);
     }
   }, [user, session, isLoading, router, redirectTo]);
 

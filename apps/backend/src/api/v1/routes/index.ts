@@ -16,6 +16,7 @@ import ledgerRoutes from "../modules/ledger/ledgerRoutes.js";
 import { reportRoutes } from "../modules/report/reportRoutes.js";
 import periodRoutes from "../modules/period/periodRoutes.js";
 import companySettingsRoutes from "../modules/company-settings/companySettingsRoutes.js";
+import dashboardRoutes from "../modules/dashboard/dashboardRoutes.js";
 
 import userRoutes from "../modules/user/userRoutes.js";
 
@@ -71,6 +72,9 @@ export default (app: Application): void => {
 
   // Company Settings routes
   app.use(`${API_PREFIX}/company-settings`, companySettingsRoutes);
+
+  // Dashboard routes
+  app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
 
   // Roles routes
   app.use(`${API_PREFIX}/roles`, roleRoutes);

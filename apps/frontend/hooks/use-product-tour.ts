@@ -16,8 +16,7 @@ export function useProductTour() {
         steps: tourSteps,
         onDestroyStarted: () => {
           driverObj.destroy();
-          // TODO: restore for production — skipped for testing so tour always re-triggers
-          // localStorage.setItem("tourCompleted", "true");
+          localStorage.setItem("tourCompleted", "true");
         },
       });
 

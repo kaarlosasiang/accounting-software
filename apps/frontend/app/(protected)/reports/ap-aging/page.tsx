@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Download, Calendar, TrendingDown } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { downloadCsv } from "@/lib/utils/csv-export";
 import { format } from "date-fns";
 
 export default function APAgingReportPage() {
@@ -33,8 +34,30 @@ export default function APAgingReportPage() {
   }, [asOfDate, fetchAPAgingReport]);
 
   const handleExport = () => {
-    // TODO: Implement CSV/PDF export
-    alert("Export functionality coming soon!");
+    if (!apAgingReport) return;
+    const rows = [
+      ...apAgingReport.suppliers.map((s) => ({
+        Supplier: s.supplierName,
+        Bills: s.bills.length,
+        Current: s.totals.current,
+        "1-30 Days": s.totals.days1to30,
+        "31-60 Days": s.totals.days31to60,
+        "61-90 Days": s.totals.days61to90,
+        "90+ Days": s.totals.days90plus,
+        Total: s.totals.total,
+      })),
+      {
+        Supplier: "GRAND TOTAL",
+        Bills: apAgingReport.summary.totalBills,
+        Current: apAgingReport.grandTotals.current,
+        "1-30 Days": apAgingReport.grandTotals.days1to30,
+        "31-60 Days": apAgingReport.grandTotals.days31to60,
+        "61-90 Days": apAgingReport.grandTotals.days61to90,
+        "90+ Days": apAgingReport.grandTotals.days90plus,
+        Total: apAgingReport.grandTotals.total,
+      },
+    ];
+    downloadCsv(`ap-aging-${asOfDate}.csv`, rows);
   };
 
   if (isLoading) {

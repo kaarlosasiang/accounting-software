@@ -14,7 +14,8 @@ function LoginPageContent() {
   const { isLoading } = useGuestRoute({ redirectTo: callbackUrl });
   const { user } = useAuth();
 
-  // Show loader while checking auth or while redirect is in flight
+  // Show loader while checking auth, or while any logged-in user is being redirected
+  // (verified → dashboard/plans, unverified → verify-email).
   if (isLoading || user) {
     return (
       <div className="bg-background flex h-svh flex-col items-center justify-center gap-3">

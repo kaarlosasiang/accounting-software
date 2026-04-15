@@ -17,6 +17,8 @@ import {
 import { authClient } from "@/lib/config/auth-client";
 
 function VerifyEmailContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const email = searchParams.get("email") ?? "";
 
   const [otp, setOtp] = useState("");
@@ -35,7 +37,7 @@ function VerifyEmailContent() {
       if (result?.error)
         throw new Error(result.error.message || "Invalid code");
       toast.success("Email verified!");
-      router.replace("/");
+      router.replace("/plans");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Verification failed");
     } finally {
