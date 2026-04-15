@@ -5,10 +5,28 @@ import { CompanySetupForm } from "@/components/forms/company-setup-form";
 import { AuthNavbar } from "@/components/common/auth-navbar";
 
 export default function CompanySetupPage() {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="bg-background flex min-h-svh flex-col items-center justify-center">
+        <div className="text-muted-foreground text-sm">Loading...</div>
+      </div>
+    );
+  }
 
   if (!user) {
-    return null;
+    return (
+      <div className="bg-background flex min-h-svh flex-col items-center justify-center">
+        <div className="text-muted-foreground text-sm">
+          Session not found. Please{" "}
+          <a href="/login" className="underline">
+            log in
+          </a>
+          .
+        </div>
+      </div>
+    );
   }
 
   return (
