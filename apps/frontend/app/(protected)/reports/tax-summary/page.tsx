@@ -614,9 +614,6 @@ export default function TaxSummaryPage() {
     </div>
   );
 }
-
-
-      {/* Income Summary */}
       <Card>
         <CardHeader>
           <CardTitle>Income Summary - Tax Year 2025</CardTitle>
