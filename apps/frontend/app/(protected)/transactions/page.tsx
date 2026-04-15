@@ -90,7 +90,7 @@ function statusVariant(
 
 export default function TransactionsPage() {
   const { data: entries = [], isLoading } = useJournalEntries({ limit: 200 });
-  const { format } = useCurrency();
+  const { formatCurrency: format } = useCurrency();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
