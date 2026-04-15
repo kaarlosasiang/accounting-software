@@ -137,7 +137,7 @@ export const dashboardService = {
       accountCode: (entry.accountId as any)?.accountCode ?? "",
       debit: entry.debit,
       credit: entry.credit,
-      type: entry.entryType,
+      type: Number(entry.debit) > 0 ? "Debit" : "Credit",
     }));
 
     // ── 6. Monthly trend for current year (12 months) ────────────────────────
