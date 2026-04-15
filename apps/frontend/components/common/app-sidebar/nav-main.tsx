@@ -78,12 +78,33 @@ export function NavMain({
   };
 
   return (
-    <SidebarGroup>
+    <SidebarGroup data-tour="sidebar">
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
           const itemActive = isItemActive(item);
           const isOpen = openItems[item.title] ?? itemActive;
+
+          // Items with no sub-items render as a direct link
+          if (!item.items || item.items.length === 0) {
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  tooltip={item.title}
+                  isActive={itemActive}
+                  className={
+                    itemActive ? "!bg-[#208049] hover:!bg-[#208049]" : ""
+                  }
+                >
+                  <Link href={item.url}>
+                    {item.icon && <span className="text-xs">{item.icon}</span>}
+                    <span>{item.title}</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            );
+          }
 
           return (
             <Collapsible
@@ -93,7 +114,12 @@ export function NavMain({
               onOpenChange={(open) => handleOpenChange(item.title, open)}
               className="group/collapsible"
             >
-              <SidebarMenuItem>
+              <SidebarMenuItem
+                data-tour={`nav-${item.title
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/-+$/, "")}`}
+              >
                 <CollapsibleTrigger asChild>
                   <SidebarMenuButton
                     tooltip={item.title}

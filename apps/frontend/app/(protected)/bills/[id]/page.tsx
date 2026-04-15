@@ -47,6 +47,7 @@ import {
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { toast } from "sonner";
 
 export default function BillViewPage() {
   const params = useParams();
@@ -125,8 +126,7 @@ export default function BillViewPage() {
 
   const handleDownloadPDF = () => {
     if (bill) {
-      // TODO: Implement bill PDF generation
-      alert("PDF download coming soon!");
+      toast.info("PDF download for bills is coming soon.");
     }
   };
 

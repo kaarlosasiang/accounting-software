@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
@@ -48,6 +48,8 @@ export function SignupForm({
   onRegistrationSuccess?: (email: string) => void;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
   const { signUp } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const {
@@ -79,8 +81,12 @@ export function SignupForm({
       if (onRegistrationSuccess) {
         onRegistrationSuccess(values.email);
       } else {
-        // Fallback: redirect to login
-        router.push("/login");
+        // Fallback: redirect to login, preserving callbackUrl
+        router.push(
+          callbackUrl !== "/dashboard"
+            ? `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`
+            : "/login",
+        );
       }
     } catch (error) {
       const message =
@@ -275,7 +281,7 @@ export function SignupForm({
         </FieldGroup>
         {/* Social Login */}
         <AuthDivider />
-        <GoogleSignInButton callbackURL="/dashboard" mode="signup" />
+        <GoogleSignInButton callbackURL={callbackUrl} mode="signup" />
       </form>
       <FieldDescription className="px-6 text-center text-sm">
         By clicking continue, you agree to our{" "}

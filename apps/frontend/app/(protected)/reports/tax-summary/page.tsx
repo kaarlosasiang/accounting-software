@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState, useCallback } from "react";
+import { useReports } from "@/hooks/use-reports";
 import {
   Card,
   CardContent,
@@ -27,9 +29,110 @@ import { Download, Calendar, AlertCircle, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency } from "@/lib/utils";
+import { downloadCsv } from "@/lib/utils/csv-export";
+
+// BIR graduated income tax (Philippines, TRAIN Law)
+function computeBIRIncomeTax(taxableIncome: number): number {
+  if (taxableIncome <= 0) return 0;
+  if (taxableIncome <= 250000) return 0;
+  if (taxableIncome <= 400000) return (taxableIncome - 250000) * 0.2;
+  if (taxableIncome <= 800000) return 30000 + (taxableIncome - 400000) * 0.25;
+  if (taxableIncome <= 2000000) return 130000 + (taxableIncome - 800000) * 0.3;
+  if (taxableIncome <= 8000000)
+    return 490000 + (taxableIncome - 2000000) * 0.32;
+  return 2410000 + (taxableIncome - 8000000) * 0.35;
+}
+
+const currentYear = new Date().getFullYear();
+const YEAR_OPTIONS = [currentYear - 1, currentYear - 2, currentYear - 3].map(
+  String,
+);
 
 export default function TaxSummaryPage() {
+  const { fetchIncomeStatement, isLoading } = useReports();
+  const [selectedYear, setSelectedYear] = useState(String(currentYear - 1));
+  const [incomeData, setIncomeData] = useState<any>(null);
+
+  const loadData = useCallback(
+    async (year: string) => {
+      const data = await fetchIncomeStatement(
+        `${year}-01-01`,
+        `${year}-12-31`,
+      );
+      setIncomeData(data);
+    },
+    [fetchIncomeStatement],
+  );
+
+  useEffect(() => {
+    loadData(selectedYear);
+  }, [selectedYear, loadData]);
+
+  const grossRevenue: number = incomeData?.summary?.totalRevenue ?? 0;
+  const totalDeductions: number = incomeData?.summary?.totalExpenses ?? 0;
+  const netTaxableIncome: number = incomeData?.summary?.netIncome ?? 0;
+  const incomeTax = computeBIRIncomeTax(netTaxableIncome);
+  const percentageTax = grossRevenue * 0.03;
+  const totalTaxLiability = incomeTax + percentageTax;
+  const quarterlyPayment = totalTaxLiability / 4;
+
+  const revenueAccounts: Array<{ accountName: string; balance: number }> =
+    incomeData?.revenue?.operatingRevenue ?? [];
+  const costOfSales: Array<{ accountName: string; balance: number }> =
+    incomeData?.expenses?.costOfSales ?? [];
+  const opExpenses: Array<{ accountName: string; balance: number }> =
+    incomeData?.expenses?.operatingExpenses ?? [];
+  const allDeductions = [...costOfSales, ...opExpenses];
+
+  const q4DueDate = `January 25, ${Number(selectedYear) + 1}`;
+  const today = new Date();
+
+  function quarterStatus(dueStr: string) {
+    return new Date(dueStr) < today ? "Paid" : "Due Soon";
+  }
+
+  const quarterRows = [
+    { label: `Q1 ${selectedYear}`, due: `May 15, ${selectedYear}` },
+    { label: `Q2 ${selectedYear}`, due: `August 15, ${selectedYear}` },
+    { label: `Q3 ${selectedYear}`, due: `November 15, ${selectedYear}` },
+    { label: `Q4 ${selectedYear}`, due: q4DueDate },
+  ];
+
+  const handleExport = () => {
+    if (!incomeData) return;
+    const rows = [
+      {
+        Section: "INCOME SUMMARY",
+        Item: "Gross Revenue",
+        Amount: grossRevenue,
+      },
+      {
+        Section: "INCOME SUMMARY",
+        Item: "Total Deductions",
+        Amount: totalDeductions,
+      },
+      {
+        Section: "INCOME SUMMARY",
+        Item: "Net Taxable Income",
+        Amount: netTaxableIncome,
+      },
+      { Section: "TAX ESTIMATES", Item: "BIR Income Tax", Amount: incomeTax },
+      {
+        Section: "TAX ESTIMATES",
+        Item: "Percentage Tax (3%)",
+        Amount: percentageTax,
+      },
+      {
+        Section: "TAX ESTIMATES",
+        Item: "Total Estimated Tax",
+        Amount: totalTaxLiability,
+      },
+    ];
+    downloadCsv(`tax-summary-${selectedYear}.csv`, rows);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -42,94 +145,120 @@ export default function TaxSummaryPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select defaultValue="2025">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
             <SelectTrigger className="w-[120px]">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Year" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2025">2025</SelectItem>
-              <SelectItem value="2024">2024</SelectItem>
-              <SelectItem value="2023">2023</SelectItem>
+              {YEAR_OPTIONS.map((y) => (
+                <SelectItem key={y} value={y}>
+                  {y}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
-          <Button variant="outline">
+          <Button
+            variant="outline"
+            onClick={handleExport}
+            disabled={!incomeData || isLoading}
+          >
             <Download className="mr-2 h-4 w-4" />
             Export to Accountant
           </Button>
         </div>
       </div>
 
-      {/* Alert Banner */}
-      <Alert>
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>BIR Tax Filing Reminder</AlertTitle>
-        <AlertDescription>
-          Q4 2025 quarterly tax return is due on January 25, 2026. Your
-          estimated payment is {formatCurrency(2094)}.
-        </AlertDescription>
-      </Alert>
+      {!isLoading && totalTaxLiability > 0 && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>BIR Tax Filing Reminder</AlertTitle>
+          <AlertDescription>
+            Q4 {selectedYear} quarterly tax return is due on {q4DueDate}. Your
+            estimated payment is {formatCurrency(quarterlyPayment)}.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Gross Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(85000)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Total income for 2025
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Deductions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(51500)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Tax-deductible expenses
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              Taxable Income
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(33500)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              After deductions
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">
-              Est. Tax Liability
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(8375)}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              BIR graduated income tax (≈25%)
-            </p>
-          </CardContent>
-        </Card>
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <Skeleton className="h-8 w-3/4" />
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">
+                  Gross Revenue
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(grossRevenue)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total income for {selectedYear}
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">
+                  Deductions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(totalDeductions)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tax-deductible expenses
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">
+                  Taxable Income
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(netTaxableIncome)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  After deductions
+                </p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium">
+                  Est. Tax Liability
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-orange-600">
+                  {formatCurrency(totalTaxLiability)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  BIR income + percentage tax
+                </p>
+              </CardContent>
+            </Card>
+          </>
+        )}
       </div>
-
       {/* Income Summary */}
       <Card>
         <CardHeader>
-          <CardTitle>Income Summary - Tax Year 2025</CardTitle>
+          <CardTitle>Income Summary — Tax Year {selectedYear}</CardTitle>
           <CardDescription>
             Breakdown of taxable and deductible amounts
           </CardDescription>
@@ -147,43 +276,53 @@ export default function TaxSummaryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>Services Rendered (Salon/Spa)</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(38250)}
-                    </TableCell>
-                    <TableCell className="text-right">45.0%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Food Sales</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(25500)}
-                    </TableCell>
-                    <TableCell className="text-right">30.0%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Non-Food Sales</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(17000)}
-                    </TableCell>
-                    <TableCell className="text-right">20.0%</TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Other Income</TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCurrency(4250)}
-                    </TableCell>
-                    <TableCell className="text-right">5.0%</TableCell>
-                  </TableRow>
-                  <TableRow className="border-t-2 bg-muted/30">
-                    <TableCell className="font-bold">
-                      Total Gross Income
-                    </TableCell>
-                    <TableCell className="text-right font-bold">
-                      {formatCurrency(85000)}
-                    </TableCell>
-                    <TableCell className="text-right font-bold">100%</TableCell>
-                  </TableRow>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={3}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ) : revenueAccounts.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={3}
+                        className="text-center text-muted-foreground"
+                      >
+                        No revenue data
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {revenueAccounts.map((acct, i) => (
+                        <TableRow key={i}>
+                          <TableCell>{acct.accountName}</TableCell>
+                          <TableCell className="text-right font-medium">
+                            {formatCurrency(acct.balance)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {grossRevenue > 0
+                              ? (
+                                  (acct.balance / grossRevenue) *
+                                  100
+                                ).toFixed(1)
+                              : "0.0"}
+                            %
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="border-t-2 bg-muted/30">
+                        <TableCell className="font-bold">
+                          Total Gross Income
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          {formatCurrency(grossRevenue)}
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          100%
+                        </TableCell>
+                      </TableRow>
+                    </>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -200,78 +339,49 @@ export default function TaxSummaryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow>
-                    <TableCell>Cost of Goods Sold (Food)</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(15300)}
-                    </TableCell>
-                    <TableCell className="text-right">100%</TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {formatCurrency(15300)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Cost of Goods Sold (Non-Food)</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(8500)}
-                    </TableCell>
-                    <TableCell className="text-right">100%</TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {formatCurrency(8500)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Salon/Spa Supplies</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(5250)}
-                    </TableCell>
-                    <TableCell className="text-right">100%</TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {formatCurrency(5250)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Rent & Utilities</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(8000)}
-                    </TableCell>
-                    <TableCell className="text-right">100%</TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {formatCurrency(8000)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Salaries & Wages</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(12000)}
-                    </TableCell>
-                    <TableCell className="text-right">100%</TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {formatCurrency(12000)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Marketing & Advertising</TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(2450)}
-                    </TableCell>
-                    <TableCell className="text-right">100%</TableCell>
-                    <TableCell className="text-right text-green-600">
-                      {formatCurrency(2450)}
-                    </TableCell>
-                  </TableRow>
-                  <TableRow className="border-t-2 bg-green-50 dark:bg-green-950/20">
-                    <TableCell className="font-bold">
-                      Total Deductions
-                    </TableCell>
-                    <TableCell className="text-right font-bold">
-                      {formatCurrency(51500)}
-                    </TableCell>
-                    <TableCell className="text-right"></TableCell>
-                    <TableCell className="text-right font-bold text-green-600">
-                      {formatCurrency(51500)}
-                    </TableCell>
-                  </TableRow>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={4}>
+                        <Skeleton className="h-4 w-full" />
+                      </TableCell>
+                    </TableRow>
+                  ) : allDeductions.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-muted-foreground"
+                      >
+                        No expense data
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    <>
+                      {allDeductions.map((acct, i) => (
+                        <TableRow key={i}>
+                          <TableCell>{acct.accountName}</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(acct.balance)}
+                          </TableCell>
+                          <TableCell className="text-right">100%</TableCell>
+                          <TableCell className="text-right text-green-600">
+                            {formatCurrency(acct.balance)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      <TableRow className="border-t-2 bg-green-50 dark:bg-green-950/20">
+                        <TableCell className="font-bold">
+                          Total Deductions
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          {formatCurrency(totalDeductions)}
+                        </TableCell>
+                        <TableCell className="text-right" />
+                        <TableCell className="text-right font-bold text-green-600">
+                          {formatCurrency(totalDeductions)}
+                        </TableCell>
+                      </TableRow>
+                    </>
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -284,7 +394,7 @@ export default function TaxSummaryPage() {
                       Net Taxable Income
                     </TableCell>
                     <TableCell className="text-right text-lg font-bold text-primary">
-                      {formatCurrency(33500)}
+                      {formatCurrency(netTaxableIncome)}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -311,16 +421,26 @@ export default function TaxSummaryPage() {
                     Income Tax (Graduated Rates)
                   </h4>
                   <p className="text-sm text-muted-foreground">
-                    Estimated at 25% effective rate per BIR tax table
+                    Per BIR TRAIN Law tax table
                   </p>
-                  <Progress value={80} className="mt-2 w-64" />
+                  <Progress
+                    value={
+                      totalTaxLiability > 0
+                        ? (incomeTax / totalTaxLiability) * 100
+                        : 0
+                    }
+                    className="mt-2 w-64"
+                  />
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-orange-600">
-                    {formatCurrency(6700)}
+                    {formatCurrency(incomeTax)}
                   </div>
                   <Badge variant="outline" className="mt-1">
-                    80% of total
+                    {totalTaxLiability > 0
+                      ? Math.round((incomeTax / totalTaxLiability) * 100)
+                      : 0}
+                    % of total
                   </Badge>
                 </div>
               </div>
@@ -329,34 +449,26 @@ export default function TaxSummaryPage() {
                 <div className="space-y-1">
                   <h4 className="font-semibold">Percentage Tax (Non-VAT)</h4>
                   <p className="text-sm text-muted-foreground">
-                    3% of gross sales/receipts (if applicable)
+                    3% of gross sales/receipts
                   </p>
-                  <Progress value={15} className="mt-2 w-64" />
+                  <Progress
+                    value={
+                      totalTaxLiability > 0
+                        ? (percentageTax / totalTaxLiability) * 100
+                        : 0
+                    }
+                    className="mt-2 w-64"
+                  />
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-orange-600">
-                    {formatCurrency(1275)}
+                    {formatCurrency(percentageTax)}
                   </div>
                   <Badge variant="outline" className="mt-1">
-                    15% of total
-                  </Badge>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="space-y-1">
-                  <h4 className="font-semibold">Withholding Tax Credits</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Creditable withholding tax from clients
-                  </p>
-                  <Progress value={5} className="mt-2 w-64" />
-                </div>
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-green-600">
-                    ({formatCurrency(400)})
-                  </div>
-                  <Badge variant="outline" className="mt-1">
-                    Tax credit
+                    {totalTaxLiability > 0
+                      ? Math.round((percentageTax / totalTaxLiability) * 100)
+                      : 0}
+                    % of total
                   </Badge>
                 </div>
               </div>
@@ -369,11 +481,11 @@ export default function TaxSummaryPage() {
                     Total Estimated Tax Liability
                   </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    For tax year 2025
+                    For tax year {selectedYear}
                   </p>
                 </div>
                 <div className="text-3xl font-bold text-orange-600">
-                  {formatCurrency(8375)}
+                  {formatCurrency(totalTaxLiability)}
                 </div>
               </div>
             </div>
@@ -384,7 +496,9 @@ export default function TaxSummaryPage() {
       {/* Quarterly Payments */}
       <Card>
         <CardHeader>
-          <CardTitle>Quarterly Income Tax Returns (BIR Form 1701Q)</CardTitle>
+          <CardTitle>
+            Quarterly Income Tax Returns (BIR Form 1701Q)
+          </CardTitle>
           <CardDescription>
             Schedule and track your quarterly tax filings with BIR
           </CardDescription>
@@ -400,62 +514,40 @@ export default function TaxSummaryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              <TableRow>
-                <TableCell className="font-medium">Q1 2025</TableCell>
-                <TableCell>May 15, 2025</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(2094)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="default" className="bg-green-600">
-                    Paid
-                  </Badge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Q2 2025</TableCell>
-                <TableCell>August 15, 2025</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(2094)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="default" className="bg-green-600">
-                    Paid
-                  </Badge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Q3 2025</TableCell>
-                <TableCell>November 15, 2025</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(2094)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="default" className="bg-green-600">
-                    Paid
-                  </Badge>
-                </TableCell>
-              </TableRow>
-              <TableRow>
-                <TableCell className="font-medium">Q4 2025</TableCell>
-                <TableCell>January 25, 2026</TableCell>
-                <TableCell className="text-right">
-                  {formatCurrency(2094)}
-                </TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="outline" className="text-orange-600">
-                    Due Soon
-                  </Badge>
-                </TableCell>
-              </TableRow>
+              {quarterRows.map((q) => {
+                const status = quarterStatus(q.due);
+                return (
+                  <TableRow key={q.label}>
+                    <TableCell className="font-medium">{q.label}</TableCell>
+                    <TableCell>{q.due}</TableCell>
+                    <TableCell className="text-right">
+                      {formatCurrency(quarterlyPayment)}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {status === "Paid" ? (
+                        <Badge variant="default" className="bg-green-600">
+                          Paid
+                        </Badge>
+                      ) : (
+                        <Badge
+                          variant="outline"
+                          className="text-orange-600"
+                        >
+                          Due Soon
+                        </Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
               <TableRow className="border-t-2 bg-muted/30">
                 <TableCell colSpan={2} className="font-bold">
                   Total Annual Payment
                 </TableCell>
                 <TableCell className="text-right font-bold">
-                  {formatCurrency(8375)}
+                  {formatCurrency(totalTaxLiability)}
                 </TableCell>
-                <TableCell></TableCell>
+                <TableCell />
               </TableRow>
             </TableBody>
           </Table>
@@ -501,37 +593,24 @@ export default function TaxSummaryPage() {
                 <div className="flex items-center gap-3">
                   <FileText className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="font-medium">{doc.name}</p>
-                    <p className="text-sm text-muted-foreground">{doc.form}</p>
+                    <p className="font-medium text-sm">{doc.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Form {doc.form}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Badge
-                    variant={doc.status === "Completed" ? "default" : "outline"}
-                  >
-                    {doc.status}
-                  </Badge>
-                  <Button variant="ghost" size="sm">
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Badge
+                  variant={
+                    doc.status === "Completed" ? "default" : "outline"
+                  }
+                >
+                  {doc.status}
+                </Badge>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
-
-      {/* Important Notice */}
-      <Alert variant="default">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Important Tax Notice</AlertTitle>
-        <AlertDescription>
-          These are estimated tax calculations based on your current financial
-          data. Tax laws are complex and change frequently. Please consult with
-          a qualified tax professional or CPA for accurate tax planning, filing,
-          and compliance with all applicable tax regulations.
-        </AlertDescription>
-      </Alert>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Card,
   CardContent,
@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,78 +53,44 @@ import {
   TrendingDown,
 } from "lucide-react";
 import { TransactionForm } from "@/components/forms/transaction-form/form";
-import { formatCurrency } from "@/lib/utils";
+import { useCurrency } from "@/hooks/use-currency";
+import { useJournalEntries } from "@/hooks/use-journal-entries";
+import {
+  JournalEntryType,
+  JournalEntryStatus,
+} from "@/lib/types/journal-entry";
+import { downloadCsv } from "@/lib/utils/csv-export";
 
-interface Transaction {
-  id: string;
-  date: string;
-  description: string;
-  category: string;
-  type: "income" | "expense";
-  amount: number;
-  status: "completed" | "pending" | "failed";
-  paymentMethod: string;
-  client?: string;
+const ENTRY_TYPE_LABELS: Record<number, string> = {
+  [JournalEntryType.MANUAL]: "Manual",
+  [JournalEntryType.AUTO_INVOICE]: "Invoice",
+  [JournalEntryType.AUTO_PAYMENT]: "Payment",
+  [JournalEntryType.AUTO_BILL]: "Bill Payment",
+};
+
+function getTransactionType(
+  entryType: JournalEntryType,
+): "income" | "expense" | "journal" {
+  if (
+    entryType === JournalEntryType.AUTO_INVOICE ||
+    entryType === JournalEntryType.AUTO_PAYMENT
+  )
+    return "income";
+  if (entryType === JournalEntryType.AUTO_BILL) return "expense";
+  return "journal";
 }
 
-const mockTransactions: Transaction[] = [
-  {
-    id: "TXN-001",
-    date: "2025-11-20",
-    description: "Consulting Services - ABC Corp",
-    category: "Professional Services",
-    type: "income",
-    amount: 5000.0,
-    status: "completed",
-    paymentMethod: "Bank Transfer",
-    client: "ABC Corp",
-  },
-  {
-    id: "TXN-002",
-    date: "2025-11-19",
-    description: "Office Supplies - Staples",
-    category: "Office Expenses",
-    type: "expense",
-    amount: 324.5,
-    status: "completed",
-    paymentMethod: "Credit Card",
-  },
-  {
-    id: "TXN-003",
-    date: "2025-11-18",
-    description: "Monthly Retainer - XYZ Inc",
-    category: "Recurring Revenue",
-    type: "income",
-    amount: 3500.0,
-    status: "completed",
-    paymentMethod: "ACH",
-    client: "XYZ Inc",
-  },
-  {
-    id: "TXN-004",
-    date: "2025-11-17",
-    description: "Software Subscription - Adobe",
-    category: "Software & Tools",
-    type: "expense",
-    amount: 79.99,
-    status: "completed",
-    paymentMethod: "Credit Card",
-  },
-  {
-    id: "TXN-005",
-    date: "2025-11-15",
-    description: "Project Payment - Tech Solutions",
-    category: "Project Revenue",
-    type: "income",
-    amount: 8750.0,
-    status: "pending",
-    paymentMethod: "Check",
-    client: "Tech Solutions",
-  },
-];
+function statusVariant(
+  status: JournalEntryStatus,
+): "default" | "outline" | "destructive" | "secondary" {
+  if (status === JournalEntryStatus.POSTED) return "default";
+  if (status === JournalEntryStatus.VOID) return "destructive";
+  return "outline";
+}
 
 export default function TransactionsPage() {
-  const [transactions] = useState<Transaction[]>(mockTransactions);
+  const { data: entries = [], isLoading } = useJournalEntries({ limit: 200 });
+  const { formatCurrency: format } = useCurrency();
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("all");
@@ -131,42 +98,72 @@ export default function TransactionsPage() {
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    const matchesSearch =
-      transaction.description
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) ||
-      transaction.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesType = filterType === "all" || transaction.type === filterType;
-    const matchesStatus =
-      filterStatus === "all" || transaction.status === filterStatus;
-    const txDate = new Date(transaction.date);
-    const withinStart = !startDate || txDate >= new Date(startDate);
-    const withinEnd = !endDate || txDate <= new Date(endDate);
-    return (
-      matchesSearch && matchesType && matchesStatus && withinStart && withinEnd
-    );
-  });
+  const filteredEntries = useMemo(() => {
+    return (entries ?? []).filter((entry) => {
+      const desc = (entry.description ?? entry.entryNumber ?? "").toLowerCase();
+      const matchesSearch =
+        desc.includes(searchQuery.toLowerCase()) ||
+        entry.entryNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      const txType = getTransactionType(entry.entryType);
+      const matchesType = filterType === "all" || filterType === txType;
+      const matchesStatus =
+        filterStatus === "all" || entry.status === filterStatus;
+      const txDate = new Date(entry.entryDate);
+      const withinStart = !startDate || txDate >= new Date(startDate);
+      const withinEnd = !endDate || txDate <= new Date(endDate);
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesStatus &&
+        withinStart &&
+        withinEnd
+      );
+    });
+  }, [entries, searchQuery, filterType, filterStatus, startDate, endDate]);
 
-  const totalIncome = transactions
-    .filter((t) => t.type === "income" && t.status === "completed")
-    .reduce((sum, t) => sum + t.amount, 0);
+  const totalIncome = useMemo(
+    () =>
+      (entries ?? [])
+        .filter(
+          (e) =>
+            getTransactionType(e.entryType) === "income" &&
+            e.status === JournalEntryStatus.POSTED,
+        )
+        .reduce((sum, e) => sum + e.totalDebit, 0),
+    [entries],
+  );
 
-  const totalExpenses = transactions
-    .filter((t) => t.type === "expense" && t.status === "completed")
-    .reduce((sum, t) => sum + t.amount, 0);
+  const totalExpenses = useMemo(
+    () =>
+      (entries ?? [])
+        .filter(
+          (e) =>
+            getTransactionType(e.entryType) === "expense" &&
+            e.status === JournalEntryStatus.POSTED,
+        )
+        .reduce((sum, e) => sum + e.totalDebit, 0),
+    [entries],
+  );
 
   const netIncome = totalIncome - totalExpenses;
-  const pendingIncome = transactions
-    .filter((t) => t.type === "income" && t.status === "pending")
-    .reduce((s, t) => s + t.amount, 0);
-  const incomeCompletionPct =
-    totalIncome + pendingIncome > 0
-      ? (totalIncome / (totalIncome + pendingIncome)) * 100
-      : 0;
   const expenseSharePct =
     totalIncome > 0 ? (totalExpenses / totalIncome) * 100 : 0;
   const netMarginPct = totalIncome > 0 ? (netIncome / totalIncome) * 100 : 0;
+
+  const handleExport = () => {
+    const rows = filteredEntries.map((entry) => ({
+      "Entry #": entry.entryNumber,
+      Date: entry.entryDate,
+      Description: entry.description ?? "",
+      Type: ENTRY_TYPE_LABELS[entry.entryType] ?? "Manual",
+      Amount: entry.totalDebit,
+      Status: entry.status,
+    }));
+    downloadCsv(
+      `transactions-${new Date().toISOString().split("T")[0]}.csv`,
+      rows,
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6 pb-8">
@@ -211,18 +208,15 @@ export default function TransactionsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalIncome)}
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center gap-1 text-xs text-green-600 bg-green-500/10 px-2 py-0.5 rounded-full">
-                <TrendingUp className="h-3 w-3" />
-                <span>{incomeCompletionPct.toFixed(1)}%</span>
-              </div>
-              <p className="text-xs text-muted-foreground">completion</p>
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : (
+              <div className="text-2xl font-bold">{format(totalIncome)}</div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">Posted entries</p>
           </CardContent>
         </Card>
+
         <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
           <div className="absolute inset-0 bg-linear-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
@@ -234,18 +228,17 @@ export default function TransactionsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {formatCurrency(totalExpenses)}
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center gap-1 text-xs text-red-600 bg-red-500/10 px-2 py-0.5 rounded-full">
-                <TrendingDown className="h-3 w-3" />
-                <span>{expenseSharePct.toFixed(1)}%</span>
-              </div>
-              <p className="text-xs text-muted-foreground">of income</p>
-            </div>
+            {isLoading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : (
+              <div className="text-2xl font-bold">{format(totalExpenses)}</div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {expenseSharePct.toFixed(1)}% of income
+            </p>
           </CardContent>
         </Card>
+
         <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
           <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 relative">
@@ -257,23 +250,23 @@ export default function TransactionsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div
-              className={`text-2xl font-bold ${netIncome >= 0 ? "text-blue-600" : "text-red-600"}`}
-            >
-              {formatCurrency(netIncome)}
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex items-center gap-1 text-xs ${netIncome >=0 ? 'text-blue-600' : 'text-red-600'} bg-blue-500/10 px-2 py-0.5 rounded-full">
-                <Receipt className="h-3 w-3" />
-                <span>{netMarginPct.toFixed(1)}%</span>
+            {isLoading ? (
+              <Skeleton className="h-8 w-32" />
+            ) : (
+              <div
+                className={`text-2xl font-bold ${netIncome >= 0 ? "text-blue-600" : "text-red-600"}`}
+              >
+                {format(netIncome)}
               </div>
-              <p className="text-xs text-muted-foreground">margin</p>
-            </div>
+            )}
+            <p className="text-xs text-muted-foreground mt-1">
+              {netMarginPct.toFixed(1)}% margin
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filters and Search */}
+      {/* Table */}
       <Card className="border-border/50">
         <CardHeader className="border-b border-border/50 bg-muted/30">
           <CardTitle>All Transactions</CardTitle>
@@ -282,36 +275,42 @@ export default function TransactionsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-6">
+          {/* Filters */}
           <div className="flex flex-col gap-4 mb-4">
             <div className="grid gap-4 md:grid-cols-6">
               <div className="relative md:col-span-2">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by ID or description..."
+                  placeholder="Search by entry # or description..."
                   className="pl-8"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger>
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Types</SelectItem>
                   <SelectItem value="income">Income</SelectItem>
                   <SelectItem value="expense">Expense</SelectItem>
+                  <SelectItem value="journal">Journal</SelectItem>
                 </SelectContent>
               </Select>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-full">
+                <SelectTrigger>
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
+                  <SelectItem value={JournalEntryStatus.POSTED}>
+                    Posted
+                  </SelectItem>
+                  <SelectItem value={JournalEntryStatus.DRAFT}>
+                    Draft
+                  </SelectItem>
+                  <SelectItem value={JournalEntryStatus.VOID}>Void</SelectItem>
                 </SelectContent>
               </Select>
               <Input
@@ -319,29 +318,19 @@ export default function TransactionsPage() {
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
                 className="w-full"
-                placeholder="Start date"
               />
               <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
                 className="w-full"
-                placeholder="End date"
               />
             </div>
-            <div className="flex justify-end">
-              <Button
-                variant="outline"
-                size="sm"
-                className="hover:bg-accent/50"
-              >
-                <Download className="mr-2 h-4 w-4" /> Export CSV
-              </Button>
+            <div className="flex justify-end gap-2">
               {(startDate || endDate) && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="ml-2"
                   onClick={() => {
                     setStartDate("");
                     setEndDate("");
@@ -350,6 +339,14 @@ export default function TransactionsPage() {
                   Clear Dates
                 </Button>
               )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleExport}
+                disabled={filteredEntries.length === 0}
+              >
+                <Download className="mr-2 h-4 w-4" /> Export CSV
+              </Button>
             </div>
           </div>
 
@@ -357,10 +354,9 @@ export default function TransactionsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>ID</TableHead>
+                  <TableHead>Entry #</TableHead>
                   <TableHead>Date</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead>Category</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
@@ -368,82 +364,94 @@ export default function TransactionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTransactions.map((transaction) => (
-                  <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">
-                      {transaction.id}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(transaction.date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {transaction.description}
-                        </span>
-                        {transaction.client && (
-                          <span className="text-xs text-muted-foreground">
-                            {transaction.client}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{transaction.category}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          transaction.type === "income"
-                            ? "default"
-                            : "secondary"
-                        }
-                      >
-                        {transaction.type}
-                      </Badge>
-                    </TableCell>
+                {isLoading ? (
+                  Array.from({ length: 6 }).map((_, i) => (
+                    <TableRow key={i}>
+                      {Array.from({ length: 7 }).map((_, j) => (
+                        <TableCell key={j}>
+                          <Skeleton className="h-5 w-full" />
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : filteredEntries.length === 0 ? (
+                  <TableRow>
                     <TableCell
-                      className={
-                        transaction.type === "income"
-                          ? "text-green-600 font-semibold"
-                          : "text-red-600 font-semibold"
-                      }
+                      colSpan={7}
+                      className="text-center py-8 text-muted-foreground"
                     >
-                      {transaction.type === "income" ? "+" : "-"}
-                      {formatCurrency(transaction.amount)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          transaction.status === "completed"
-                            ? "default"
-                            : transaction.status === "pending"
-                              ? "outline"
-                              : "destructive"
-                        }
-                      >
-                        {transaction.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                          <DropdownMenuItem>View Details</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Transaction</DropdownMenuItem>
-                          <DropdownMenuItem>Download Receipt</DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive">
-                            Delete Transaction
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      No transactions found
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredEntries.map((entry) => {
+                    const txType = getTransactionType(entry.entryType);
+                    return (
+                      <TableRow key={entry._id}>
+                        <TableCell className="font-medium whitespace-nowrap">
+                          {entry.entryNumber}
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap">
+                          {new Date(entry.entryDate).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell className="max-w-60 truncate">
+                          {entry.description ?? entry.entryNumber}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              txType === "income"
+                                ? "default"
+                                : txType === "expense"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                          >
+                            {ENTRY_TYPE_LABELS[entry.entryType] ?? "Manual"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell
+                          className={
+                            txType === "income"
+                              ? "text-green-600 font-semibold"
+                              : txType === "expense"
+                                ? "text-red-600 font-semibold"
+                                : "font-semibold"
+                          }
+                        >
+                          {txType === "income"
+                            ? "+"
+                            : txType === "expense"
+                              ? "−"
+                              : ""}
+                          {format(entry.totalDebit)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={statusVariant(entry.status)}>
+                            {entry.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                              <DropdownMenuItem>View Details</DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive">
+                                Void Entry
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>

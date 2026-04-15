@@ -15,6 +15,7 @@ import {
   useSession,
   authClient,
 } from "@/lib/config/auth-client";
+import { OrgRole } from "@sas/validators";
 
 export type OrganizationClient = {
   list: () => Promise<{ data?: Organization[]; error?: unknown } | undefined>;
@@ -112,20 +113,6 @@ export function useOrganization(): UseOrganizationReturn {
   const { data: sessionData } = useSession();
   const { data: organizationsData } = useListOrganizations();
 
-  // Debug logging (only when data changes)
-  useEffect(() => {
-    console.log("[useOrganization] Hook state:", {
-      activeOrgData,
-      hasActiveOrg: !!activeOrgData,
-      isPending,
-      error,
-      sessionExists: !!sessionData,
-      organizationsCount: Array.isArray(organizationsData)
-        ? organizationsData.length
-        : 0,
-    });
-  }, [activeOrgData, isPending, error, sessionData, organizationsData]);
-
   // Better-auth's useActiveOrganization returns the organization directly in data
   // If null/undefined, it means no active organization is set
   const activeOrganization =
@@ -155,22 +142,22 @@ export function useOrganization(): UseOrganizationReturn {
 
   const hasActiveOrganization = useMemo(
     () => !!activeOrganization,
-    [activeOrganization]
+    [activeOrganization],
   );
 
   const organizationId = useMemo(
     () => activeOrganization?.id,
-    [activeOrganization]
+    [activeOrganization],
   );
 
   const organizationName = useMemo(
     () => activeOrganization?.name,
-    [activeOrganization]
+    [activeOrganization],
   );
 
   const organizationSlug = useMemo(
     () => activeOrganization?.slug,
-    [activeOrganization]
+    [activeOrganization],
   );
 
   // Get data from metadata (nested objects)
@@ -180,11 +167,11 @@ export function useOrganization(): UseOrganizationReturn {
   const industry = useMemo(() => metadata?.industry, [metadata?.industry]);
   const companySize = useMemo(
     () => metadata?.companySize,
-    [metadata?.companySize]
+    [metadata?.companySize],
   );
   const description = useMemo(
     () => metadata?.description,
-    [metadata?.description]
+    [metadata?.description],
   );
 
   return {
@@ -217,13 +204,31 @@ export function useOrganization(): UseOrganizationReturn {
  * Hook for checking organization member role
  * @returns Member role utilities
  */
+/**
+ * Hook for checking the current user's role within the active organization.
+ * Returns synchronous boolean flags derived from the BetterAuth session/membership data.
+ */
 export function useOrganizationRole() {
-  const getRole = async (): Promise<string | null> => null;
-  const isOwner = async (): Promise<boolean> => false;
-  const isAdmin = async (): Promise<boolean> => false;
-  const isMember = async (): Promise<boolean> => false;
+  const { data: activeOrgData } = useActiveOrganization();
+  const { data: sessionData } = useSession();
 
-  return { getRole, isOwner, isAdmin, isMember };
+  const currentUserId = (sessionData as any)?.user?.id as string | undefined;
+
+  // BetterAuth organization member role comes from the session or membership list
+  const memberRole = useMemo<string | null>(() => {
+    if (!activeOrgData || !currentUserId) return null;
+    const members: any[] = (activeOrgData as any)?.members ?? [];
+    const me = members.find((m: any) => m.userId === currentUserId);
+    return (me?.role as string) ?? null;
+  }, [activeOrgData, currentUserId]);
+
+  const isOwner = memberRole === OrgRole.owner;
+  const isAdmin = memberRole === OrgRole.admin || isOwner;
+  const isAccountant = memberRole === OrgRole.accountant;
+  const isStaff = memberRole === OrgRole.staff;
+  const isViewer = memberRole === OrgRole.viewer;
+
+  return { memberRole, isOwner, isAdmin, isAccountant, isStaff, isViewer };
 }
 
 /**

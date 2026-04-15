@@ -8,6 +8,7 @@ import { z } from "zod";
 import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { useOrganization } from "@/hooks/use-organization";
+import { permissionsService } from "@/lib/services/permissions.service";
 import type {
   BusinessType,
   CompanyAddress,
@@ -313,6 +314,17 @@ export function CompanySetupForm({
       // Force refresh the session to get updated user data and set active organization
       console.log("Setting active organization and refreshing session...");
       await organization.setActive({ organizationId });
+
+      // Explicitly provision MemberPermission with owner role.
+      // This eliminates a race condition where usePermissions fires before
+      // the session reflects the new org, causing a 403 on the effective-permissions endpoint.
+      try {
+        await permissionsService.provisionMember(organizationId, "owner");
+      } catch {
+        // Non-fatal — auto-assign fallback in resolvePermissions will handle it,
+        // but explicit provisioning ensures no permission denied on first load.
+      }
+
       await refetchSession();
       console.log("Session updated successfully");
 

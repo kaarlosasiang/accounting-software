@@ -1,6 +1,10 @@
 import express from "express";
 import { billController } from "./billController.js";
-import { requireAuth } from "../../shared/middleware/auth.middleware.js";
+import {
+  requireAuth,
+  requirePermission,
+} from "../../shared/middleware/auth.middleware.js";
+import { Action, Resource } from "../../shared/auth/permissions.js";
 
 const billRoutes = express.Router();
 
@@ -12,32 +16,84 @@ billRoutes.use(requireAuth);
  */
 
 // Search bills (must be before /:id routes)
-billRoutes.get("/search", billController.searchBills);
+billRoutes.get(
+  "/search",
+  requirePermission(Resource.bill, Action.read),
+  billController.searchBills,
+);
 
 // Get overdue bills (must be before /:id routes)
-billRoutes.get("/overdue", billController.getOverdueBills);
+billRoutes.get(
+  "/overdue",
+  requirePermission(Resource.bill, Action.read),
+  billController.getOverdueBills,
+);
 
 // Get bills by supplier (must be before /:id routes)
-billRoutes.get("/supplier/:supplierId", billController.getBillsBySupplier);
+billRoutes.get(
+  "/supplier/:supplierId",
+  requirePermission(Resource.bill, Action.read),
+  billController.getBillsBySupplier,
+);
 
 // Get bills by status (must be before /:id routes)
-billRoutes.get("/status/:status", billController.getBillsByStatus);
+billRoutes.get(
+  "/status/:status",
+  requirePermission(Resource.bill, Action.read),
+  billController.getBillsByStatus,
+);
 
 // CRUD operations
-billRoutes.get("/", billController.getAllBills);
-billRoutes.get("/:id", billController.getBillById);
-billRoutes.post("/", billController.createBill);
-billRoutes.put("/:id", billController.updateBill);
-billRoutes.delete("/:id", billController.deleteBill);
+billRoutes.get(
+  "/",
+  requirePermission(Resource.bill, Action.read),
+  billController.getAllBills,
+);
+billRoutes.get(
+  "/:id",
+  requirePermission(Resource.bill, Action.read),
+  billController.getBillById,
+);
+billRoutes.post(
+  "/",
+  requirePermission(Resource.bill, Action.create),
+  billController.createBill,
+);
+billRoutes.put(
+  "/:id",
+  requirePermission(Resource.bill, Action.update),
+  billController.updateBill,
+);
+billRoutes.delete(
+  "/:id",
+  requirePermission(Resource.bill, Action.delete),
+  billController.deleteBill,
+);
 
 // Void bill
-billRoutes.post("/:id/void", billController.voidBill);
+billRoutes.post(
+  "/:id/void",
+  requirePermission(Resource.bill, Action.update),
+  billController.voidBill,
+);
 
 // Approve bill
-billRoutes.post("/:id/approve", billController.approveBill);
+billRoutes.post(
+  "/:id/approve",
+  requirePermission(Resource.bill, Action.update),
+  billController.approveBill,
+);
 
 // Payment operations
-billRoutes.post("/:id/payments", billController.recordPayment);
-billRoutes.get("/:id/payments", billController.getBillPayments);
+billRoutes.post(
+  "/:id/payments",
+  requirePermission(Resource.bill, Action.update),
+  billController.recordPayment,
+);
+billRoutes.get(
+  "/:id/payments",
+  requirePermission(Resource.bill, Action.read),
+  billController.getBillPayments,
+);
 
 export { billRoutes };

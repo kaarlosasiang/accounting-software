@@ -44,6 +44,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { downloadCsv } from "@/lib/utils/csv-export";
 import { format } from "date-fns";
 
 export default function GeneralLedgerPage() {
@@ -53,6 +54,7 @@ export default function GeneralLedgerPage() {
   const [expandedAccounts, setExpandedAccounts] = useState<Set<string>>(
     new Set(),
   );
+  const [activeTab, setActiveTab] = useState("general-ledger");
 
   const { accounts } = useAccounts();
   const { data: generalLedger, isLoading: isLoadingGL } = useGeneralLedger(
@@ -77,6 +79,47 @@ export default function GeneralLedgerPage() {
     (item) => selectedAccount === "all" || item.account._id === selectedAccount,
   );
 
+  const handleExport = () => {
+    const date = new Date().toISOString().split("T")[0];
+    if (activeTab === "trial-balance" && trialBalance) {
+      const rows = trialBalance.accounts.map((a) => ({
+        "Account Code": a.accountCode,
+        "Account Name": a.accountName,
+        "Account Type": a.accountType,
+        Debit: a.debit,
+        Credit: a.credit,
+      }));
+      rows.push({
+        "Account Code": "",
+        "Account Name": "TOTALS",
+        "Account Type": "",
+        Debit: trialBalance.totals.debits,
+        Credit: trialBalance.totals.credits,
+      });
+      downloadCsv(`trial-balance-${date}.csv`, rows);
+    } else if (filteredLedger && filteredLedger.length > 0) {
+      const rows = filteredLedger.flatMap((acct) =>
+        acct.entries.map((e) => ({
+          Account: acct.account.accountName,
+          "Account Code": acct.account.accountCode,
+          Date: format(new Date(e.transactionDate), "yyyy-MM-dd"),
+          Description: e.description,
+          "Entry #": e.entryNumber,
+          Debit: e.debit,
+          Credit: e.credit,
+          "Running Balance": e.runningBalance,
+        })),
+      );
+      downloadCsv(`general-ledger-${date}.csv`, rows);
+    }
+  };
+
+  const canExport =
+    (activeTab === "trial-balance" && !!trialBalance) ||
+    (activeTab === "general-ledger" &&
+      !!filteredLedger &&
+      filteredLedger.length > 0);
+
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
@@ -91,9 +134,9 @@ export default function GeneralLedgerPage() {
             Complete transaction history for all accounts
           </p>
         </div>
-        <Button variant="outline">
+        <Button variant="outline" onClick={handleExport} disabled={!canExport}>
           <Download className="mr-2 h-4 w-4" />
-          Export
+          Export CSV
         </Button>
       </div>
 
@@ -151,7 +194,11 @@ export default function GeneralLedgerPage() {
       </Card>
 
       {/* Tabs for General Ledger and Trial Balance */}
-      <Tabs defaultValue="general-ledger" className="space-y-4">
+      <Tabs
+        defaultValue="general-ledger"
+        className="space-y-4"
+        onValueChange={setActiveTab}
+      >
         <TabsList>
           <TabsTrigger value="general-ledger">General Ledger</TabsTrigger>
           <TabsTrigger value="trial-balance">Trial Balance</TabsTrigger>
