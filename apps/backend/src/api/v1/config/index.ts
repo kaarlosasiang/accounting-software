@@ -15,7 +15,7 @@ const constants = {
 
   // Database
   mongodbUri: process.env.MONGODB_URI as string,
-  dbName: process.env.DB_NAME || "rrd10-sas",
+  dbName: process.env.DB_NAME || "accounting-software",
 
   // JWT (for future auth)
   jwtSecret: (() => {

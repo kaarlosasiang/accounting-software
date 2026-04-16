@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { authClient, useListOrganizations } from "@/lib/config/auth-client";
 
 /**
  * Higher-order component to protect routes that require authentication.
@@ -30,18 +31,29 @@ export function withAuth<P extends object>(
 
   return function AuthenticatedComponent(props: P) {
     const { user, session, isLoading } = useAuth();
+    const { data: orgListData, isPending: orgListPending } = useListOrganizations();
     const router = useRouter();
     const pathname = usePathname();
 
+    const hasOrgAccess = !!(session as any)?.activeOrganizationId;
+    const orgs = (orgListData as any[] | null | undefined) ?? [];
+    const hasOrgs = orgs.length > 0;
+
+    // When no activeOrganizationId in session but the user already belongs to an
+    // org (e.g. after a re-deploy that changed BETTER_AUTH_SECRET), auto-activate
+    // the first org so API calls get a companyId without forcing company-setup.
     useEffect(() => {
-      // console.log("[withAuth] effect check:", {
-      //   isLoading,
-      //   hasUser: !!user,
-      //   hasActiveSubscription: user
-      //     ? (user as any).hasActiveSubscription
-      //     : undefined,
-      //   requireSubscription,
-      // });
+      if (hasOrgAccess || orgListPending || isLoading || !user || !hasOrgs) return;
+      const firstOrg = orgs[0];
+      if (firstOrg?.id) {
+        (authClient as any).organization
+          .setActive({ organizationId: firstOrg.id })
+          .catch(() => {});
+      }
+    }, [hasOrgAccess, orgListPending, isLoading, user, hasOrgs, orgs]);
+
+    useEffect(() => {
+      if (isLoading || orgListPending) return;
 
       if (!isLoading && !user) {
         router.replace(redirectTo);
@@ -54,16 +66,19 @@ export function withAuth<P extends object>(
         return;
       }
 
+      // Org access: either session has activeOrganizationId OR user already has orgs
+      // (the auto-setActive above will fix up the session in the background).
+      const effectiveOrgAccess = hasOrgAccess || hasOrgs;
+
       // Check if subscription is required.
       // Invited members are covered by their org's subscription — allow through
       // if they have an active organization, even without a personal subscription.
-      const hasOrgAccess = !!(session as any)?.activeOrganizationId;
       if (
         !isLoading &&
         user &&
         requireSubscription &&
         !(user as any).hasActiveSubscription &&
-        !hasOrgAccess
+        !effectiveOrgAccess
       ) {
         router.replace("/plans");
         return;
@@ -74,17 +89,17 @@ export function withAuth<P extends object>(
       if (
         !isLoading &&
         user &&
-        !hasOrgAccess &&
+        !effectiveOrgAccess &&
         !pathname?.startsWith("/company-setup") &&
         !pathname?.startsWith("/plans")
       ) {
         router.replace("/company-setup");
         return;
       }
-    }, [user, session, isLoading, router, requireSubscription, pathname]);
+    }, [user, session, isLoading, router, requireSubscription, pathname, hasOrgAccess, hasOrgs, orgListPending]);
 
     // Show loading state while checking authentication
-    if (isLoading) {
+    if (isLoading || orgListPending) {
       return (
         <div className="flex min-h-screen items-center justify-center">
           <div className="text-center">
@@ -107,11 +122,11 @@ export function withAuth<P extends object>(
 
     // Don't render if subscription is required and user is not subscribed
     // (org members are covered by the org owner's subscription)
-    const hasOrgAccess = !!(session as any)?.activeOrganizationId;
+    const effectiveOrgAccess = hasOrgAccess || hasOrgs;
     if (
       requireSubscription &&
       !(user as any).hasActiveSubscription &&
-      !hasOrgAccess
+      !effectiveOrgAccess
     ) {
       return null;
     }
