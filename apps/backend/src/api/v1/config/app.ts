@@ -16,6 +16,11 @@ import { constants } from "./index.js";
 import logger from "./logger.js";
 
 export default (app: Application): Application => {
+  // Trust the reverse proxy (nginx) so req.secure, req.protocol and req.ip
+  // reflect the original HTTPS connection instead of the internal HTTP hop.
+  // Required for Secure cookies and OAuth redirects to work behind a proxy.
+  app.set("trust proxy", 1);
+
   // Security middleware - disable CSP for Better Auth
   app.use(
     helmet({
@@ -42,7 +47,14 @@ export default (app: Application): Application => {
       },
       credentials: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "X-Requested-With",
+        "Accept",
+        "Origin",
+      ],
+      exposedHeaders: ["Set-Cookie"],
       optionsSuccessStatus: 200,
     }),
   );
