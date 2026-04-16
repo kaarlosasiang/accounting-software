@@ -54,9 +54,14 @@ const constants = {
     `${process.env.API_BASE_URL || `http://localhost:${Number(process.env.PORT) || 4000}`}/api/v1/auth`,
   // Origin-only URL for Better-Auth baseURL (must not include path)
   betterAuthOrigin: (() => {
-    const url = process.env.BETTER_AUTH_URL ||
+    const url =
+      process.env.BETTER_AUTH_URL ||
       `http://localhost:${Number(process.env.PORT) || 4000}`;
-    try { return new URL(url).origin; } catch { return url; }
+    try {
+      return new URL(url).origin;
+    } catch {
+      return url;
+    }
   })(),
   googleClientId: process.env.GOOGLE_CLIENT_ID || "",
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
