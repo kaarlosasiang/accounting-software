@@ -34,7 +34,7 @@ const userController = {
       const result = await userService.updateUserRole(
         validationResult.data.userId,
         validationResult.data.role,
-        validationResult.data.companyId
+        validationResult.data.companyId,
       );
 
       if (result.matchedCount === 0) {
@@ -87,7 +87,10 @@ const userController = {
         });
       }
 
-      const user = await userService.createPersonnel(parsed.data, organizationId);
+      const user = await userService.createPersonnel(
+        parsed.data,
+        organizationId,
+      );
 
       return res.status(201).json({
         success: true,

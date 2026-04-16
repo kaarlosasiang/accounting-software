@@ -103,15 +103,11 @@ export function AddPersonnelDialog({
 
   const handleNextStep = () => {
     // Validate step-1 fields before advancing
-    form.trigger([
-      "first_name",
-      "last_name",
-      "email",
-      "password",
-      "orgRole",
-    ]).then((valid) => {
-      if (valid) setStep(2);
-    });
+    form
+      .trigger(["first_name", "last_name", "email", "password", "orgRole"])
+      .then((valid) => {
+        if (valid) setStep(2);
+      });
   };
 
   const handleSubmit = form.handleSubmit(async (values) => {
@@ -323,8 +319,8 @@ export function AddPersonnelDialog({
               <div className="space-y-4 py-2">
                 <p className="text-sm text-muted-foreground">
                   Override individual permissions on top of the{" "}
-                  <span className="font-medium capitalize">{orgRole}</span>{" "}
-                  role defaults. Leave empty to use the role&apos;s defaults.
+                  <span className="font-medium capitalize">{orgRole}</span> role
+                  defaults. Leave empty to use the role&apos;s defaults.
                 </p>
                 <RolePermissionMatrix
                   mode="override"
@@ -342,11 +338,7 @@ export function AddPersonnelDialog({
         <DialogFooter className="gap-2">
           {step === 1 ? (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleClose}
-              >
+              <Button type="button" variant="outline" onClick={handleClose}>
                 Cancel
               </Button>
               <Button type="button" onClick={handleNextStep}>

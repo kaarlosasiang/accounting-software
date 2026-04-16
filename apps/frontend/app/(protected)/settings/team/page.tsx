@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Users, Lock, Pencil, Trash2, Plus, UserPlus, Mail, Clock } from "lucide-react";
+import {
+  Users,
+  Lock,
+  Pencil,
+  Trash2,
+  Plus,
+  UserPlus,
+  Mail,
+  Clock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Resource, Action, OrgRole, type RoleDto } from "@sas/validators";
 import { withPermissionGuard } from "@/lib/auth/permission-guard";

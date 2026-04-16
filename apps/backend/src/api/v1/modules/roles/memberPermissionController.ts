@@ -52,8 +52,14 @@ export const memberPermissionController = {
           if (pending) {
             await memberPermissionService.assignRole(userId, organizationId, {
               roleId: pending.roleId.toString(),
-              grants: pending.grants as { resource: string; actions: string[] }[],
-              revocations: pending.revocations as { resource: string; actions: string[] }[],
+              grants: pending.grants as {
+                resource: string;
+                actions: string[];
+              }[],
+              revocations: pending.revocations as {
+                resource: string;
+                actions: string[];
+              }[],
             });
 
             logger.info("Applied pending invite permissions on provision", {

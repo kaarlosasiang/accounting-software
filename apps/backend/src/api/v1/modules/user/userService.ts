@@ -18,7 +18,7 @@ const userService = {
             companyId,
             companySetupCompletedAt: new Date(),
           },
-        }
+        },
       );
 
       return result;
@@ -36,10 +36,7 @@ const userService = {
    * Security: `organizationId` must come from the caller's session
    *           (getCompanyId(req)), never from the request body.
    */
-  createPersonnel: async (
-    payload: CreatePersonnel,
-    organizationId: string,
-  ) => {
+  createPersonnel: async (payload: CreatePersonnel, organizationId: string) => {
     const {
       first_name,
       middle_name,
@@ -131,11 +128,7 @@ const userService = {
     //    custom memberPermissions collection (step 5) — so we map to the
     //    closest built-in role here.
     const betterAuthOrgRole: "owner" | "admin" | "member" =
-      orgRole === "owner"
-        ? "owner"
-        : orgRole === "admin"
-          ? "admin"
-          : "member";
+      orgRole === "owner" ? "owner" : orgRole === "admin" ? "admin" : "member";
 
     await authServer.api.addMember({
       body: {
