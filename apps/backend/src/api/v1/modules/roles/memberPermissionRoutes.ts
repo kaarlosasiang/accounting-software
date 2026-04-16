@@ -45,4 +45,13 @@ memberPermissionRoutes.patch(
   memberPermissionController.updateOverrides,
 );
 
+// Store pre-configured permissions for a pending invitation.
+// Called before sending the invite so that when the invitee accepts the
+// invitation and hits /provision, their custom role + overrides are applied.
+memberPermissionRoutes.post(
+  "/pending-permissions",
+  requirePermission(Resource.user, Action.create),
+  memberPermissionController.storePendingPermissions,
+);
+
 export default memberPermissionRoutes;

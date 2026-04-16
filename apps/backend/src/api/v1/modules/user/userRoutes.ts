@@ -16,4 +16,10 @@ userRoutes.post(
   userController.updateUserRole,
 );
 
+userRoutes.post(
+  "/",
+  requirePermission(Resource.user, Action.create),
+  userController.createPersonnel,
+);
+
 export default userRoutes;

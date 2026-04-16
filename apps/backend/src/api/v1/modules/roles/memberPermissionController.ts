@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from "express";
+import { Types } from "mongoose";
 import { memberPermissionService } from "./member-permission.service.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
+import PendingInvitePermission from "../../models/PendingInvitePermission.js";
+import logger from "../../config/logger.js";
 
 export const memberPermissionController = {
   /**
@@ -35,6 +38,42 @@ export const memberPermissionController = {
         organizationId,
         roleName,
       );
+
+      // Apply any pre-configured permissions from an enhanced invite.
+      // Look up by the authenticated user's email + the organisation they joined.
+      try {
+        const userEmail = (req.authUser as any)?.email as string | undefined;
+        if (userEmail) {
+          const pending = await PendingInvitePermission.findOneAndDelete({
+            email: userEmail.toLowerCase().trim(),
+            organizationId,
+          });
+
+          if (pending) {
+            await memberPermissionService.assignRole(userId, organizationId, {
+              roleId: pending.roleId.toString(),
+              grants: pending.grants as { resource: string; actions: string[] }[],
+              revocations: pending.revocations as { resource: string; actions: string[] }[],
+            });
+
+            logger.info("Applied pending invite permissions on provision", {
+              userId,
+              organizationId,
+              roleId: pending.roleId.toString(),
+            });
+          }
+        }
+      } catch (pendingErr) {
+        // Non-fatal: log but don't fail the provision request
+        logger.warn("Failed to apply pending invite permissions", {
+          error:
+            pendingErr instanceof Error
+              ? pendingErr.message
+              : String(pendingErr),
+          userId,
+          organizationId,
+        });
+      }
 
       res.status(201).json(record);
     } catch (error) {
@@ -142,6 +181,73 @@ export const memberPermissionController = {
       );
 
       res.json(effective);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * POST /members/pending-permissions
+   * Stores pre-configured role + permission overrides for a pending invitation.
+   * When the invited user accepts and calls /provision, these are automatically
+   * applied instead of the default provisioned role.
+   *
+   * Body: { email, organizationId, roleId, grants?, revocations? }
+   * Requires: Resource.user + Action.create
+   */
+  async storePendingPermissions(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const sessionOrgId = getCompanyId(req);
+      if (!sessionOrgId) {
+        res.status(400).json({ error: "Active company not found in session" });
+        return;
+      }
+
+      const {
+        email,
+        roleId,
+        grants = [],
+        revocations = [],
+      } = req.body as {
+        email?: string;
+        roleId?: string;
+        grants?: { resource: string; actions: string[] }[];
+        revocations?: { resource: string; actions: string[] }[];
+      };
+
+      if (!email || !roleId) {
+        res.status(400).json({ error: "email and roleId are required" });
+        return;
+      }
+
+      const record = await PendingInvitePermission.findOneAndUpdate(
+        {
+          email: email.toLowerCase().trim(),
+          organizationId: sessionOrgId,
+        },
+        {
+          $set: {
+            email: email.toLowerCase().trim(),
+            organizationId: sessionOrgId,
+            roleId: new Types.ObjectId(roleId),
+            grants,
+            revocations,
+          },
+        },
+        { upsert: true, new: true },
+      );
+
+      logger.info("Stored pending invite permissions", {
+        email,
+        organizationId: sessionOrgId,
+        roleId,
+      });
+
+      res.status(201).json(record);
     } catch (error) {
       next(error);
     }

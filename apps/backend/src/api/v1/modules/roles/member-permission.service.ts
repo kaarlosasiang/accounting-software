@@ -161,4 +161,58 @@ export const memberPermissionService = {
 
     return record.populate("roleId");
   },
+
+  /**
+   * Provision a MemberPermission record with optional grants/revocations set
+   * at creation time. Used when adding personnel directly (not via invite).
+   *
+   * If a record already exists (upsert no-op from $setOnInsert), the caller
+   * can supply a second PUT to update overrides — but in practice this path
+   * is only hit once per user per org.
+   */
+  async provisionRoleWithOverrides(
+    userId: string,
+    organizationId: string,
+    roleName: string,
+    grants: { resource: string; actions: string[] }[] = [],
+    revocations: { resource: string; actions: string[] }[] = [],
+  ) {
+    const normalized = roleName.trim().toLowerCase();
+    const FALLBACK = "staff";
+    const role =
+      (await Role.findOne({ name: normalized, companyId: null })) ??
+      (await Role.findOne({ name: FALLBACK, companyId: null }));
+
+    if (!role) {
+      throw new Error(
+        `Neither system role "${normalized}" nor fallback "${FALLBACK}" found. ` +
+          `Run seedRoles() to create system roles.`,
+      );
+    }
+
+    // Upsert: create if absent, then always set overrides.
+    // We use findOneAndUpdate with upsert so it's idempotent on the role/grants/revocations.
+    const record = await MemberPermission.findOneAndUpdate(
+      { userId, organizationId },
+      {
+        $setOnInsert: { userId, organizationId },
+        $set: {
+          roleId: role._id,
+          grants,
+          revocations,
+        },
+      },
+      { upsert: true, new: true },
+    );
+
+    logger.info("Provisioned MemberPermission with overrides", {
+      userId,
+      organizationId,
+      roleName,
+      grantsCount: grants.length,
+      revocationsCount: revocations.length,
+    });
+
+    return record.populate("roleId");
+  },
 };

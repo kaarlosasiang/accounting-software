@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { z } from "zod";
 
 import userService from "./userService.js";
+import { createPersonnelSchema } from "@sas/validators";
+import { getCompanyId } from "../../shared/helpers/utils.js";
 
 // Define user role update schema
 const userRoleUpdateSchema = z.object({
@@ -56,6 +58,49 @@ const userController = {
         success: false,
         message: "Failed to update user role",
         error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  },
+
+  /**
+   * POST /api/v1/users
+   * Creates a new user and immediately adds them to the active organisation.
+   * The organizationId is read from the session — never from the request body.
+   * Requires: Resource.user + Action.create permission.
+   */
+  createPersonnel: async (req: Request, res: Response) => {
+    try {
+      const organizationId = getCompanyId(req);
+      if (!organizationId) {
+        return res.status(400).json({
+          success: false,
+          message: "Active company not found in session",
+        });
+      }
+
+      const parsed = createPersonnelSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Validation failed",
+          errors: parsed.error.issues,
+        });
+      }
+
+      const user = await userService.createPersonnel(parsed.data, organizationId);
+
+      return res.status(201).json({
+        success: true,
+        message: "Personnel created successfully",
+        data: user,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to create personnel";
+      const status = message.includes("already exists") ? 409 : 500;
+      return res.status(status).json({
+        success: false,
+        message,
       });
     }
   },

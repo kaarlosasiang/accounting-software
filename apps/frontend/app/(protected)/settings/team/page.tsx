@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Users, Lock, Pencil, Trash2, Plus, UserPlus } from "lucide-react";
+import { Users, Lock, Pencil, Trash2, Plus, UserPlus, Mail, Clock } from "lucide-react";
 import { toast } from "sonner";
 import { Resource, Action, OrgRole, type RoleDto } from "@sas/validators";
 import { withPermissionGuard } from "@/lib/auth/permission-guard";
+import { usePermissions } from "@/hooks/use-permissions";
 import { useRoles } from "@/hooks/use-roles";
 import { useOrganization } from "@/hooks/use-organization";
 import { useDataTable } from "@/hooks/use-data-table";
@@ -12,6 +13,7 @@ import {
   permissionsService,
   type AssignRoleData,
 } from "@/lib/services/permissions.service";
+import { AddPersonnelDialog } from "@/components/forms/add-personnel-dialog/form";
 import {
   RolePermissionMatrix,
   type PermissionMatrixValue,
@@ -78,10 +80,28 @@ type Member = {
   user?: { name?: string; email?: string; image?: string };
 };
 
+type PendingInvitation = {
+  id: string;
+  email: string;
+  role: string;
+  status: string;
+  expiresAt: Date;
+};
+
+// Unified row — discriminated union so columns can render each kind appropriately
+type TableRow =
+  | ({ _kind: "member" } & Member)
+  | ({ _kind: "invite" } & PendingInvitation);
+
 function MembersTab({ roles }: { roles: RoleDto[] }) {
   const { organization, organizationId } = useOrganization();
+  const { can } = usePermissions();
   const [members, setMembers] = useState<Member[]>([]);
+  const [invitations, setInvitations] = useState<PendingInvitation[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
+
+  // Add personnel dialog state
+  const [addPersonnelOpen, setAddPersonnelOpen] = useState(false);
 
   // Invite dialog state
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -103,23 +123,37 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
   // Remove dialog
   const [removeTarget, setRemoveTarget] = useState<Member | null>(null);
 
-  const loadMembers = async () => {
+  const loadData = async () => {
     if (!organizationId) return;
     setLoadingMembers(true);
     try {
-      const result = await (organization as any)?.listMembers({
-        query: { organizationId, limit: 100 },
-      });
-      setMembers(result?.data?.members ?? []);
+      const [membersResult, invitationsResult] = await Promise.allSettled([
+        (organization as any)?.listMembers({
+          query: { organizationId, limit: 100 },
+        }),
+        (organization as any)?.listInvitations({
+          query: { organizationId },
+        }),
+      ]);
+      setMembers(
+        membersResult.status === "fulfilled"
+          ? (membersResult.value?.data?.members ?? [])
+          : [],
+      );
+      const rawInvites: any[] =
+        invitationsResult.status === "fulfilled"
+          ? (invitationsResult.value?.data ?? [])
+          : [];
+      setInvitations(rawInvites.filter((inv) => inv.status === "pending"));
     } catch {
-      toast.error("Failed to load members");
+      toast.error("Failed to load team data");
     } finally {
       setLoadingMembers(false);
     }
   };
 
   useEffect(() => {
-    loadMembers();
+    loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId]);
 
@@ -137,6 +171,7 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
       toast.success(`Invitation sent to ${inviteEmail}`);
       setInviteOpen(false);
       setInviteEmail("");
+      loadData();
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Failed to invite member",
@@ -227,11 +262,24 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
     }
   };
 
-  const memberColumns = useMemo<ColumnDef<Member>[]>(
+  const handleCancelInvitation = async (invitationId: string) => {
+    try {
+      await (organization as any)?.cancelInvitation({ invitationId });
+      setInvitations((prev) => prev.filter((inv) => inv.id !== invitationId));
+      toast.success("Invitation cancelled");
+    } catch {
+      toast.error("Failed to cancel invitation");
+    }
+  };
+
+  const memberColumns = useMemo<ColumnDef<TableRow>[]>(
     () => [
       {
         id: "search",
-        accessorFn: (row) => `${row.user?.name ?? ""} ${row.user?.email ?? ""}`,
+        accessorFn: (row) =>
+          row._kind === "member"
+            ? `${row.user?.name ?? ""} ${row.user?.email ?? ""}`
+            : row.email,
         header: () => null,
         cell: () => null,
         enableColumnFilter: true,
@@ -246,16 +294,37 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
       },
       {
         id: "name",
-        accessorFn: (row) => row.user?.name ?? row.user?.email ?? "Unknown",
+        accessorFn: (row) =>
+          row._kind === "member"
+            ? (row.user?.name ?? row.user?.email ?? "Unknown")
+            : row.email,
         size: 300,
         header: ({ column }) => (
           <DataTableColumnHeader column={column} label="Member" />
         ),
         cell: ({ row }) => {
-          const member = row.original;
+          const r = row.original;
+          if (r._kind === "invite") {
+            const initial = r.email[0]?.toUpperCase() ?? "?";
+            return (
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-8 rounded-full bg-muted/40 border-2 border-dashed border-muted-foreground/25 flex items-center justify-center text-sm font-medium shrink-0 text-muted-foreground">
+                  {initial}
+                </div>
+                <div>
+                  <p className="text-sm font-medium leading-none text-muted-foreground">
+                    {r.email}
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-0.5">
+                    Invite pending
+                  </p>
+                </div>
+              </div>
+            );
+          }
           const initial = (
-            member.user?.name?.[0] ??
-            member.user?.email?.[0] ??
+            r.user?.name?.[0] ??
+            r.user?.email?.[0] ??
             "?"
           ).toUpperCase();
           return (
@@ -265,10 +334,10 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
               </div>
               <div>
                 <p className="text-sm font-medium leading-none">
-                  {member.user?.name ?? "Unknown"}
+                  {r.user?.name ?? "Unknown"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {member.user?.email}
+                  {r.user?.email}
                 </p>
               </div>
             </div>
@@ -304,6 +373,45 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
         },
       },
       {
+        id: "status",
+        accessorFn: (row) => (row._kind === "invite" ? "Pending" : "Active"),
+        size: 110,
+        header: ({ column }) => (
+          <DataTableColumnHeader column={column} label="Status" />
+        ),
+        cell: ({ row }) => {
+          if (row.original._kind === "invite") {
+            return (
+              <Badge
+                variant="outline"
+                className="text-amber-600 border-amber-300 dark:text-amber-400 dark:border-amber-600 gap-1"
+              >
+                <Clock className="h-3 w-3" />
+                Pending
+              </Badge>
+            );
+          }
+          return (
+            <Badge
+              variant="outline"
+              className="text-green-600 border-green-300 dark:text-green-400 dark:border-green-700"
+            >
+              Active
+            </Badge>
+          );
+        },
+        enableColumnFilter: true,
+        enableSorting: true,
+        meta: {
+          label: "Status",
+          variant: "select",
+          options: [
+            { label: "Active", value: "Active" },
+            { label: "Pending", value: "Pending" },
+          ],
+        },
+      },
+      {
         id: "actions",
         size: 0,
         header: ({ column }) => (
@@ -314,13 +422,28 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
           />
         ),
         cell: ({ row }) => {
-          const member = row.original;
+          const r = row.original;
+          if (r._kind === "invite") {
+            return (
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => handleCancelInvitation(r.id)}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Cancel
+                </Button>
+              </div>
+            );
+          }
           return (
             <div className="flex items-center justify-end gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => handleOpenPermDialog(member)}
+                onClick={() => handleOpenPermDialog(r)}
               >
                 <Users className="h-3 w-3 mr-1" />
                 Permissions
@@ -329,7 +452,7 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
                 variant="ghost"
                 size="sm"
                 className="text-destructive hover:text-destructive"
-                onClick={() => setRemoveTarget(member)}
+                onClick={() => setRemoveTarget(r)}
               >
                 <Trash2 className="h-3 w-3" />
               </Button>
@@ -344,10 +467,18 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
     [roles],
   );
 
+  const allRows: TableRow[] = useMemo(
+    () => [
+      ...members.map((m) => ({ ...m, _kind: "member" as const })),
+      ...invitations.map((inv) => ({ ...inv, _kind: "invite" as const })),
+    ],
+    [members, invitations],
+  );
+
   const { table } = useDataTable({
-    data: members,
+    data: allRows,
     columns: memberColumns,
-    pageCount: Math.max(1, Math.ceil(members.length / 10)),
+    pageCount: Math.max(1, Math.ceil(allRows.length / 10)),
     initialState: { pagination: { pageSize: 10, pageIndex: 0 } },
     getRowId: (row) => row.id,
     manualFiltering: false,
@@ -366,21 +497,49 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
       ) : (
         <DataTable table={table}>
           <DataTableToolbar table={table}>
-            <Button size="sm" onClick={() => setInviteOpen(true)}>
-              <UserPlus className="h-4 w-4 mr-2" />
-              Invite Member
+            {can(Resource.user, Action.create) && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setAddPersonnelOpen(true)}
+                title="Create an account immediately — you set the password, they can log in right away"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add User Directly
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={() => setInviteOpen(true)}
+              title="Email an invitation link — the recipient accepts and sets their own password"
+            >
+              <Mail className="h-4 w-4 mr-2" />
+              Send Invite
             </Button>
           </DataTableToolbar>
         </DataTable>
       )}
 
+      {/* Add Personnel Dialog */}
+      <AddPersonnelDialog
+        open={addPersonnelOpen}
+        onOpenChange={setAddPersonnelOpen}
+        roles={roles}
+        onSuccess={() => loadData()}
+      />
+
       {/* Invite Dialog */}
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite Team Member</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Send Invitation
+            </DialogTitle>
             <DialogDescription>
-              Send an invitation to join this organization.
+              Email an invitation link. The recipient clicks it to create their
+              account and set their own password. They will appear as
+              &ldquo;Pending&rdquo; in the table until they accept.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
