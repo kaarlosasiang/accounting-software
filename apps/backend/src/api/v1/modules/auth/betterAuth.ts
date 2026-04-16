@@ -32,7 +32,8 @@ const dbProxy = new Proxy(db, {
 
 export const authServer = betterAuth({
   appUrl: constants.frontEndUrl, // Frontend URL for redirects
-  baseURL: constants.betterAuthUrl, // API auth endpoint
+  baseURL: constants.betterAuthOrigin, // API origin (no path)
+  basePath: "/api/v1/auth", // Auth route prefix
   secret: constants.betterAuthSecret,
   trustedOrigins: [
     constants.frontEndUrl,
