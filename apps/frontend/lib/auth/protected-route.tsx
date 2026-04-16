@@ -31,7 +31,8 @@ export function withAuth<P extends object>(
 
   return function AuthenticatedComponent(props: P) {
     const { user, session, isLoading } = useAuth();
-    const { data: orgListData, isPending: orgListPending } = useListOrganizations();
+    const { data: orgListData, isPending: orgListPending } =
+      useListOrganizations();
     const router = useRouter();
     const pathname = usePathname();
 
@@ -43,7 +44,8 @@ export function withAuth<P extends object>(
     // org (e.g. after a re-deploy that changed BETTER_AUTH_SECRET), auto-activate
     // the first org so API calls get a companyId without forcing company-setup.
     useEffect(() => {
-      if (hasOrgAccess || orgListPending || isLoading || !user || !hasOrgs) return;
+      if (hasOrgAccess || orgListPending || isLoading || !user || !hasOrgs)
+        return;
       const firstOrg = orgs[0];
       if (firstOrg?.id) {
         (authClient as any).organization
@@ -96,7 +98,17 @@ export function withAuth<P extends object>(
         router.replace("/company-setup");
         return;
       }
-    }, [user, session, isLoading, router, requireSubscription, pathname, hasOrgAccess, hasOrgs, orgListPending]);
+    }, [
+      user,
+      session,
+      isLoading,
+      router,
+      requireSubscription,
+      pathname,
+      hasOrgAccess,
+      hasOrgs,
+      orgListPending,
+    ]);
 
     // Show loading state while checking authentication
     if (isLoading || orgListPending) {
