@@ -1,6 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
-import { ILedger, ILedgerDocument } from '../shared/interface/ILedger.js';
+import { ILedger, ILedgerDocument } from "../shared/interface/ILedger.js";
 
 /**
  * Ledger Schema
@@ -81,11 +81,13 @@ LedgerSchema.index({ accountId: 1, transactionDate: 1 }); // For running balance
  * Static method: Get ledger entries by account and date range
  */
 LedgerSchema.statics.findByAccountAndDateRange = function (
+  companyId: mongoose.Types.ObjectId,
   accountId: mongoose.Types.ObjectId,
   startDate: Date,
   endDate: Date,
 ) {
   return this.find({
+    companyId,
     accountId,
     transactionDate: { $gte: startDate, $lte: endDate },
   }).sort({ transactionDate: 1, createdAt: 1 });
@@ -95,21 +97,24 @@ LedgerSchema.statics.findByAccountAndDateRange = function (
  * Static method: Get ledger entries by journal entry
  */
 LedgerSchema.statics.findByJournalEntry = function (
+  companyId: mongoose.Types.ObjectId,
   journalEntryId: mongoose.Types.ObjectId,
 ) {
-  return this.find({ journalEntryId }).sort({ accountId: 1 });
+  return this.find({ companyId, journalEntryId }).sort({ accountId: 1 });
 };
 
 /**
  * Static method: Calculate running balance for an account up to a date
  */
 LedgerSchema.statics.calculateRunningBalance = async function (
+  companyId: mongoose.Types.ObjectId,
   accountId: mongoose.Types.ObjectId,
   upToDate: Date,
 ) {
   const result = await this.aggregate([
     {
       $match: {
+        companyId,
         accountId,
         transactionDate: { $lte: upToDate },
       },
@@ -135,9 +140,10 @@ LedgerSchema.statics.calculateRunningBalance = async function (
  * Static method: Get account balance
  */
 LedgerSchema.statics.getAccountBalance = function (
+  companyId: mongoose.Types.ObjectId,
   accountId: mongoose.Types.ObjectId,
 ) {
-  return this.findOne({ accountId })
+  return this.findOne({ companyId, accountId })
     .sort({ transactionDate: -1, createdAt: -1 })
     .select("runningBalance")
     .then((doc: ILedgerDocument | null) => (doc ? doc.runningBalance : 0));

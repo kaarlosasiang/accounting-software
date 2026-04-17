@@ -19,7 +19,7 @@ export enum AuditAction {
 export interface IAuditLog {
   _id: Types.ObjectId;
   companyId: Types.ObjectId;
-  userId: Types.ObjectId;
+  userId: string;
   userName: string; // Denormalized
   action: AuditAction;
   module: string; // e.g., 'Invoice', 'JournalEntry', 'Customer'

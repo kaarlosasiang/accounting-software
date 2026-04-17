@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Card,
@@ -20,9 +21,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Save } from "lucide-react";
-import { useOrganization } from "@/hooks/use-organization";
+import { Save, LogOut, Trash2 } from "lucide-react";
+import { useOrganization, useOrganizationRole } from "@/hooks/use-organization";
+import { useAuth } from "@/lib/contexts/auth-context";
+import { useListOrganizations, authClient } from "@/lib/config/auth-client";
 
 const BUSINESS_TYPES = [
   { value: "sole proprietorship", label: "Sole Proprietorship" },
@@ -50,14 +64,17 @@ const INDUSTRIES = [
 ];
 
 export default function CompanySettingsPage() {
-  const {
-    activeOrganization,
-    isPending,
-    organization,
-    organizationId,
-  } = useOrganization();
+  const router = useRouter();
+  const { activeOrganization, isPending, organization, organizationId } =
+    useOrganization();
+  const { isOwner } = useOrganizationRole();
+  const { user } = useAuth();
+  const { data: orgListData } = useListOrganizations();
 
   const [isSaving, setIsSaving] = useState(false);
+  const [isLeaving, setIsLeaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
   const [form, setForm] = useState({
     name: "",
@@ -101,6 +118,67 @@ export default function CompanySettingsPage() {
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const afterOrgExit = async () => {
+    const orgs = (orgListData as any[] | null | undefined) ?? [];
+    const remaining = orgs.filter((o: any) => o.id !== organizationId);
+    if (remaining.length > 0) {
+      await (authClient as any).organization.setActive({
+        organizationId: remaining[0].id,
+      });
+      router.push("/dashboard");
+      window.location.reload();
+    } else {
+      router.push("/company-setup");
+    }
+  };
+
+  const handleLeaveOrg = async () => {
+    if (!organizationId || !user?.id) return;
+    setIsLeaving(true);
+    try {
+      const result = await (authClient as any).organization.removeMember({
+        memberIdOrEmail: user.id,
+        organizationId,
+      });
+      if (result?.error) throw new Error(result.error.message);
+      toast.success("You have left the organization");
+      await afterOrgExit();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to leave organization",
+      );
+    } finally {
+      setIsLeaving(false);
+    }
+  };
+
+  const handleDeleteOrg = async () => {
+    if (!organizationId) return;
+    setIsDeleting(true);
+    try {
+      const apiBase =
+        process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
+        "http://localhost:4000/api/v1";
+      const res = await fetch(`${apiBase}/company`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message ?? "Failed to delete organization");
+      }
+      toast.success("Organization deleted");
+      await afterOrgExit();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete organization",
+      );
+    } finally {
+      setIsDeleting(false);
+      setDeleteConfirmName("");
+    }
   };
 
   const handleSave = async () => {
@@ -373,6 +451,120 @@ export default function CompanySettingsPage() {
           {isSaving ? "Saving…" : "Save Changes"}
         </Button>
       </div>
+
+      {/* Danger Zone */}
+      <Card className="border-destructive/40">
+        <CardHeader>
+          <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          <CardDescription>
+            These actions are irreversible. Please be certain.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Leave Organization — hidden for owners */}
+          {!isOwner && (
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Leave Organization</p>
+                <p className="text-xs text-muted-foreground">
+                  Remove yourself from this organization. You'll lose access to
+                  all its data.
+                </p>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 border-destructive/50 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Leave
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Leave organization?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      You'll be removed from{" "}
+                      <strong>{activeOrganization?.name}</strong> and lose
+                      access to all its data. This cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleLeaveOrg}
+                      disabled={isLeaving}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isLeaving ? "Leaving…" : "Leave Organization"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+
+          {/* Delete Organization — owners only */}
+          {isOwner && (
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-sm font-medium">Delete Organization</p>
+                <p className="text-xs text-muted-foreground">
+                  Permanently delete this organization and all its data. This
+                  cannot be undone.
+                </p>
+              </div>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" className="shrink-0">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Delete
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete organization?</AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <span className="block">
+                        This will permanently delete{" "}
+                        <strong>{activeOrganization?.name}</strong> and all
+                        associated data (invoices, accounts, customers, etc.).
+                      </span>
+                      <span className="block">
+                        Type <strong>{activeOrganization?.name}</strong> below
+                        to confirm.
+                      </span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <Input
+                    placeholder={activeOrganization?.name}
+                    value={deleteConfirmName}
+                    onChange={(e) => setDeleteConfirmName(e.target.value)}
+                    className="mx-6"
+                  />
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setDeleteConfirmName("")}>
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleDeleteOrg}
+                      disabled={
+                        isDeleting ||
+                        deleteConfirmName !== activeOrganization?.name
+                      }
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {isDeleting ? "Deleting…" : "Delete Organization"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
