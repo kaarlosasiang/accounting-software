@@ -8,7 +8,12 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { useOrganization } from "@/hooks/use-organization";
 import { permissionsService } from "@/lib/services/permissions.service";
-import type { BusinessType, CompanyAddress, CompanyContact, CompanyMetadata } from "@/lib/types/auth";
+import type {
+  BusinessType,
+  CompanyAddress,
+  CompanyContact,
+  CompanyMetadata,
+} from "@/lib/types/auth";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -183,7 +188,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
       });
 
       if (result?.error) {
-        throw new Error(result.error.message || "Failed to create organization");
+        throw new Error(
+          result.error.message || "Failed to create organization",
+        );
       }
       if (!result?.data?.id) {
         throw new Error("Organization created but ID not returned");
@@ -203,7 +210,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
       onSuccess?.();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to create organization",
+        error instanceof Error
+          ? error.message
+          : "Failed to create organization",
       );
     } finally {
       setIsSubmitting(false);
@@ -218,13 +227,17 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
           const done = step > s.number;
           const active = step === s.number;
           return (
-            <div key={s.number} className="flex items-center flex-1 last:flex-none">
+            <div
+              key={s.number}
+              className="flex items-center flex-1 last:flex-none"
+            >
               <div className="flex items-center gap-2 shrink-0">
                 <div
                   className={cn(
                     "size-6 rounded-full flex items-center justify-center text-xs font-medium transition-colors",
                     done && "bg-primary text-primary-foreground",
-                    active && "bg-primary text-primary-foreground ring-4 ring-primary/20",
+                    active &&
+                      "bg-primary text-primary-foreground ring-4 ring-primary/20",
                     !done && !active && "bg-muted text-muted-foreground",
                   )}
                 >
@@ -233,7 +246,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                 <span
                   className={cn(
                     "text-sm hidden sm:inline transition-colors",
-                    active ? "font-medium text-foreground" : "text-muted-foreground",
+                    active
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground",
                   )}
                 >
                   {s.label}
@@ -276,7 +291,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   {...register("companyName")}
                 />
                 {errors.companyName && (
-                  <p className="text-xs text-destructive">{errors.companyName.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.companyName.message}
+                  </p>
                 )}
               </div>
 
@@ -291,7 +308,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   {...register("companySlug")}
                 />
                 {errors.companySlug ? (
-                  <p className="text-xs text-destructive">{errors.companySlug.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.companySlug.message}
+                  </p>
                 ) : (
                   <p className="text-xs text-muted-foreground">
                     Lowercase, numbers &amp; hyphens only
@@ -307,9 +326,13 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                 </label>
                 <Select
                   value={businessType}
-                  onValueChange={(v) => setValue("businessType", v as BusinessType)}
+                  onValueChange={(v) =>
+                    setValue("businessType", v as BusinessType)
+                  }
                 >
-                  <SelectTrigger className={cn(errors.businessType && "border-destructive")}>
+                  <SelectTrigger
+                    className={cn(errors.businessType && "border-destructive")}
+                  >
                     <SelectValue placeholder="Select type" />
                   </SelectTrigger>
                   <SelectContent>
@@ -321,7 +344,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   </SelectContent>
                 </Select>
                 {errors.businessType && (
-                  <p className="text-xs text-destructive">{errors.businessType.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.businessType.message}
+                  </p>
                 )}
               </div>
 
@@ -333,7 +358,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   value={currency}
                   onValueChange={(v) => setValue("currency", v)}
                 >
-                  <SelectTrigger className={cn(errors.currency && "border-destructive")}>
+                  <SelectTrigger
+                    className={cn(errors.currency && "border-destructive")}
+                  >
                     <SelectValue placeholder="Select currency" />
                   </SelectTrigger>
                   <SelectContent>
@@ -345,7 +372,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   </SelectContent>
                 </Select>
                 {errors.currency && (
-                  <p className="text-xs text-destructive">{errors.currency.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.currency.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -366,7 +395,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                 {...register("address")}
               />
               {errors.address && (
-                <p className="text-xs text-destructive">{errors.address.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.address.message}
+                </p>
               )}
             </div>
 
@@ -382,7 +413,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   {...register("city")}
                 />
                 {errors.city && (
-                  <p className="text-xs text-destructive">{errors.city.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.city.message}
+                  </p>
                 )}
               </div>
 
@@ -390,7 +423,11 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                 <label htmlFor="state" className="text-sm font-medium">
                   State / Province
                 </label>
-                <Input id="state" placeholder="Optional" {...register("state")} />
+                <Input
+                  id="state"
+                  placeholder="Optional"
+                  {...register("state")}
+                />
               </div>
             </div>
 
@@ -406,7 +443,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   {...register("country")}
                 />
                 {errors.country && (
-                  <p className="text-xs text-destructive">{errors.country.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.country.message}
+                  </p>
                 )}
               </div>
 
@@ -421,7 +460,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   {...register("postalCode")}
                 />
                 {errors.postalCode && (
-                  <p className="text-xs text-destructive">{errors.postalCode.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.postalCode.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -460,7 +501,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                   {...register("email")}
                 />
                 {errors.email && (
-                  <p className="text-xs text-destructive">{errors.email.message}</p>
+                  <p className="text-xs text-destructive">
+                    {errors.email.message}
+                  </p>
                 )}
               </div>
             </div>
@@ -477,7 +520,9 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
                 {...register("website")}
               />
               {errors.website && (
-                <p className="text-xs text-destructive">{errors.website.message}</p>
+                <p className="text-xs text-destructive">
+                  {errors.website.message}
+                </p>
               )}
             </div>
           </div>
@@ -498,20 +543,12 @@ export function NewOrgForm({ onSuccess }: NewOrgFormProps) {
           )}
 
           {step < 3 ? (
-            <Button
-              type="button"
-              onClick={handleNext}
-              className="flex-1 group"
-            >
+            <Button type="button" onClick={handleNext} className="flex-1 group">
               Continue
               <ArrowRight className="size-4 ml-2 group-hover:translate-x-0.5 transition-transform" />
             </Button>
           ) : (
-            <Button
-              type="submit"
-              className="flex-1"
-              disabled={isSubmitting}
-            >
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="size-4 mr-2 animate-spin" />
