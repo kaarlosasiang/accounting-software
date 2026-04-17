@@ -22,16 +22,9 @@ import { AccountingPeriod } from "../models/AccountingPeriod.js";
 import { CompanySettings } from "../models/CompanySettings.js";
 import Account from "../models/Account.js";
 
-import {
-  InvoiceStatus,
-} from "../shared/interface/IInvoice.js";
-import {
-  BillStatus,
-} from "../shared/interface/IBill.js";
-import {
-  PaymentType,
-  PaymentMethod,
-} from "../shared/interface/IPayment.js";
+import { InvoiceStatus } from "../shared/interface/IInvoice.js";
+import { BillStatus } from "../shared/interface/IBill.js";
+import { PaymentType, PaymentMethod } from "../shared/interface/IPayment.js";
 import {
   JournalEntryType,
   JournalEntryStatus,
@@ -93,11 +86,15 @@ async function seedFullCompany(companyId: string) {
 
   const byCode = Object.fromEntries(
     accountDocs.map((a: any) => [a.accountCode, a]),
-  ) as Record<string, { _id: Types.ObjectId; accountCode: string; accountName: string }>;
+  ) as Record<
+    string,
+    { _id: Types.ObjectId; accountCode: string; accountName: string }
+  >;
 
   const acc = (code: string) => {
     const a = byCode[code];
-    if (!a) throw new Error(`Account ${code} not found — run seedAccounts first.`);
+    if (!a)
+      throw new Error(`Account ${code} not found — run seedAccounts first.`);
     return a;
   };
 
@@ -156,7 +153,13 @@ async function seedFullCompany(companyId: string) {
       email: "accounts@sunshinegrocery.ph",
       phone: "+63 2 8100 1001",
       website: "https://sunshinegrocery.ph",
-      billingAddress: { street: "12 Ayala Avenue", city: "Makati", state: "Metro Manila", zipCode: "1226", country: "Philippines" },
+      billingAddress: {
+        street: "12 Ayala Avenue",
+        city: "Makati",
+        state: "Metro Manila",
+        zipCode: "1226",
+        country: "Philippines",
+      },
       taxId: "111-222-333-000",
       currency: "PHP",
       paymentTerms: "Net 30",
@@ -172,7 +175,13 @@ async function seedFullCompany(companyId: string) {
       displayName: "Horizon Supermart",
       email: "billing@horizonsupermart.com",
       phone: "+63 2 8100 2002",
-      billingAddress: { street: "88 EDSA", city: "Quezon City", state: "Metro Manila", zipCode: "1100", country: "Philippines" },
+      billingAddress: {
+        street: "88 EDSA",
+        city: "Quezon City",
+        state: "Metro Manila",
+        zipCode: "1100",
+        country: "Philippines",
+      },
       taxId: "222-333-444-000",
       currency: "PHP",
       paymentTerms: "Net 15",
@@ -188,7 +197,13 @@ async function seedFullCompany(companyId: string) {
       displayName: "Metro Deli",
       email: "orders@metrodeli.ph",
       phone: "+63 2 8100 3003",
-      billingAddress: { street: "55 Ortigas Center", city: "Pasig", state: "Metro Manila", zipCode: "1605", country: "Philippines" },
+      billingAddress: {
+        street: "55 Ortigas Center",
+        city: "Pasig",
+        state: "Metro Manila",
+        zipCode: "1605",
+        country: "Philippines",
+      },
       taxId: "333-444-555-000",
       currency: "PHP",
       paymentTerms: "Net 30",
@@ -204,7 +219,13 @@ async function seedFullCompany(companyId: string) {
       displayName: "Golden Palate",
       email: "procurement@goldenpalate.ph",
       phone: "+63 2 8100 4004",
-      billingAddress: { street: "33 Taguig Boulevard", city: "Taguig", state: "Metro Manila", zipCode: "1630", country: "Philippines" },
+      billingAddress: {
+        street: "33 Taguig Boulevard",
+        city: "Taguig",
+        state: "Metro Manila",
+        zipCode: "1630",
+        country: "Philippines",
+      },
       taxId: "444-555-666-000",
       currency: "PHP",
       paymentTerms: "Net 30",
@@ -220,7 +241,13 @@ async function seedFullCompany(companyId: string) {
       displayName: "FreshMart",
       email: "accounts@freshmart.ph",
       phone: "+63 2 8100 5005",
-      billingAddress: { street: "7 Cebu Business Park", city: "Cebu City", state: "Cebu", zipCode: "6000", country: "Philippines" },
+      billingAddress: {
+        street: "7 Cebu Business Park",
+        city: "Cebu City",
+        state: "Cebu",
+        zipCode: "6000",
+        country: "Philippines",
+      },
       taxId: "555-666-777-000",
       currency: "PHP",
       paymentTerms: "Net 45",
@@ -236,7 +263,13 @@ async function seedFullCompany(companyId: string) {
       displayName: "Island Provisions",
       email: "finance@islandprovisions.ph",
       phone: "+63 2 8100 6006",
-      billingAddress: { street: "20 Davao City Hall Drive", city: "Davao City", state: "Davao del Sur", zipCode: "8000", country: "Philippines" },
+      billingAddress: {
+        street: "20 Davao City Hall Drive",
+        city: "Davao City",
+        state: "Davao del Sur",
+        zipCode: "8000",
+        country: "Philippines",
+      },
       taxId: "666-777-888-000",
       currency: "PHP",
       paymentTerms: "Net 30",
@@ -247,7 +280,14 @@ async function seedFullCompany(companyId: string) {
     },
   ]);
 
-  const [custSunshine, custHorizon, custMetroDeli, custGolden, custFreshmart, custIsland] = customerDocs;
+  const [
+    custSunshine,
+    custHorizon,
+    custMetroDeli,
+    custGolden,
+    custFreshmart,
+    custIsland,
+  ] = customerDocs;
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 4. INVENTORY ITEMS (8 products + 2 services)
@@ -425,9 +465,16 @@ async function seedFullCompany(companyId: string) {
   ]);
 
   const [
-    itemRiceWhite, itemRiceBrown, itemVeg, itemTuna,
-    itemDishwash, itemWater, itemJuice, itemSoap,
-    itemDelivery, itemConsult,
+    itemRiceWhite,
+    itemRiceBrown,
+    itemVeg,
+    itemTuna,
+    itemDishwash,
+    itemWater,
+    itemJuice,
+    itemSoap,
+    itemDelivery,
+    itemConsult,
   ] = itemDocs;
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -455,9 +502,34 @@ async function seedFullCompany(companyId: string) {
       entryType: JournalEntryType.AUTO_BILL,
       status: JournalEntryStatus.POSTED,
       lines: [
-        { accountId: expAcc._id, accountCode: expAcc.accountCode, accountName: expAcc.accountName, debit: subtotal, credit: 0, description },
-        ...(taxAmt > 0 ? [{ accountId: acc("2100")._id, accountCode: "2100", accountName: acc("2100").accountName, debit: taxAmt, credit: 0, description: "Input tax" }] : []),
-        { accountId: acc("2000")._id, accountCode: "2000", accountName: acc("2000").accountName, debit: 0, credit: total, description: "Accounts payable" },
+        {
+          accountId: expAcc._id,
+          accountCode: expAcc.accountCode,
+          accountName: expAcc.accountName,
+          debit: subtotal,
+          credit: 0,
+          description,
+        },
+        ...(taxAmt > 0
+          ? [
+              {
+                accountId: acc("2100")._id,
+                accountCode: "2100",
+                accountName: acc("2100").accountName,
+                debit: taxAmt,
+                credit: 0,
+                description: "Input tax",
+              },
+            ]
+          : []),
+        {
+          accountId: acc("2000")._id,
+          accountCode: "2000",
+          accountName: acc("2000").accountName,
+          debit: 0,
+          credit: total,
+          description: "Accounts payable",
+        },
       ],
       totalDebit: total,
       totalCredit: total,
@@ -468,7 +540,15 @@ async function seedFullCompany(companyId: string) {
   };
 
   // Bill 1 — Rice purchase (Paid)
-  const bill1JE = await makePurchaseJE("JE-2026-001", daysAgo(60), "Rice purchase from Manila Rice Trading", 110000, 12, 123200, "1200");
+  const bill1JE = await makePurchaseJE(
+    "JE-2026-001",
+    daysAgo(60),
+    "Rice purchase from Manila Rice Trading",
+    110000,
+    12,
+    123200,
+    "1200",
+  );
   const bill1 = await Bill.create({
     companyId: cid,
     supplierId: suppMRT,
@@ -477,7 +557,14 @@ async function seedFullCompany(companyId: string) {
     dueDate: daysAgo(30),
     status: BillStatus.PAID,
     lineItems: [
-      { description: "White Rice 50kg (50 sacks)", quantity: 50, unitPrice: 2200, accountId: acc("1200")._id, inventoryItemId: itemRiceWhite._id, amount: 110000 },
+      {
+        description: "White Rice 50kg (50 sacks)",
+        quantity: 50,
+        unitPrice: 2200,
+        accountId: acc("1200")._id,
+        inventoryItemId: itemRiceWhite._id,
+        amount: 110000,
+      },
     ],
     subtotal: 110000,
     taxRate: 12,
@@ -492,7 +579,15 @@ async function seedFullCompany(companyId: string) {
   });
 
   // Bill 2 — Cleaning supplies (Paid)
-  const bill2JE = await makePurchaseJE("JE-2026-002", daysAgo(45), "Cleaning supplies purchase", 42000, 12, 47040, "1200");
+  const bill2JE = await makePurchaseJE(
+    "JE-2026-002",
+    daysAgo(45),
+    "Cleaning supplies purchase",
+    42000,
+    12,
+    47040,
+    "1200",
+  );
   const bill2 = await Bill.create({
     companyId: cid,
     supplierId: suppMCS,
@@ -501,7 +596,14 @@ async function seedFullCompany(companyId: string) {
     dueDate: daysAgo(15),
     status: BillStatus.PAID,
     lineItems: [
-      { description: "Dishwashing Liquid 500ml 24-pk (50 boxes)", quantity: 50, unitPrice: 840, accountId: acc("1200")._id, inventoryItemId: itemDishwash._id, amount: 42000 },
+      {
+        description: "Dishwashing Liquid 500ml 24-pk (50 boxes)",
+        quantity: 50,
+        unitPrice: 840,
+        accountId: acc("1200")._id,
+        inventoryItemId: itemDishwash._id,
+        amount: 42000,
+      },
     ],
     subtotal: 42000,
     taxRate: 12,
@@ -518,7 +620,15 @@ async function seedFullCompany(companyId: string) {
   const bill3Subtotal = 54000;
   const bill3Tax = Math.round(bill3Subtotal * 0.12 * 100) / 100;
   const bill3Total = bill3Subtotal + bill3Tax;
-  const bill3JE = await makePurchaseJE("JE-2026-003", daysAgo(30), "Beverage stock purchase", bill3Subtotal, 12, bill3Total, "1200");
+  const bill3JE = await makePurchaseJE(
+    "JE-2026-003",
+    daysAgo(30),
+    "Beverage stock purchase",
+    bill3Subtotal,
+    12,
+    bill3Total,
+    "1200",
+  );
   const bill3 = await Bill.create({
     companyId: cid,
     supplierId: new Types.ObjectId("69e1ebf9ce42629b164fce34"), // BVG
@@ -527,8 +637,22 @@ async function seedFullCompany(companyId: string) {
     dueDate: daysAgo(0),
     status: BillStatus.PARTIAL,
     lineItems: [
-      { description: "Purified Water 500ml 24-btl (100 boxes)", quantity: 100, unitPrice: 180, accountId: acc("1200")._id, inventoryItemId: itemWater._id, amount: 18000 },
-      { description: "Juice Drink 250ml 24-pk (150 boxes)", quantity: 150, unitPrice: 240, accountId: acc("1200")._id, inventoryItemId: itemJuice._id, amount: 36000 },
+      {
+        description: "Purified Water 500ml 24-btl (100 boxes)",
+        quantity: 100,
+        unitPrice: 180,
+        accountId: acc("1200")._id,
+        inventoryItemId: itemWater._id,
+        amount: 18000,
+      },
+      {
+        description: "Juice Drink 250ml 24-pk (150 boxes)",
+        quantity: 150,
+        unitPrice: 240,
+        accountId: acc("1200")._id,
+        inventoryItemId: itemJuice._id,
+        amount: 36000,
+      },
     ],
     subtotal: bill3Subtotal,
     taxRate: 12,
@@ -545,7 +669,15 @@ async function seedFullCompany(companyId: string) {
   const bill4Subtotal = 72000;
   const bill4Tax = Math.round(bill4Subtotal * 0.12 * 100) / 100;
   const bill4Total = bill4Subtotal + bill4Tax;
-  const bill4JE = await makePurchaseJE("JE-2026-004", daysAgo(14), "Canned goods purchase", bill4Subtotal, 12, bill4Total, "1200");
+  const bill4JE = await makePurchaseJE(
+    "JE-2026-004",
+    daysAgo(14),
+    "Canned goods purchase",
+    bill4Subtotal,
+    12,
+    bill4Total,
+    "1200",
+  );
   const bill4 = await Bill.create({
     companyId: cid,
     supplierId: suppQCG,
@@ -554,7 +686,14 @@ async function seedFullCompany(companyId: string) {
     dueDate: daysFromNow(16),
     status: BillStatus.OPEN,
     lineItems: [
-      { description: "Canned Tuna 24-cans (100 boxes)", quantity: 100, unitPrice: 720, accountId: acc("1200")._id, inventoryItemId: itemTuna._id, amount: 72000 },
+      {
+        description: "Canned Tuna 24-cans (100 boxes)",
+        quantity: 100,
+        unitPrice: 720,
+        accountId: acc("1200")._id,
+        inventoryItemId: itemTuna._id,
+        amount: 72000,
+      },
     ],
     subtotal: bill4Subtotal,
     taxRate: 12,
@@ -569,7 +708,15 @@ async function seedFullCompany(companyId: string) {
 
   // Bill 5 — Office rent (Paid, expense)
   const bill5Subtotal = 45000;
-  const bill5JE = await makePurchaseJE("JE-2026-005", daysAgo(75), "Monthly rent — warehouse", bill5Subtotal, 0, bill5Subtotal, "6100");
+  const bill5JE = await makePurchaseJE(
+    "JE-2026-005",
+    daysAgo(75),
+    "Monthly rent — warehouse",
+    bill5Subtotal,
+    0,
+    bill5Subtotal,
+    "6100",
+  );
   const bill5 = await Bill.create({
     companyId: cid,
     supplierId: suppMCS, // using as stand-in landlord
@@ -578,7 +725,13 @@ async function seedFullCompany(companyId: string) {
     dueDate: daysAgo(45),
     status: BillStatus.PAID,
     lineItems: [
-      { description: "Warehouse rental — January 2026", quantity: 1, unitPrice: 45000, accountId: acc("6100")._id, amount: 45000 },
+      {
+        description: "Warehouse rental — January 2026",
+        quantity: 1,
+        unitPrice: 45000,
+        accountId: acc("6100")._id,
+        amount: 45000,
+      },
     ],
     subtotal: 45000,
     taxRate: 0,
@@ -607,11 +760,50 @@ async function seedFullCompany(companyId: string) {
   ) => {
     const taxAmt = Math.round(subtotal * (tax / 100) * 100) / 100;
     const lines = [
-      { accountId: acc("1100")._id, accountCode: "1100", accountName: acc("1100").accountName, debit: total, credit: 0, description: "Accounts receivable" },
-      { accountId: acc("4000")._id, accountCode: "4000", accountName: acc("4000").accountName, debit: 0, credit: subtotal, description },
-      ...(taxAmt > 0 ? [{ accountId: acc("2100")._id, accountCode: "2100", accountName: acc("2100").accountName, debit: 0, credit: taxAmt, description: "Output tax" }] : []),
-      { accountId: acc("5000")._id, accountCode: "5000", accountName: acc("5000").accountName, debit: cogsAmount, credit: 0, description: "Cost of goods sold" },
-      { accountId: acc("1200")._id, accountCode: "1200", accountName: acc("1200").accountName, debit: 0, credit: cogsAmount, description: "Inventory reduction" },
+      {
+        accountId: acc("1100")._id,
+        accountCode: "1100",
+        accountName: acc("1100").accountName,
+        debit: total,
+        credit: 0,
+        description: "Accounts receivable",
+      },
+      {
+        accountId: acc("4000")._id,
+        accountCode: "4000",
+        accountName: acc("4000").accountName,
+        debit: 0,
+        credit: subtotal,
+        description,
+      },
+      ...(taxAmt > 0
+        ? [
+            {
+              accountId: acc("2100")._id,
+              accountCode: "2100",
+              accountName: acc("2100").accountName,
+              debit: 0,
+              credit: taxAmt,
+              description: "Output tax",
+            },
+          ]
+        : []),
+      {
+        accountId: acc("5000")._id,
+        accountCode: "5000",
+        accountName: acc("5000").accountName,
+        debit: cogsAmount,
+        credit: 0,
+        description: "Cost of goods sold",
+      },
+      {
+        accountId: acc("1200")._id,
+        accountCode: "1200",
+        accountName: acc("1200").accountName,
+        debit: 0,
+        credit: cogsAmount,
+        description: "Inventory reduction",
+      },
     ];
     return JournalEntry.create({
       companyId: cid,
@@ -629,105 +821,330 @@ async function seedFullCompany(companyId: string) {
   };
 
   // INV-001 — Sunshine Grocery (Paid)
-  const inv1Sub = 140000; const inv1Tax = Math.round(inv1Sub * 0.12 * 100) / 100; const inv1Tot = inv1Sub + inv1Tax;
-  const inv1JE = await makeSaleJE("JE-2026-006", daysAgo(55), "Sales to Sunshine Grocery", inv1Sub, 12, inv1Tot, 107800);
+  const inv1Sub = 140000;
+  const inv1Tax = Math.round(inv1Sub * 0.12 * 100) / 100;
+  const inv1Tot = inv1Sub + inv1Tax;
+  const inv1JE = await makeSaleJE(
+    "JE-2026-006",
+    daysAgo(55),
+    "Sales to Sunshine Grocery",
+    inv1Sub,
+    12,
+    inv1Tot,
+    107800,
+  );
   const inv1 = await Invoice.create({
-    companyId: cid, customerId: custSunshine._id,
+    companyId: cid,
+    customerId: custSunshine._id,
     invoiceNumber: "INV-2026-001",
-    invoiceDate: daysAgo(55), dueDate: daysAgo(25),
+    invoiceDate: daysAgo(55),
+    dueDate: daysAgo(25),
     status: InvoiceStatus.PAID,
     lineItems: [
-      { description: "White Rice 50kg (30 sacks)", quantity: 30, unitPrice: 2800, accountId: acc("4000")._id, inventoryItemId: itemRiceWhite._id, amount: 84000 },
-      { description: "Brown Rice 25kg (20 sacks)", quantity: 20, unitPrice: 1750, accountId: acc("4000")._id, inventoryItemId: itemRiceBrown._id, amount: 35000 },
-      { description: "Delivery Service", quantity: 1, unitPrice: 1500, accountId: acc("4010")._id, inventoryItemId: itemDelivery._id, amount: 1500 },
-      { description: "Mixed Vegetables 10kg (25 bundles)", quantity: 25, unitPrice: 600, accountId: acc("4000")._id, inventoryItemId: itemVeg._id, amount: 15000 },
-      { description: "Canned Tuna 24-cans (5 boxes)", quantity: 5, unitPrice: 960, accountId: acc("4000")._id, inventoryItemId: itemTuna._id, amount: 4800 },
+      {
+        description: "White Rice 50kg (30 sacks)",
+        quantity: 30,
+        unitPrice: 2800,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemRiceWhite._id,
+        amount: 84000,
+      },
+      {
+        description: "Brown Rice 25kg (20 sacks)",
+        quantity: 20,
+        unitPrice: 1750,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemRiceBrown._id,
+        amount: 35000,
+      },
+      {
+        description: "Delivery Service",
+        quantity: 1,
+        unitPrice: 1500,
+        accountId: acc("4010")._id,
+        inventoryItemId: itemDelivery._id,
+        amount: 1500,
+      },
+      {
+        description: "Mixed Vegetables 10kg (25 bundles)",
+        quantity: 25,
+        unitPrice: 600,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemVeg._id,
+        amount: 15000,
+      },
+      {
+        description: "Canned Tuna 24-cans (5 boxes)",
+        quantity: 5,
+        unitPrice: 960,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemTuna._id,
+        amount: 4800,
+      },
     ],
-    subtotal: inv1Sub, taxRate: 12, taxAmount: inv1Tax, discount: 0,
-    totalAmount: inv1Tot, amountPaid: inv1Tot, balanceDue: 0,
+    subtotal: inv1Sub,
+    taxRate: 12,
+    taxAmount: inv1Tax,
+    discount: 0,
+    totalAmount: inv1Tot,
+    amountPaid: inv1Tot,
+    balanceDue: 0,
     terms: "Net 30",
     journalEntryId: inv1JE._id,
     createdBy: userId,
   });
 
   // INV-002 — Horizon Supermart (Paid)
-  const inv2Sub = 86400; const inv2Tax = Math.round(inv2Sub * 0.12 * 100) / 100; const inv2Tot = inv2Sub + inv2Tax;
-  const inv2JE = await makeSaleJE("JE-2026-007", daysAgo(40), "Sales to Horizon Supermart", inv2Sub, 12, inv2Tot, 66600);
+  const inv2Sub = 86400;
+  const inv2Tax = Math.round(inv2Sub * 0.12 * 100) / 100;
+  const inv2Tot = inv2Sub + inv2Tax;
+  const inv2JE = await makeSaleJE(
+    "JE-2026-007",
+    daysAgo(40),
+    "Sales to Horizon Supermart",
+    inv2Sub,
+    12,
+    inv2Tot,
+    66600,
+  );
   const inv2 = await Invoice.create({
-    companyId: cid, customerId: custHorizon._id,
+    companyId: cid,
+    customerId: custHorizon._id,
     invoiceNumber: "INV-2026-002",
-    invoiceDate: daysAgo(40), dueDate: daysAgo(25),
+    invoiceDate: daysAgo(40),
+    dueDate: daysAgo(25),
     status: InvoiceStatus.PAID,
     lineItems: [
-      { description: "Purified Water 500ml (120 boxes)", quantity: 120, unitPrice: 270, accountId: acc("4000")._id, inventoryItemId: itemWater._id, amount: 32400 },
-      { description: "Juice Drink 250ml (100 boxes)", quantity: 100, unitPrice: 360, accountId: acc("4000")._id, inventoryItemId: itemJuice._id, amount: 36000 },
-      { description: "Bath Soap 12-bars (50 boxes)", quantity: 50, unitPrice: 504, accountId: acc("4000")._id, inventoryItemId: itemSoap._id, amount: 25200 },
-      { description: "Dishwashing Liquid (10 boxes)", quantity: 10, unitPrice: 1080, accountId: acc("4000")._id, inventoryItemId: itemDishwash._id, amount: 10800 },
+      {
+        description: "Purified Water 500ml (120 boxes)",
+        quantity: 120,
+        unitPrice: 270,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemWater._id,
+        amount: 32400,
+      },
+      {
+        description: "Juice Drink 250ml (100 boxes)",
+        quantity: 100,
+        unitPrice: 360,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemJuice._id,
+        amount: 36000,
+      },
+      {
+        description: "Bath Soap 12-bars (50 boxes)",
+        quantity: 50,
+        unitPrice: 504,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemSoap._id,
+        amount: 25200,
+      },
+      {
+        description: "Dishwashing Liquid (10 boxes)",
+        quantity: 10,
+        unitPrice: 1080,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemDishwash._id,
+        amount: 10800,
+      },
     ],
-    subtotal: inv2Sub, taxRate: 12, taxAmount: inv2Tax, discount: 0,
-    totalAmount: inv2Tot, amountPaid: inv2Tot, balanceDue: 0,
+    subtotal: inv2Sub,
+    taxRate: 12,
+    taxAmount: inv2Tax,
+    discount: 0,
+    totalAmount: inv2Tot,
+    amountPaid: inv2Tot,
+    balanceDue: 0,
     terms: "Net 15",
     journalEntryId: inv2JE._id,
     createdBy: userId,
   });
 
   // INV-003 — Metro Deli (Partial)
-  const inv3Sub = 54000; const inv3Tax = Math.round(inv3Sub * 0.12 * 100) / 100; const inv3Tot = inv3Sub + inv3Tax;
-  const inv3JE = await makeSaleJE("JE-2026-008", daysAgo(25), "Sales to Metro Deli", inv3Sub, 12, inv3Tot, 41600);
+  const inv3Sub = 54000;
+  const inv3Tax = Math.round(inv3Sub * 0.12 * 100) / 100;
+  const inv3Tot = inv3Sub + inv3Tax;
+  const inv3JE = await makeSaleJE(
+    "JE-2026-008",
+    daysAgo(25),
+    "Sales to Metro Deli",
+    inv3Sub,
+    12,
+    inv3Tot,
+    41600,
+  );
   const inv3 = await Invoice.create({
-    companyId: cid, customerId: custMetroDeli._id,
+    companyId: cid,
+    customerId: custMetroDeli._id,
     invoiceNumber: "INV-2026-003",
-    invoiceDate: daysAgo(25), dueDate: daysFromNow(5),
+    invoiceDate: daysAgo(25),
+    dueDate: daysFromNow(5),
     status: InvoiceStatus.PARTIAL,
     lineItems: [
-      { description: "White Rice 50kg (15 sacks)", quantity: 15, unitPrice: 2800, accountId: acc("4000")._id, inventoryItemId: itemRiceWhite._id, amount: 42000 },
-      { description: "Mixed Vegetables 10kg (20 bundles)", quantity: 20, unitPrice: 600, accountId: acc("4000")._id, inventoryItemId: itemVeg._id, amount: 12000 },
+      {
+        description: "White Rice 50kg (15 sacks)",
+        quantity: 15,
+        unitPrice: 2800,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemRiceWhite._id,
+        amount: 42000,
+      },
+      {
+        description: "Mixed Vegetables 10kg (20 bundles)",
+        quantity: 20,
+        unitPrice: 600,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemVeg._id,
+        amount: 12000,
+      },
     ],
-    subtotal: inv3Sub, taxRate: 12, taxAmount: inv3Tax, discount: 0,
-    totalAmount: inv3Tot, amountPaid: 30000, balanceDue: inv3Tot - 30000,
+    subtotal: inv3Sub,
+    taxRate: 12,
+    taxAmount: inv3Tax,
+    discount: 0,
+    totalAmount: inv3Tot,
+    amountPaid: 30000,
+    balanceDue: inv3Tot - 30000,
     terms: "Net 30",
     journalEntryId: inv3JE._id,
     createdBy: userId,
   });
 
   // INV-004 — Golden Palate (Sent, not due yet)
-  const inv4Sub = 98000; const inv4Tax = Math.round(inv4Sub * 0.12 * 100) / 100; const inv4Tot = inv4Sub + inv4Tax;
-  const inv4JE = await makeSaleJE("JE-2026-009", daysAgo(10), "Sales to Golden Palate Catering", inv4Sub, 12, inv4Tot, 75460);
+  const inv4Sub = 98000;
+  const inv4Tax = Math.round(inv4Sub * 0.12 * 100) / 100;
+  const inv4Tot = inv4Sub + inv4Tax;
+  const inv4JE = await makeSaleJE(
+    "JE-2026-009",
+    daysAgo(10),
+    "Sales to Golden Palate Catering",
+    inv4Sub,
+    12,
+    inv4Tot,
+    75460,
+  );
   const inv4 = await Invoice.create({
-    companyId: cid, customerId: custGolden._id,
+    companyId: cid,
+    customerId: custGolden._id,
     invoiceNumber: "INV-2026-004",
-    invoiceDate: daysAgo(10), dueDate: daysFromNow(20),
+    invoiceDate: daysAgo(10),
+    dueDate: daysFromNow(20),
     status: InvoiceStatus.SENT,
     lineItems: [
-      { description: "White Rice 50kg (20 sacks)", quantity: 20, unitPrice: 2800, accountId: acc("4000")._id, inventoryItemId: itemRiceWhite._id, amount: 56000 },
-      { description: "Brown Rice 25kg (10 sacks)", quantity: 10, unitPrice: 1750, accountId: acc("4000")._id, inventoryItemId: itemRiceBrown._id, amount: 17500 },
-      { description: "Canned Tuna 24-cans (15 boxes)", quantity: 15, unitPrice: 960, accountId: acc("4000")._id, inventoryItemId: itemTuna._id, amount: 14400 },
-      { description: "Procurement Consultation (3 hrs)", quantity: 3, unitPrice: 3500, accountId: acc("4010")._id, inventoryItemId: itemConsult._id, amount: 10500 },
+      {
+        description: "White Rice 50kg (20 sacks)",
+        quantity: 20,
+        unitPrice: 2800,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemRiceWhite._id,
+        amount: 56000,
+      },
+      {
+        description: "Brown Rice 25kg (10 sacks)",
+        quantity: 10,
+        unitPrice: 1750,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemRiceBrown._id,
+        amount: 17500,
+      },
+      {
+        description: "Canned Tuna 24-cans (15 boxes)",
+        quantity: 15,
+        unitPrice: 960,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemTuna._id,
+        amount: 14400,
+      },
+      {
+        description: "Procurement Consultation (3 hrs)",
+        quantity: 3,
+        unitPrice: 3500,
+        accountId: acc("4010")._id,
+        inventoryItemId: itemConsult._id,
+        amount: 10500,
+      },
     ],
-    subtotal: inv4Sub, taxRate: 12, taxAmount: inv4Tax, discount: 0,
-    totalAmount: inv4Tot, amountPaid: 0, balanceDue: inv4Tot,
+    subtotal: inv4Sub,
+    taxRate: 12,
+    taxAmount: inv4Tax,
+    discount: 0,
+    totalAmount: inv4Tot,
+    amountPaid: 0,
+    balanceDue: inv4Tot,
     terms: "Net 30",
     journalEntryId: inv4JE._id,
     createdBy: userId,
   });
 
   // INV-005 — FreshMart (Overdue)
-  const inv5Sub = 162000; const inv5Tax = Math.round(inv5Sub * 0.12 * 100) / 100; const inv5Tot = inv5Sub + inv5Tax;
-  const inv5JE = await makeSaleJE("JE-2026-010", daysAgo(65), "Sales to FreshMart Convenience Stores", inv5Sub, 12, inv5Tot, 124740);
+  const inv5Sub = 162000;
+  const inv5Tax = Math.round(inv5Sub * 0.12 * 100) / 100;
+  const inv5Tot = inv5Sub + inv5Tax;
+  const inv5JE = await makeSaleJE(
+    "JE-2026-010",
+    daysAgo(65),
+    "Sales to FreshMart Convenience Stores",
+    inv5Sub,
+    12,
+    inv5Tot,
+    124740,
+  );
   const inv5 = await Invoice.create({
-    companyId: cid, customerId: custFreshmart._id,
+    companyId: cid,
+    customerId: custFreshmart._id,
     invoiceNumber: "INV-2026-005",
-    invoiceDate: daysAgo(65), dueDate: daysAgo(20),
+    invoiceDate: daysAgo(65),
+    dueDate: daysAgo(20),
     status: InvoiceStatus.OVERDUE,
     lineItems: [
-      { description: "White Rice 50kg (25 sacks)", quantity: 25, unitPrice: 2800, accountId: acc("4000")._id, inventoryItemId: itemRiceWhite._id, amount: 70000 },
-      { description: "Purified Water 500ml (100 boxes)", quantity: 100, unitPrice: 270, accountId: acc("4000")._id, inventoryItemId: itemWater._id, amount: 27000 },
-      { description: "Juice Drink 250ml (125 boxes)", quantity: 125, unitPrice: 360, accountId: acc("4000")._id, inventoryItemId: itemJuice._id, amount: 45000 },
-      { description: "Bath Soap 12-bars (20 boxes)", quantity: 20, unitPrice: 504, accountId: acc("4000")._id, inventoryItemId: itemSoap._id, amount: 10080 },
-      { description: "Canned Tuna 24-cans (10 boxes)", quantity: 10, unitPrice: 960, accountId: acc("4000")._id, inventoryItemId: itemTuna._id, amount: 9600 },
+      {
+        description: "White Rice 50kg (25 sacks)",
+        quantity: 25,
+        unitPrice: 2800,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemRiceWhite._id,
+        amount: 70000,
+      },
+      {
+        description: "Purified Water 500ml (100 boxes)",
+        quantity: 100,
+        unitPrice: 270,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemWater._id,
+        amount: 27000,
+      },
+      {
+        description: "Juice Drink 250ml (125 boxes)",
+        quantity: 125,
+        unitPrice: 360,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemJuice._id,
+        amount: 45000,
+      },
+      {
+        description: "Bath Soap 12-bars (20 boxes)",
+        quantity: 20,
+        unitPrice: 504,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemSoap._id,
+        amount: 10080,
+      },
+      {
+        description: "Canned Tuna 24-cans (10 boxes)",
+        quantity: 10,
+        unitPrice: 960,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemTuna._id,
+        amount: 9600,
+      },
     ],
-    subtotal: inv5Sub, taxRate: 12, taxAmount: inv5Tax, discount: 0,
-    totalAmount: inv5Tot, amountPaid: 0, balanceDue: inv5Tot,
+    subtotal: inv5Sub,
+    taxRate: 12,
+    taxAmount: inv5Tax,
+    discount: 0,
+    totalAmount: inv5Tot,
+    amountPaid: 0,
+    balanceDue: inv5Tot,
     terms: "Net 45",
     journalEntryId: inv5JE._id,
     createdBy: userId,
@@ -735,16 +1152,37 @@ async function seedFullCompany(companyId: string) {
 
   // INV-006 — Island Provisions (Draft)
   const inv6 = await Invoice.create({
-    companyId: cid, customerId: custIsland._id,
+    companyId: cid,
+    customerId: custIsland._id,
     invoiceNumber: "INV-2026-006",
-    invoiceDate: daysAgo(2), dueDate: daysFromNow(28),
+    invoiceDate: daysAgo(2),
+    dueDate: daysFromNow(28),
     status: InvoiceStatus.DRAFT,
     lineItems: [
-      { description: "White Rice 50kg (10 sacks)", quantity: 10, unitPrice: 2800, accountId: acc("4000")._id, inventoryItemId: itemRiceWhite._id, amount: 28000 },
-      { description: "Canned Tuna 24-cans (20 boxes)", quantity: 20, unitPrice: 960, accountId: acc("4000")._id, inventoryItemId: itemTuna._id, amount: 19200 },
+      {
+        description: "White Rice 50kg (10 sacks)",
+        quantity: 10,
+        unitPrice: 2800,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemRiceWhite._id,
+        amount: 28000,
+      },
+      {
+        description: "Canned Tuna 24-cans (20 boxes)",
+        quantity: 20,
+        unitPrice: 960,
+        accountId: acc("4000")._id,
+        inventoryItemId: itemTuna._id,
+        amount: 19200,
+      },
     ],
-    subtotal: 47200, taxRate: 12, taxAmount: 5664, discount: 0,
-    totalAmount: 52864, amountPaid: 0, balanceDue: 52864,
+    subtotal: 47200,
+    taxRate: 12,
+    taxAmount: 5664,
+    discount: 0,
+    totalAmount: 52864,
+    amountPaid: 0,
+    balanceDue: 52864,
     terms: "Net 30",
     createdBy: userId,
   });
@@ -756,122 +1194,284 @@ async function seedFullCompany(companyId: string) {
 
   // PAY-001 — Sunshine Grocery pays INV-001 in full (bank transfer)
   const pay1JE = await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-011", entryDate: daysAgo(24),
+    companyId: cid,
+    entryNumber: "JE-2026-011",
+    entryDate: daysAgo(24),
     description: "Payment received — Sunshine Grocery INV-2026-001",
-    entryType: JournalEntryType.AUTO_PAYMENT, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.AUTO_PAYMENT,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("1010")._id, accountCode: "1010", accountName: acc("1010").accountName, debit: inv1Tot, credit: 0, description: "Bank deposit" },
-      { accountId: acc("1100")._id, accountCode: "1100", accountName: acc("1100").accountName, debit: 0, credit: inv1Tot, description: "A/R cleared" },
+      {
+        accountId: acc("1010")._id,
+        accountCode: "1010",
+        accountName: acc("1010").accountName,
+        debit: inv1Tot,
+        credit: 0,
+        description: "Bank deposit",
+      },
+      {
+        accountId: acc("1100")._id,
+        accountCode: "1100",
+        accountName: acc("1100").accountName,
+        debit: 0,
+        credit: inv1Tot,
+        description: "A/R cleared",
+      },
     ],
-    totalDebit: inv1Tot, totalCredit: inv1Tot, createdBy: userId, postedBy: userId,
+    totalDebit: inv1Tot,
+    totalCredit: inv1Tot,
+    createdBy: userId,
+    postedBy: userId,
   });
   await Payment.create({
-    companyId: cid, paymentNumber: "PAY-2026-001", paymentDate: daysAgo(24),
-    paymentType: PaymentType.RECEIVED, paymentMethod: PaymentMethod.BANK_TRANSFER,
+    companyId: cid,
+    paymentNumber: "PAY-2026-001",
+    paymentDate: daysAgo(24),
+    paymentType: PaymentType.RECEIVED,
+    paymentMethod: PaymentMethod.BANK_TRANSFER,
     referenceNumber: "BT-20260320-001",
-    amount: inv1Tot, customerId: custSunshine._id,
+    amount: inv1Tot,
+    customerId: custSunshine._id,
     invoiceIds: [inv1._id],
-    allocations: [{ documentId: inv1._id, documentNumber: "INV-2026-001", allocatedAmount: inv1Tot, documentType: "INVOICE" }],
+    allocations: [
+      {
+        documentId: inv1._id,
+        documentNumber: "INV-2026-001",
+        allocatedAmount: inv1Tot,
+        documentType: "INVOICE",
+      },
+    ],
     billIds: [],
     bankAccountId: acc("1010")._id,
     status: "COMPLETED",
-    journalEntryId: pay1JE._id, createdBy: userId,
+    journalEntryId: pay1JE._id,
+    createdBy: userId,
   });
 
   // PAY-002 — Horizon Supermart pays INV-002 in full (check)
   const pay2JE = await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-012", entryDate: daysAgo(24),
+    companyId: cid,
+    entryNumber: "JE-2026-012",
+    entryDate: daysAgo(24),
     description: "Payment received — Horizon Supermart INV-2026-002",
-    entryType: JournalEntryType.AUTO_PAYMENT, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.AUTO_PAYMENT,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("1010")._id, accountCode: "1010", accountName: acc("1010").accountName, debit: inv2Tot, credit: 0, description: "Check deposit" },
-      { accountId: acc("1100")._id, accountCode: "1100", accountName: acc("1100").accountName, debit: 0, credit: inv2Tot, description: "A/R cleared" },
+      {
+        accountId: acc("1010")._id,
+        accountCode: "1010",
+        accountName: acc("1010").accountName,
+        debit: inv2Tot,
+        credit: 0,
+        description: "Check deposit",
+      },
+      {
+        accountId: acc("1100")._id,
+        accountCode: "1100",
+        accountName: acc("1100").accountName,
+        debit: 0,
+        credit: inv2Tot,
+        description: "A/R cleared",
+      },
     ],
-    totalDebit: inv2Tot, totalCredit: inv2Tot, createdBy: userId, postedBy: userId,
+    totalDebit: inv2Tot,
+    totalCredit: inv2Tot,
+    createdBy: userId,
+    postedBy: userId,
   });
   await Payment.create({
-    companyId: cid, paymentNumber: "PAY-2026-002", paymentDate: daysAgo(24),
-    paymentType: PaymentType.RECEIVED, paymentMethod: PaymentMethod.CHECK,
+    companyId: cid,
+    paymentNumber: "PAY-2026-002",
+    paymentDate: daysAgo(24),
+    paymentType: PaymentType.RECEIVED,
+    paymentMethod: PaymentMethod.CHECK,
     referenceNumber: "CHK-000081",
-    amount: inv2Tot, customerId: custHorizon._id,
+    amount: inv2Tot,
+    customerId: custHorizon._id,
     invoiceIds: [inv2._id],
-    allocations: [{ documentId: inv2._id, documentNumber: "INV-2026-002", allocatedAmount: inv2Tot, documentType: "INVOICE" }],
+    allocations: [
+      {
+        documentId: inv2._id,
+        documentNumber: "INV-2026-002",
+        allocatedAmount: inv2Tot,
+        documentType: "INVOICE",
+      },
+    ],
     billIds: [],
     bankAccountId: acc("1010")._id,
     status: "COMPLETED",
-    journalEntryId: pay2JE._id, createdBy: userId,
+    journalEntryId: pay2JE._id,
+    createdBy: userId,
   });
 
   // PAY-003 — Metro Deli partial on INV-003
   const pay3JE = await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-013", entryDate: daysAgo(15),
+    companyId: cid,
+    entryNumber: "JE-2026-013",
+    entryDate: daysAgo(15),
     description: "Partial payment received — Metro Deli INV-2026-003",
-    entryType: JournalEntryType.AUTO_PAYMENT, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.AUTO_PAYMENT,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("1010")._id, accountCode: "1010", accountName: acc("1010").accountName, debit: 30000, credit: 0, description: "Bank deposit" },
-      { accountId: acc("1100")._id, accountCode: "1100", accountName: acc("1100").accountName, debit: 0, credit: 30000, description: "Partial A/R reduction" },
+      {
+        accountId: acc("1010")._id,
+        accountCode: "1010",
+        accountName: acc("1010").accountName,
+        debit: 30000,
+        credit: 0,
+        description: "Bank deposit",
+      },
+      {
+        accountId: acc("1100")._id,
+        accountCode: "1100",
+        accountName: acc("1100").accountName,
+        debit: 0,
+        credit: 30000,
+        description: "Partial A/R reduction",
+      },
     ],
-    totalDebit: 30000, totalCredit: 30000, createdBy: userId, postedBy: userId,
+    totalDebit: 30000,
+    totalCredit: 30000,
+    createdBy: userId,
+    postedBy: userId,
   });
   await Payment.create({
-    companyId: cid, paymentNumber: "PAY-2026-003", paymentDate: daysAgo(15),
-    paymentType: PaymentType.RECEIVED, paymentMethod: PaymentMethod.BANK_TRANSFER,
+    companyId: cid,
+    paymentNumber: "PAY-2026-003",
+    paymentDate: daysAgo(15),
+    paymentType: PaymentType.RECEIVED,
+    paymentMethod: PaymentMethod.BANK_TRANSFER,
     referenceNumber: "BT-20260402-003",
-    amount: 30000, customerId: custMetroDeli._id,
+    amount: 30000,
+    customerId: custMetroDeli._id,
     invoiceIds: [inv3._id],
-    allocations: [{ documentId: inv3._id, documentNumber: "INV-2026-003", allocatedAmount: 30000, documentType: "INVOICE" }],
+    allocations: [
+      {
+        documentId: inv3._id,
+        documentNumber: "INV-2026-003",
+        allocatedAmount: 30000,
+        documentType: "INVOICE",
+      },
+    ],
     billIds: [],
     bankAccountId: acc("1010")._id,
     status: "COMPLETED",
-    journalEntryId: pay3JE._id, createdBy: userId,
+    journalEntryId: pay3JE._id,
+    createdBy: userId,
   });
 
   // PAY-004 — Pay Bill 1 (Manila Rice Trading, full)
   const pay4JE = await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-014", entryDate: daysAgo(28),
+    companyId: cid,
+    entryNumber: "JE-2026-014",
+    entryDate: daysAgo(28),
     description: "Payment made — Manila Rice Trading BILL-2026-001",
-    entryType: JournalEntryType.AUTO_PAYMENT, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.AUTO_PAYMENT,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("2000")._id, accountCode: "2000", accountName: acc("2000").accountName, debit: 123200, credit: 0, description: "A/P cleared" },
-      { accountId: acc("1010")._id, accountCode: "1010", accountName: acc("1010").accountName, debit: 0, credit: 123200, description: "Bank payment" },
+      {
+        accountId: acc("2000")._id,
+        accountCode: "2000",
+        accountName: acc("2000").accountName,
+        debit: 123200,
+        credit: 0,
+        description: "A/P cleared",
+      },
+      {
+        accountId: acc("1010")._id,
+        accountCode: "1010",
+        accountName: acc("1010").accountName,
+        debit: 0,
+        credit: 123200,
+        description: "Bank payment",
+      },
     ],
-    totalDebit: 123200, totalCredit: 123200, createdBy: userId, postedBy: userId,
+    totalDebit: 123200,
+    totalCredit: 123200,
+    createdBy: userId,
+    postedBy: userId,
   });
   await Payment.create({
-    companyId: cid, paymentNumber: "PAY-2026-004", paymentDate: daysAgo(28),
-    paymentType: PaymentType.MADE, paymentMethod: PaymentMethod.BANK_TRANSFER,
+    companyId: cid,
+    paymentNumber: "PAY-2026-004",
+    paymentDate: daysAgo(28),
+    paymentType: PaymentType.MADE,
+    paymentMethod: PaymentMethod.BANK_TRANSFER,
     referenceNumber: "BT-20260318-004",
-    amount: 123200, customerId: custSunshine._id, // required field — using a placeholder
+    amount: 123200,
+    customerId: custSunshine._id, // required field — using a placeholder
     supplierId: suppMRT,
-    invoiceIds: [], billIds: [bill1._id],
-    allocations: [{ documentId: bill1._id, documentNumber: "BILL-2026-001", allocatedAmount: 123200, documentType: "BILL" }],
+    invoiceIds: [],
+    billIds: [bill1._id],
+    allocations: [
+      {
+        documentId: bill1._id,
+        documentNumber: "BILL-2026-001",
+        allocatedAmount: 123200,
+        documentType: "BILL",
+      },
+    ],
     bankAccountId: acc("1010")._id,
     status: "COMPLETED",
-    journalEntryId: pay4JE._id, createdBy: userId,
+    journalEntryId: pay4JE._id,
+    createdBy: userId,
   });
 
   // PAY-005 — Pay Bill 2 (Metro Cleaning Supplies, full)
   const pay5JE = await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-015", entryDate: daysAgo(13),
+    companyId: cid,
+    entryNumber: "JE-2026-015",
+    entryDate: daysAgo(13),
     description: "Payment made — Metro Cleaning Supplies BILL-2026-002",
-    entryType: JournalEntryType.AUTO_PAYMENT, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.AUTO_PAYMENT,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("2000")._id, accountCode: "2000", accountName: acc("2000").accountName, debit: 47040, credit: 0, description: "A/P cleared" },
-      { accountId: acc("1010")._id, accountCode: "1010", accountName: acc("1010").accountName, debit: 0, credit: 47040, description: "Bank payment" },
+      {
+        accountId: acc("2000")._id,
+        accountCode: "2000",
+        accountName: acc("2000").accountName,
+        debit: 47040,
+        credit: 0,
+        description: "A/P cleared",
+      },
+      {
+        accountId: acc("1010")._id,
+        accountCode: "1010",
+        accountName: acc("1010").accountName,
+        debit: 0,
+        credit: 47040,
+        description: "Bank payment",
+      },
     ],
-    totalDebit: 47040, totalCredit: 47040, createdBy: userId, postedBy: userId,
+    totalDebit: 47040,
+    totalCredit: 47040,
+    createdBy: userId,
+    postedBy: userId,
   });
   await Payment.create({
-    companyId: cid, paymentNumber: "PAY-2026-005", paymentDate: daysAgo(13),
-    paymentType: PaymentType.MADE, paymentMethod: PaymentMethod.BANK_TRANSFER,
+    companyId: cid,
+    paymentNumber: "PAY-2026-005",
+    paymentDate: daysAgo(13),
+    paymentType: PaymentType.MADE,
+    paymentMethod: PaymentMethod.BANK_TRANSFER,
     referenceNumber: "BT-20260402-005",
-    amount: 47040, customerId: custSunshine._id,
+    amount: 47040,
+    customerId: custSunshine._id,
     supplierId: suppMCS,
-    invoiceIds: [], billIds: [bill2._id],
-    allocations: [{ documentId: bill2._id, documentNumber: "BILL-2026-002", allocatedAmount: 47040, documentType: "BILL" }],
+    invoiceIds: [],
+    billIds: [bill2._id],
+    allocations: [
+      {
+        documentId: bill2._id,
+        documentNumber: "BILL-2026-002",
+        allocatedAmount: 47040,
+        documentType: "BILL",
+      },
+    ],
     bankAccountId: acc("1010")._id,
     status: "COMPLETED",
-    journalEntryId: pay5JE._id, createdBy: userId,
+    journalEntryId: pay5JE._id,
+    createdBy: userId,
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -880,47 +1480,127 @@ async function seedFullCompany(companyId: string) {
   logger.info("Seeding manual journal entries…");
 
   await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-016", entryDate: daysAgo(45),
+    companyId: cid,
+    entryNumber: "JE-2026-016",
+    entryDate: daysAgo(45),
     description: "Monthly payroll — February 2026",
-    entryType: JournalEntryType.MANUAL, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.MANUAL,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("6000")._id, accountCode: "6000", accountName: acc("6000").accountName, debit: 120000, credit: 0, description: "Gross salaries Feb" },
-      { accountId: acc("1010")._id, accountCode: "1010", accountName: acc("1010").accountName, debit: 0, credit: 120000, description: "Payroll bank transfer" },
+      {
+        accountId: acc("6000")._id,
+        accountCode: "6000",
+        accountName: acc("6000").accountName,
+        debit: 120000,
+        credit: 0,
+        description: "Gross salaries Feb",
+      },
+      {
+        accountId: acc("1010")._id,
+        accountCode: "1010",
+        accountName: acc("1010").accountName,
+        debit: 0,
+        credit: 120000,
+        description: "Payroll bank transfer",
+      },
     ],
-    totalDebit: 120000, totalCredit: 120000, createdBy: userId, postedBy: userId,
+    totalDebit: 120000,
+    totalCredit: 120000,
+    createdBy: userId,
+    postedBy: userId,
   });
 
   await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-017", entryDate: daysAgo(15),
+    companyId: cid,
+    entryNumber: "JE-2026-017",
+    entryDate: daysAgo(15),
     description: "Monthly payroll — March 2026",
-    entryType: JournalEntryType.MANUAL, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.MANUAL,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("6000")._id, accountCode: "6000", accountName: acc("6000").accountName, debit: 120000, credit: 0, description: "Gross salaries Mar" },
-      { accountId: acc("1010")._id, accountCode: "1010", accountName: acc("1010").accountName, debit: 0, credit: 120000, description: "Payroll bank transfer" },
+      {
+        accountId: acc("6000")._id,
+        accountCode: "6000",
+        accountName: acc("6000").accountName,
+        debit: 120000,
+        credit: 0,
+        description: "Gross salaries Mar",
+      },
+      {
+        accountId: acc("1010")._id,
+        accountCode: "1010",
+        accountName: acc("1010").accountName,
+        debit: 0,
+        credit: 120000,
+        description: "Payroll bank transfer",
+      },
     ],
-    totalDebit: 120000, totalCredit: 120000, createdBy: userId, postedBy: userId,
+    totalDebit: 120000,
+    totalCredit: 120000,
+    createdBy: userId,
+    postedBy: userId,
   });
 
   await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-018", entryDate: daysAgo(15),
+    companyId: cid,
+    entryNumber: "JE-2026-018",
+    entryDate: daysAgo(15),
     description: "Depreciation — Q1 2026",
-    entryType: JournalEntryType.MANUAL, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.MANUAL,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("6400")._id, accountCode: "6400", accountName: acc("6400").accountName, debit: 18500, credit: 0, description: "Q1 depreciation" },
-      { accountId: acc("1200")._id, accountCode: "1200", accountName: acc("1200").accountName, debit: 0, credit: 18500, description: "Accumulated depreciation" },
+      {
+        accountId: acc("6400")._id,
+        accountCode: "6400",
+        accountName: acc("6400").accountName,
+        debit: 18500,
+        credit: 0,
+        description: "Q1 depreciation",
+      },
+      {
+        accountId: acc("1200")._id,
+        accountCode: "1200",
+        accountName: acc("1200").accountName,
+        debit: 0,
+        credit: 18500,
+        description: "Accumulated depreciation",
+      },
     ],
-    totalDebit: 18500, totalCredit: 18500, createdBy: userId, postedBy: userId,
+    totalDebit: 18500,
+    totalCredit: 18500,
+    createdBy: userId,
+    postedBy: userId,
   });
 
   await JournalEntry.create({
-    companyId: cid, entryNumber: "JE-2026-019", entryDate: daysAgo(75),
+    companyId: cid,
+    entryNumber: "JE-2026-019",
+    entryDate: daysAgo(75),
     description: "Owner capital contribution — January 2026",
-    entryType: JournalEntryType.MANUAL, status: JournalEntryStatus.POSTED,
+    entryType: JournalEntryType.MANUAL,
+    status: JournalEntryStatus.POSTED,
     lines: [
-      { accountId: acc("1010")._id, accountCode: "1010", accountName: acc("1010").accountName, debit: 500000, credit: 0, description: "Initial capital injection" },
-      { accountId: acc("3000")._id, accountCode: "3000", accountName: acc("3000").accountName, debit: 0, credit: 500000, description: "Owner's equity" },
+      {
+        accountId: acc("1010")._id,
+        accountCode: "1010",
+        accountName: acc("1010").accountName,
+        debit: 500000,
+        credit: 0,
+        description: "Initial capital injection",
+      },
+      {
+        accountId: acc("3000")._id,
+        accountCode: "3000",
+        accountName: acc("3000").accountName,
+        debit: 0,
+        credit: 500000,
+        description: "Owner's equity",
+      },
     ],
-    totalDebit: 500000, totalCredit: 500000, createdBy: userId, postedBy: userId,
+    totalDebit: 500000,
+    totalCredit: 500000,
+    createdBy: userId,
+    postedBy: userId,
   });
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -930,38 +1610,298 @@ async function seedFullCompany(companyId: string) {
 
   const inventoryTxns = [
     // Purchases (in)
-    { item: itemRiceWhite,  type: InventoryTransactionType.PURCHASE, date: daysAgo(60), refType: InventoryReferenceType.BILL, refId: bill1._id, qIn: 50, qOut: 0, cost: 2200, note: "Initial rice stock from Manila Rice Trading" },
-    { item: itemDishwash,   type: InventoryTransactionType.PURCHASE, date: daysAgo(45), refType: InventoryReferenceType.BILL, refId: bill2._id, qIn: 50, qOut: 0, cost: 840,  note: "Cleaning supplies restock" },
-    { item: itemWater,      type: InventoryTransactionType.PURCHASE, date: daysAgo(30), refType: InventoryReferenceType.BILL, refId: bill3._id, qIn: 100, qOut: 0, cost: 180, note: "Water beverages purchase" },
-    { item: itemJuice,      type: InventoryTransactionType.PURCHASE, date: daysAgo(30), refType: InventoryReferenceType.BILL, refId: bill3._id, qIn: 150, qOut: 0, cost: 240, note: "Juice drinks purchase" },
-    { item: itemTuna,       type: InventoryTransactionType.PURCHASE, date: daysAgo(14), refType: InventoryReferenceType.BILL, refId: bill4._id, qIn: 100, qOut: 0, cost: 720, note: "Canned goods restock" },
+    {
+      item: itemRiceWhite,
+      type: InventoryTransactionType.PURCHASE,
+      date: daysAgo(60),
+      refType: InventoryReferenceType.BILL,
+      refId: bill1._id,
+      qIn: 50,
+      qOut: 0,
+      cost: 2200,
+      note: "Initial rice stock from Manila Rice Trading",
+    },
+    {
+      item: itemDishwash,
+      type: InventoryTransactionType.PURCHASE,
+      date: daysAgo(45),
+      refType: InventoryReferenceType.BILL,
+      refId: bill2._id,
+      qIn: 50,
+      qOut: 0,
+      cost: 840,
+      note: "Cleaning supplies restock",
+    },
+    {
+      item: itemWater,
+      type: InventoryTransactionType.PURCHASE,
+      date: daysAgo(30),
+      refType: InventoryReferenceType.BILL,
+      refId: bill3._id,
+      qIn: 100,
+      qOut: 0,
+      cost: 180,
+      note: "Water beverages purchase",
+    },
+    {
+      item: itemJuice,
+      type: InventoryTransactionType.PURCHASE,
+      date: daysAgo(30),
+      refType: InventoryReferenceType.BILL,
+      refId: bill3._id,
+      qIn: 150,
+      qOut: 0,
+      cost: 240,
+      note: "Juice drinks purchase",
+    },
+    {
+      item: itemTuna,
+      type: InventoryTransactionType.PURCHASE,
+      date: daysAgo(14),
+      refType: InventoryReferenceType.BILL,
+      refId: bill4._id,
+      qIn: 100,
+      qOut: 0,
+      cost: 720,
+      note: "Canned goods restock",
+    },
     // Sales (out) — from INV-001
-    { item: itemRiceWhite,  type: InventoryTransactionType.SALE, date: daysAgo(55), refType: InventoryReferenceType.INVOICE, refId: inv1._id, qIn: 0, qOut: 30, cost: 2200, note: "Sales to Sunshine Grocery" },
-    { item: itemRiceBrown,  type: InventoryTransactionType.SALE, date: daysAgo(55), refType: InventoryReferenceType.INVOICE, refId: inv1._id, qIn: 0, qOut: 20, cost: 1350, note: "Sales to Sunshine Grocery" },
-    { item: itemVeg,        type: InventoryTransactionType.SALE, date: daysAgo(55), refType: InventoryReferenceType.INVOICE, refId: inv1._id, qIn: 0, qOut: 25, cost: 450, note: "Sales to Sunshine Grocery" },
-    { item: itemTuna,       type: InventoryTransactionType.SALE, date: daysAgo(55), refType: InventoryReferenceType.INVOICE, refId: inv1._id, qIn: 0, qOut: 5,  cost: 720, note: "Sales to Sunshine Grocery" },
+    {
+      item: itemRiceWhite,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(55),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv1._id,
+      qIn: 0,
+      qOut: 30,
+      cost: 2200,
+      note: "Sales to Sunshine Grocery",
+    },
+    {
+      item: itemRiceBrown,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(55),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv1._id,
+      qIn: 0,
+      qOut: 20,
+      cost: 1350,
+      note: "Sales to Sunshine Grocery",
+    },
+    {
+      item: itemVeg,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(55),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv1._id,
+      qIn: 0,
+      qOut: 25,
+      cost: 450,
+      note: "Sales to Sunshine Grocery",
+    },
+    {
+      item: itemTuna,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(55),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv1._id,
+      qIn: 0,
+      qOut: 5,
+      cost: 720,
+      note: "Sales to Sunshine Grocery",
+    },
     // Sales — INV-002
-    { item: itemWater,      type: InventoryTransactionType.SALE, date: daysAgo(40), refType: InventoryReferenceType.INVOICE, refId: inv2._id, qIn: 0, qOut: 120, cost: 180, note: "Sales to Horizon Supermart" },
-    { item: itemJuice,      type: InventoryTransactionType.SALE, date: daysAgo(40), refType: InventoryReferenceType.INVOICE, refId: inv2._id, qIn: 0, qOut: 100, cost: 240, note: "Sales to Horizon Supermart" },
-    { item: itemSoap,       type: InventoryTransactionType.SALE, date: daysAgo(40), refType: InventoryReferenceType.INVOICE, refId: inv2._id, qIn: 0, qOut: 50, cost: 360, note: "Sales to Horizon Supermart" },
-    { item: itemDishwash,   type: InventoryTransactionType.SALE, date: daysAgo(40), refType: InventoryReferenceType.INVOICE, refId: inv2._id, qIn: 0, qOut: 10, cost: 840, note: "Sales to Horizon Supermart" },
+    {
+      item: itemWater,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(40),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv2._id,
+      qIn: 0,
+      qOut: 120,
+      cost: 180,
+      note: "Sales to Horizon Supermart",
+    },
+    {
+      item: itemJuice,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(40),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv2._id,
+      qIn: 0,
+      qOut: 100,
+      cost: 240,
+      note: "Sales to Horizon Supermart",
+    },
+    {
+      item: itemSoap,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(40),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv2._id,
+      qIn: 0,
+      qOut: 50,
+      cost: 360,
+      note: "Sales to Horizon Supermart",
+    },
+    {
+      item: itemDishwash,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(40),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv2._id,
+      qIn: 0,
+      qOut: 10,
+      cost: 840,
+      note: "Sales to Horizon Supermart",
+    },
     // Sales — INV-003
-    { item: itemRiceWhite,  type: InventoryTransactionType.SALE, date: daysAgo(25), refType: InventoryReferenceType.INVOICE, refId: inv3._id, qIn: 0, qOut: 15, cost: 2200, note: "Sales to Metro Deli" },
-    { item: itemVeg,        type: InventoryTransactionType.SALE, date: daysAgo(25), refType: InventoryReferenceType.INVOICE, refId: inv3._id, qIn: 0, qOut: 20, cost: 450, note: "Sales to Metro Deli" },
+    {
+      item: itemRiceWhite,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(25),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv3._id,
+      qIn: 0,
+      qOut: 15,
+      cost: 2200,
+      note: "Sales to Metro Deli",
+    },
+    {
+      item: itemVeg,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(25),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv3._id,
+      qIn: 0,
+      qOut: 20,
+      cost: 450,
+      note: "Sales to Metro Deli",
+    },
     // Sales — INV-004
-    { item: itemRiceWhite,  type: InventoryTransactionType.SALE, date: daysAgo(10), refType: InventoryReferenceType.INVOICE, refId: inv4._id, qIn: 0, qOut: 20, cost: 2200, note: "Sales to Golden Palate" },
-    { item: itemRiceBrown,  type: InventoryTransactionType.SALE, date: daysAgo(10), refType: InventoryReferenceType.INVOICE, refId: inv4._id, qIn: 0, qOut: 10, cost: 1350, note: "Sales to Golden Palate" },
-    { item: itemTuna,       type: InventoryTransactionType.SALE, date: daysAgo(10), refType: InventoryReferenceType.INVOICE, refId: inv4._id, qIn: 0, qOut: 15, cost: 720, note: "Sales to Golden Palate" },
+    {
+      item: itemRiceWhite,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(10),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv4._id,
+      qIn: 0,
+      qOut: 20,
+      cost: 2200,
+      note: "Sales to Golden Palate",
+    },
+    {
+      item: itemRiceBrown,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(10),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv4._id,
+      qIn: 0,
+      qOut: 10,
+      cost: 1350,
+      note: "Sales to Golden Palate",
+    },
+    {
+      item: itemTuna,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(10),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv4._id,
+      qIn: 0,
+      qOut: 15,
+      cost: 720,
+      note: "Sales to Golden Palate",
+    },
     // Sales — INV-005
-    { item: itemRiceWhite,  type: InventoryTransactionType.SALE, date: daysAgo(65), refType: InventoryReferenceType.INVOICE, refId: inv5._id, qIn: 0, qOut: 25, cost: 2200, note: "Sales to FreshMart" },
-    { item: itemWater,      type: InventoryTransactionType.SALE, date: daysAgo(65), refType: InventoryReferenceType.INVOICE, refId: inv5._id, qIn: 0, qOut: 100, cost: 180, note: "Sales to FreshMart" },
-    { item: itemJuice,      type: InventoryTransactionType.SALE, date: daysAgo(65), refType: InventoryReferenceType.INVOICE, refId: inv5._id, qIn: 0, qOut: 125, cost: 240, note: "Sales to FreshMart" },
-    { item: itemSoap,       type: InventoryTransactionType.SALE, date: daysAgo(65), refType: InventoryReferenceType.INVOICE, refId: inv5._id, qIn: 0, qOut: 20, cost: 360, note: "Sales to FreshMart" },
-    { item: itemTuna,       type: InventoryTransactionType.SALE, date: daysAgo(65), refType: InventoryReferenceType.INVOICE, refId: inv5._id, qIn: 0, qOut: 10, cost: 720, note: "Sales to FreshMart" },
+    {
+      item: itemRiceWhite,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(65),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv5._id,
+      qIn: 0,
+      qOut: 25,
+      cost: 2200,
+      note: "Sales to FreshMart",
+    },
+    {
+      item: itemWater,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(65),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv5._id,
+      qIn: 0,
+      qOut: 100,
+      cost: 180,
+      note: "Sales to FreshMart",
+    },
+    {
+      item: itemJuice,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(65),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv5._id,
+      qIn: 0,
+      qOut: 125,
+      cost: 240,
+      note: "Sales to FreshMart",
+    },
+    {
+      item: itemSoap,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(65),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv5._id,
+      qIn: 0,
+      qOut: 20,
+      cost: 360,
+      note: "Sales to FreshMart",
+    },
+    {
+      item: itemTuna,
+      type: InventoryTransactionType.SALE,
+      date: daysAgo(65),
+      refType: InventoryReferenceType.INVOICE,
+      refId: inv5._id,
+      qIn: 0,
+      qOut: 10,
+      cost: 720,
+      note: "Sales to FreshMart",
+    },
     // Stock adjustment — initial inventory loading
-    { item: itemRiceBrown,  type: InventoryTransactionType.ADJUSTMENT, date: daysAgo(70), refType: InventoryReferenceType.MANUAL, refId: new Types.ObjectId(), qIn: 150, qOut: 0, cost: 1350, note: "Opening stock — brown rice" },
-    { item: itemVeg,        type: InventoryTransactionType.ADJUSTMENT, date: daysAgo(70), refType: InventoryReferenceType.MANUAL, refId: new Types.ObjectId(), qIn: 125, qOut: 0, cost: 450, note: "Opening stock — vegetables" },
-    { item: itemSoap,       type: InventoryTransactionType.ADJUSTMENT, date: daysAgo(70), refType: InventoryReferenceType.MANUAL, refId: new Types.ObjectId(), qIn: 160, qOut: 0, cost: 360, note: "Opening stock — bath soap" },
+    {
+      item: itemRiceBrown,
+      type: InventoryTransactionType.ADJUSTMENT,
+      date: daysAgo(70),
+      refType: InventoryReferenceType.MANUAL,
+      refId: new Types.ObjectId(),
+      qIn: 150,
+      qOut: 0,
+      cost: 1350,
+      note: "Opening stock — brown rice",
+    },
+    {
+      item: itemVeg,
+      type: InventoryTransactionType.ADJUSTMENT,
+      date: daysAgo(70),
+      refType: InventoryReferenceType.MANUAL,
+      refId: new Types.ObjectId(),
+      qIn: 125,
+      qOut: 0,
+      cost: 450,
+      note: "Opening stock — vegetables",
+    },
+    {
+      item: itemSoap,
+      type: InventoryTransactionType.ADJUSTMENT,
+      date: daysAgo(70),
+      refType: InventoryReferenceType.MANUAL,
+      refId: new Types.ObjectId(),
+      qIn: 160,
+      qOut: 0,
+      cost: 360,
+      note: "Opening stock — bath soap",
+    },
   ];
 
   for (const t of inventoryTxns) {
@@ -995,99 +1935,498 @@ async function seedFullCompany(companyId: string) {
 
   const ledgerEntries = [
     // ── JE-2026-019 — Owner capital contribution ──────────────────────────────
-    { date: daysAgo(75), jeNum: "JE-2026-019", accCode: "1010", debit: 500000, credit: 0,       desc: "Owner capital contribution" },
-    { date: daysAgo(75), jeNum: "JE-2026-019", accCode: "3000", debit: 0,      credit: 500000,  desc: "Owner capital contribution" },
+    {
+      date: daysAgo(75),
+      jeNum: "JE-2026-019",
+      accCode: "1010",
+      debit: 500000,
+      credit: 0,
+      desc: "Owner capital contribution",
+    },
+    {
+      date: daysAgo(75),
+      jeNum: "JE-2026-019",
+      accCode: "3000",
+      debit: 0,
+      credit: 500000,
+      desc: "Owner capital contribution",
+    },
 
     // ── JE-2026-005 — BILL-005: Rent expense (daysAgo 75) ───────────────────
-    { date: daysAgo(75), jeNum: "JE-2026-005", accCode: "6100", debit: 45000,  credit: 0,       desc: "BILL-2026-005 rent expense" },
-    { date: daysAgo(75), jeNum: "JE-2026-005", accCode: "2000", debit: 0,      credit: 45000,   desc: "BILL-2026-005 A/P" },
+    {
+      date: daysAgo(75),
+      jeNum: "JE-2026-005",
+      accCode: "6100",
+      debit: 45000,
+      credit: 0,
+      desc: "BILL-2026-005 rent expense",
+    },
+    {
+      date: daysAgo(75),
+      jeNum: "JE-2026-005",
+      accCode: "2000",
+      debit: 0,
+      credit: 45000,
+      desc: "BILL-2026-005 A/P",
+    },
 
     // ── JE-2026-001 — BILL-001: Rice purchase ────────────────────────────────
-    { date: daysAgo(60), jeNum: "JE-2026-001", accCode: "1200", debit: 110000, credit: 0,       desc: "BILL-2026-001 inventory in" },
-    { date: daysAgo(60), jeNum: "JE-2026-001", accCode: "2100", debit: 13200,  credit: 0,       desc: "BILL-2026-001 input VAT" },
-    { date: daysAgo(60), jeNum: "JE-2026-001", accCode: "2000", debit: 0,      credit: 123200,  desc: "BILL-2026-001 A/P" },
+    {
+      date: daysAgo(60),
+      jeNum: "JE-2026-001",
+      accCode: "1200",
+      debit: 110000,
+      credit: 0,
+      desc: "BILL-2026-001 inventory in",
+    },
+    {
+      date: daysAgo(60),
+      jeNum: "JE-2026-001",
+      accCode: "2100",
+      debit: 13200,
+      credit: 0,
+      desc: "BILL-2026-001 input VAT",
+    },
+    {
+      date: daysAgo(60),
+      jeNum: "JE-2026-001",
+      accCode: "2000",
+      debit: 0,
+      credit: 123200,
+      desc: "BILL-2026-001 A/P",
+    },
 
     // ── JE-2026-010 — INV-005: FreshMart sale (daysAgo 65) ───────────────────
-    { date: daysAgo(65), jeNum: "JE-2026-010", accCode: "1100", debit: inv5Tot,  credit: 0,       desc: "INV-2026-005 A/R" },
-    { date: daysAgo(65), jeNum: "JE-2026-010", accCode: "4000", debit: 0,        credit: inv5Sub,  desc: "INV-2026-005 revenue" },
-    { date: daysAgo(65), jeNum: "JE-2026-010", accCode: "2100", debit: 0,        credit: inv5Tax,  desc: "INV-2026-005 output VAT" },
-    { date: daysAgo(65), jeNum: "JE-2026-010", accCode: "5000", debit: 124740,   credit: 0,        desc: "INV-2026-005 COGS" },
-    { date: daysAgo(65), jeNum: "JE-2026-010", accCode: "1200", debit: 0,        credit: 124740,   desc: "INV-2026-005 inventory out" },
+    {
+      date: daysAgo(65),
+      jeNum: "JE-2026-010",
+      accCode: "1100",
+      debit: inv5Tot,
+      credit: 0,
+      desc: "INV-2026-005 A/R",
+    },
+    {
+      date: daysAgo(65),
+      jeNum: "JE-2026-010",
+      accCode: "4000",
+      debit: 0,
+      credit: inv5Sub,
+      desc: "INV-2026-005 revenue",
+    },
+    {
+      date: daysAgo(65),
+      jeNum: "JE-2026-010",
+      accCode: "2100",
+      debit: 0,
+      credit: inv5Tax,
+      desc: "INV-2026-005 output VAT",
+    },
+    {
+      date: daysAgo(65),
+      jeNum: "JE-2026-010",
+      accCode: "5000",
+      debit: 124740,
+      credit: 0,
+      desc: "INV-2026-005 COGS",
+    },
+    {
+      date: daysAgo(65),
+      jeNum: "JE-2026-010",
+      accCode: "1200",
+      debit: 0,
+      credit: 124740,
+      desc: "INV-2026-005 inventory out",
+    },
 
     // ── JE-2026-006 — INV-001: Sunshine sale ─────────────────────────────────
-    { date: daysAgo(55), jeNum: "JE-2026-006", accCode: "1100", debit: inv1Tot,  credit: 0,       desc: "INV-2026-001 A/R" },
-    { date: daysAgo(55), jeNum: "JE-2026-006", accCode: "4000", debit: 0,        credit: inv1Sub,  desc: "INV-2026-001 revenue" },
-    { date: daysAgo(55), jeNum: "JE-2026-006", accCode: "2100", debit: 0,        credit: inv1Tax,  desc: "INV-2026-001 output VAT" },
-    { date: daysAgo(55), jeNum: "JE-2026-006", accCode: "5000", debit: 107800,   credit: 0,        desc: "INV-2026-001 COGS" },
-    { date: daysAgo(55), jeNum: "JE-2026-006", accCode: "1200", debit: 0,        credit: 107800,   desc: "INV-2026-001 inventory out" },
+    {
+      date: daysAgo(55),
+      jeNum: "JE-2026-006",
+      accCode: "1100",
+      debit: inv1Tot,
+      credit: 0,
+      desc: "INV-2026-001 A/R",
+    },
+    {
+      date: daysAgo(55),
+      jeNum: "JE-2026-006",
+      accCode: "4000",
+      debit: 0,
+      credit: inv1Sub,
+      desc: "INV-2026-001 revenue",
+    },
+    {
+      date: daysAgo(55),
+      jeNum: "JE-2026-006",
+      accCode: "2100",
+      debit: 0,
+      credit: inv1Tax,
+      desc: "INV-2026-001 output VAT",
+    },
+    {
+      date: daysAgo(55),
+      jeNum: "JE-2026-006",
+      accCode: "5000",
+      debit: 107800,
+      credit: 0,
+      desc: "INV-2026-001 COGS",
+    },
+    {
+      date: daysAgo(55),
+      jeNum: "JE-2026-006",
+      accCode: "1200",
+      debit: 0,
+      credit: 107800,
+      desc: "INV-2026-001 inventory out",
+    },
 
     // ── JE-2026-002 — BILL-002: Cleaning supplies ────────────────────────────
-    { date: daysAgo(45), jeNum: "JE-2026-002", accCode: "1200", debit: 42000,  credit: 0,       desc: "BILL-2026-002 inventory in" },
-    { date: daysAgo(45), jeNum: "JE-2026-002", accCode: "2100", debit: 5040,   credit: 0,       desc: "BILL-2026-002 input VAT" },
-    { date: daysAgo(45), jeNum: "JE-2026-002", accCode: "2000", debit: 0,      credit: 47040,   desc: "BILL-2026-002 A/P" },
+    {
+      date: daysAgo(45),
+      jeNum: "JE-2026-002",
+      accCode: "1200",
+      debit: 42000,
+      credit: 0,
+      desc: "BILL-2026-002 inventory in",
+    },
+    {
+      date: daysAgo(45),
+      jeNum: "JE-2026-002",
+      accCode: "2100",
+      debit: 5040,
+      credit: 0,
+      desc: "BILL-2026-002 input VAT",
+    },
+    {
+      date: daysAgo(45),
+      jeNum: "JE-2026-002",
+      accCode: "2000",
+      debit: 0,
+      credit: 47040,
+      desc: "BILL-2026-002 A/P",
+    },
 
     // ── JE-2026-016 — Feb payroll ─────────────────────────────────────────────
-    { date: daysAgo(45), jeNum: "JE-2026-016", accCode: "6000", debit: 120000, credit: 0,       desc: "Feb 2026 payroll" },
-    { date: daysAgo(45), jeNum: "JE-2026-016", accCode: "1010", debit: 0,      credit: 120000,  desc: "Feb 2026 payroll bank" },
+    {
+      date: daysAgo(45),
+      jeNum: "JE-2026-016",
+      accCode: "6000",
+      debit: 120000,
+      credit: 0,
+      desc: "Feb 2026 payroll",
+    },
+    {
+      date: daysAgo(45),
+      jeNum: "JE-2026-016",
+      accCode: "1010",
+      debit: 0,
+      credit: 120000,
+      desc: "Feb 2026 payroll bank",
+    },
 
     // ── JE-2026-007 — INV-002: Horizon sale ──────────────────────────────────
-    { date: daysAgo(40), jeNum: "JE-2026-007", accCode: "1100", debit: inv2Tot,  credit: 0,       desc: "INV-2026-002 A/R" },
-    { date: daysAgo(40), jeNum: "JE-2026-007", accCode: "4000", debit: 0,        credit: inv2Sub,  desc: "INV-2026-002 revenue" },
-    { date: daysAgo(40), jeNum: "JE-2026-007", accCode: "2100", debit: 0,        credit: inv2Tax,  desc: "INV-2026-002 output VAT" },
-    { date: daysAgo(40), jeNum: "JE-2026-007", accCode: "5000", debit: 66600,    credit: 0,        desc: "INV-2026-002 COGS" },
-    { date: daysAgo(40), jeNum: "JE-2026-007", accCode: "1200", debit: 0,        credit: 66600,    desc: "INV-2026-002 inventory out" },
+    {
+      date: daysAgo(40),
+      jeNum: "JE-2026-007",
+      accCode: "1100",
+      debit: inv2Tot,
+      credit: 0,
+      desc: "INV-2026-002 A/R",
+    },
+    {
+      date: daysAgo(40),
+      jeNum: "JE-2026-007",
+      accCode: "4000",
+      debit: 0,
+      credit: inv2Sub,
+      desc: "INV-2026-002 revenue",
+    },
+    {
+      date: daysAgo(40),
+      jeNum: "JE-2026-007",
+      accCode: "2100",
+      debit: 0,
+      credit: inv2Tax,
+      desc: "INV-2026-002 output VAT",
+    },
+    {
+      date: daysAgo(40),
+      jeNum: "JE-2026-007",
+      accCode: "5000",
+      debit: 66600,
+      credit: 0,
+      desc: "INV-2026-002 COGS",
+    },
+    {
+      date: daysAgo(40),
+      jeNum: "JE-2026-007",
+      accCode: "1200",
+      debit: 0,
+      credit: 66600,
+      desc: "INV-2026-002 inventory out",
+    },
 
     // ── JE-2026-003 — BILL-003: Beverage purchase ────────────────────────────
-    { date: daysAgo(30), jeNum: "JE-2026-003", accCode: "1200", debit: bill3Subtotal, credit: 0,     desc: "BILL-2026-003 inventory in" },
-    { date: daysAgo(30), jeNum: "JE-2026-003", accCode: "2100", debit: bill3Tax,      credit: 0,     desc: "BILL-2026-003 input VAT" },
-    { date: daysAgo(30), jeNum: "JE-2026-003", accCode: "2000", debit: 0,            credit: bill3TotL, desc: "BILL-2026-003 A/P" },
+    {
+      date: daysAgo(30),
+      jeNum: "JE-2026-003",
+      accCode: "1200",
+      debit: bill3Subtotal,
+      credit: 0,
+      desc: "BILL-2026-003 inventory in",
+    },
+    {
+      date: daysAgo(30),
+      jeNum: "JE-2026-003",
+      accCode: "2100",
+      debit: bill3Tax,
+      credit: 0,
+      desc: "BILL-2026-003 input VAT",
+    },
+    {
+      date: daysAgo(30),
+      jeNum: "JE-2026-003",
+      accCode: "2000",
+      debit: 0,
+      credit: bill3TotL,
+      desc: "BILL-2026-003 A/P",
+    },
 
     // ── JE-2026-014 — PAY-004: Pay BILL-001 ──────────────────────────────────
-    { date: daysAgo(28), jeNum: "JE-2026-014", accCode: "2000", debit: 123200,  credit: 0,       desc: "PAY-2026-004 A/P cleared" },
-    { date: daysAgo(28), jeNum: "JE-2026-014", accCode: "1010", debit: 0,       credit: 123200,  desc: "PAY-2026-004 bank payment" },
+    {
+      date: daysAgo(28),
+      jeNum: "JE-2026-014",
+      accCode: "2000",
+      debit: 123200,
+      credit: 0,
+      desc: "PAY-2026-004 A/P cleared",
+    },
+    {
+      date: daysAgo(28),
+      jeNum: "JE-2026-014",
+      accCode: "1010",
+      debit: 0,
+      credit: 123200,
+      desc: "PAY-2026-004 bank payment",
+    },
 
     // ── JE-2026-008 — INV-003: Metro Deli sale ───────────────────────────────
-    { date: daysAgo(25), jeNum: "JE-2026-008", accCode: "1100", debit: inv3Tot,  credit: 0,       desc: "INV-2026-003 A/R" },
-    { date: daysAgo(25), jeNum: "JE-2026-008", accCode: "4000", debit: 0,        credit: inv3Sub,  desc: "INV-2026-003 revenue" },
-    { date: daysAgo(25), jeNum: "JE-2026-008", accCode: "2100", debit: 0,        credit: inv3Tax,  desc: "INV-2026-003 output VAT" },
-    { date: daysAgo(25), jeNum: "JE-2026-008", accCode: "5000", debit: 41600,    credit: 0,        desc: "INV-2026-003 COGS" },
-    { date: daysAgo(25), jeNum: "JE-2026-008", accCode: "1200", debit: 0,        credit: 41600,    desc: "INV-2026-003 inventory out" },
+    {
+      date: daysAgo(25),
+      jeNum: "JE-2026-008",
+      accCode: "1100",
+      debit: inv3Tot,
+      credit: 0,
+      desc: "INV-2026-003 A/R",
+    },
+    {
+      date: daysAgo(25),
+      jeNum: "JE-2026-008",
+      accCode: "4000",
+      debit: 0,
+      credit: inv3Sub,
+      desc: "INV-2026-003 revenue",
+    },
+    {
+      date: daysAgo(25),
+      jeNum: "JE-2026-008",
+      accCode: "2100",
+      debit: 0,
+      credit: inv3Tax,
+      desc: "INV-2026-003 output VAT",
+    },
+    {
+      date: daysAgo(25),
+      jeNum: "JE-2026-008",
+      accCode: "5000",
+      debit: 41600,
+      credit: 0,
+      desc: "INV-2026-003 COGS",
+    },
+    {
+      date: daysAgo(25),
+      jeNum: "JE-2026-008",
+      accCode: "1200",
+      debit: 0,
+      credit: 41600,
+      desc: "INV-2026-003 inventory out",
+    },
 
     // ── JE-2026-011 — PAY-001: Sunshine pays INV-001 ─────────────────────────
-    { date: daysAgo(24), jeNum: "JE-2026-011", accCode: "1010", debit: inv1Tot,  credit: 0,       desc: "PAY-2026-001 bank receipt" },
-    { date: daysAgo(24), jeNum: "JE-2026-011", accCode: "1100", debit: 0,        credit: inv1Tot,  desc: "PAY-2026-001 A/R cleared" },
+    {
+      date: daysAgo(24),
+      jeNum: "JE-2026-011",
+      accCode: "1010",
+      debit: inv1Tot,
+      credit: 0,
+      desc: "PAY-2026-001 bank receipt",
+    },
+    {
+      date: daysAgo(24),
+      jeNum: "JE-2026-011",
+      accCode: "1100",
+      debit: 0,
+      credit: inv1Tot,
+      desc: "PAY-2026-001 A/R cleared",
+    },
 
     // ── JE-2026-012 — PAY-002: Horizon pays INV-002 ──────────────────────────
-    { date: daysAgo(24), jeNum: "JE-2026-012", accCode: "1010", debit: inv2Tot,  credit: 0,       desc: "PAY-2026-002 bank receipt" },
-    { date: daysAgo(24), jeNum: "JE-2026-012", accCode: "1100", debit: 0,        credit: inv2Tot,  desc: "PAY-2026-002 A/R cleared" },
+    {
+      date: daysAgo(24),
+      jeNum: "JE-2026-012",
+      accCode: "1010",
+      debit: inv2Tot,
+      credit: 0,
+      desc: "PAY-2026-002 bank receipt",
+    },
+    {
+      date: daysAgo(24),
+      jeNum: "JE-2026-012",
+      accCode: "1100",
+      debit: 0,
+      credit: inv2Tot,
+      desc: "PAY-2026-002 A/R cleared",
+    },
 
     // ── JE-2026-013 — PAY-003: Metro Deli partial (daysAgo 15) ───────────────
-    { date: daysAgo(15), jeNum: "JE-2026-013", accCode: "1010", debit: 30000,  credit: 0,       desc: "PAY-2026-003 partial receipt" },
-    { date: daysAgo(15), jeNum: "JE-2026-013", accCode: "1100", debit: 0,      credit: 30000,   desc: "PAY-2026-003 partial A/R" },
+    {
+      date: daysAgo(15),
+      jeNum: "JE-2026-013",
+      accCode: "1010",
+      debit: 30000,
+      credit: 0,
+      desc: "PAY-2026-003 partial receipt",
+    },
+    {
+      date: daysAgo(15),
+      jeNum: "JE-2026-013",
+      accCode: "1100",
+      debit: 0,
+      credit: 30000,
+      desc: "PAY-2026-003 partial A/R",
+    },
 
     // ── JE-2026-017 — Mar payroll (daysAgo 15) ───────────────────────────────
-    { date: daysAgo(15), jeNum: "JE-2026-017", accCode: "6000", debit: 120000, credit: 0,       desc: "Mar 2026 payroll" },
-    { date: daysAgo(15), jeNum: "JE-2026-017", accCode: "1010", debit: 0,      credit: 120000,  desc: "Mar 2026 payroll bank" },
+    {
+      date: daysAgo(15),
+      jeNum: "JE-2026-017",
+      accCode: "6000",
+      debit: 120000,
+      credit: 0,
+      desc: "Mar 2026 payroll",
+    },
+    {
+      date: daysAgo(15),
+      jeNum: "JE-2026-017",
+      accCode: "1010",
+      debit: 0,
+      credit: 120000,
+      desc: "Mar 2026 payroll bank",
+    },
 
     // ── JE-2026-018 — Q1 depreciation (daysAgo 15) ───────────────────────────
-    { date: daysAgo(15), jeNum: "JE-2026-018", accCode: "6400", debit: 18500,  credit: 0,       desc: "Q1 2026 depreciation" },
-    { date: daysAgo(15), jeNum: "JE-2026-018", accCode: "1200", debit: 0,      credit: 18500,   desc: "Q1 2026 accumulated depreciation" },
+    {
+      date: daysAgo(15),
+      jeNum: "JE-2026-018",
+      accCode: "6400",
+      debit: 18500,
+      credit: 0,
+      desc: "Q1 2026 depreciation",
+    },
+    {
+      date: daysAgo(15),
+      jeNum: "JE-2026-018",
+      accCode: "1200",
+      debit: 0,
+      credit: 18500,
+      desc: "Q1 2026 accumulated depreciation",
+    },
 
     // ── JE-2026-004 — BILL-004: Canned goods (daysAgo 14) ────────────────────
-    { date: daysAgo(14), jeNum: "JE-2026-004", accCode: "1200", debit: bill4Subtotal, credit: 0,     desc: "BILL-2026-004 inventory in" },
-    { date: daysAgo(14), jeNum: "JE-2026-004", accCode: "2100", debit: bill4Tax,      credit: 0,     desc: "BILL-2026-004 input VAT" },
-    { date: daysAgo(14), jeNum: "JE-2026-004", accCode: "2000", debit: 0,            credit: bill4TotL, desc: "BILL-2026-004 A/P" },
+    {
+      date: daysAgo(14),
+      jeNum: "JE-2026-004",
+      accCode: "1200",
+      debit: bill4Subtotal,
+      credit: 0,
+      desc: "BILL-2026-004 inventory in",
+    },
+    {
+      date: daysAgo(14),
+      jeNum: "JE-2026-004",
+      accCode: "2100",
+      debit: bill4Tax,
+      credit: 0,
+      desc: "BILL-2026-004 input VAT",
+    },
+    {
+      date: daysAgo(14),
+      jeNum: "JE-2026-004",
+      accCode: "2000",
+      debit: 0,
+      credit: bill4TotL,
+      desc: "BILL-2026-004 A/P",
+    },
 
     // ── JE-2026-015 — PAY-005: Pay BILL-002 (daysAgo 13) ─────────────────────
-    { date: daysAgo(13), jeNum: "JE-2026-015", accCode: "2000", debit: 47040,  credit: 0,       desc: "PAY-2026-005 A/P cleared" },
-    { date: daysAgo(13), jeNum: "JE-2026-015", accCode: "1010", debit: 0,      credit: 47040,   desc: "PAY-2026-005 bank payment" },
+    {
+      date: daysAgo(13),
+      jeNum: "JE-2026-015",
+      accCode: "2000",
+      debit: 47040,
+      credit: 0,
+      desc: "PAY-2026-005 A/P cleared",
+    },
+    {
+      date: daysAgo(13),
+      jeNum: "JE-2026-015",
+      accCode: "1010",
+      debit: 0,
+      credit: 47040,
+      desc: "PAY-2026-005 bank payment",
+    },
 
     // ── JE-2026-009 — INV-004: Golden Palate sale ────────────────────────────
-    { date: daysAgo(10), jeNum: "JE-2026-009", accCode: "1100", debit: inv4Tot,  credit: 0,       desc: "INV-2026-004 A/R" },
-    { date: daysAgo(10), jeNum: "JE-2026-009", accCode: "4000", debit: 0,        credit: inv4Sub,  desc: "INV-2026-004 revenue" },
-    { date: daysAgo(10), jeNum: "JE-2026-009", accCode: "2100", debit: 0,        credit: inv4Tax,  desc: "INV-2026-004 output VAT" },
-    { date: daysAgo(10), jeNum: "JE-2026-009", accCode: "5000", debit: 75460,    credit: 0,        desc: "INV-2026-004 COGS" },
-    { date: daysAgo(10), jeNum: "JE-2026-009", accCode: "1200", debit: 0,        credit: 75460,    desc: "INV-2026-004 inventory out" },
+    {
+      date: daysAgo(10),
+      jeNum: "JE-2026-009",
+      accCode: "1100",
+      debit: inv4Tot,
+      credit: 0,
+      desc: "INV-2026-004 A/R",
+    },
+    {
+      date: daysAgo(10),
+      jeNum: "JE-2026-009",
+      accCode: "4000",
+      debit: 0,
+      credit: inv4Sub,
+      desc: "INV-2026-004 revenue",
+    },
+    {
+      date: daysAgo(10),
+      jeNum: "JE-2026-009",
+      accCode: "2100",
+      debit: 0,
+      credit: inv4Tax,
+      desc: "INV-2026-004 output VAT",
+    },
+    {
+      date: daysAgo(10),
+      jeNum: "JE-2026-009",
+      accCode: "5000",
+      debit: 75460,
+      credit: 0,
+      desc: "INV-2026-004 COGS",
+    },
+    {
+      date: daysAgo(10),
+      jeNum: "JE-2026-009",
+      accCode: "1200",
+      debit: 0,
+      credit: 75460,
+      desc: "INV-2026-004 inventory out",
+    },
   ];
 
   // Build a running balance map per account
@@ -1130,7 +2469,9 @@ async function seedFullCompany(companyId: string) {
 async function main() {
   const companyId = process.argv[2];
   if (!companyId) {
-    logger.error("Usage: npx tsx src/api/v1/scripts/seedFullCompany.ts <companyId>");
+    logger.error(
+      "Usage: npx tsx src/api/v1/scripts/seedFullCompany.ts <companyId>",
+    );
     process.exit(1);
   }
 
