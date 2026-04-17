@@ -235,7 +235,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ? `${authUser.first_name} ${authUser.last_name}`
       : authUser?.name) ||
     (authUser?.email ? authUser.email.split("@")[0] : "User");
-  const displayEmail = organizationName || authUser?.email || "";
+  const displayEmail = authUser?.email || "";
   const displayAvatar = (authUser as any)?.image ?? "/avatars/user.jpg";
 
   const sidebarUser = {
@@ -246,7 +246,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar variant="inset" {...props}>
-      <SidebarHeader className="p-3">
+      <SidebarHeader>
         <OrganizationSwitcher onCreateNew={() => setNewOrgOpen(true)} />
         <NewOrgModal open={newOrgOpen} onOpenChange={setNewOrgOpen} />
       </SidebarHeader>
