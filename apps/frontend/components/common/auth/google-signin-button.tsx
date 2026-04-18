@@ -19,16 +19,22 @@ export function GoogleSignInButton({
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      // Construct absolute callback URL
-      const absoluteCallbackURL =
-        typeof window !== "undefined"
-          ? `${window.location.origin}${callbackURL}`
-          : callbackURL;
+      // Always pass a relative path — Better Auth resolves the full URL via
+      // its appUrl config. Passing an absolute URL risks double-encoding if
+      // the callbackURL query param already contains a full URL, which breaks
+      // the OAuth state and causes a state-mismatch on the callback.
+      const relativeCallbackURL = callbackURL.startsWith("/")
+        ? callbackURL
+        : "/dashboard";
 
-      await authClient.signIn.social({
+      const { error } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: absoluteCallbackURL,
+        callbackURL: relativeCallbackURL,
       });
+
+      if (error) {
+        throw new Error(error.message ?? "Google sign-in failed");
+      }
     } catch (error) {
       console.error("Google sign-in error:", error);
       setIsLoading(false);

@@ -703,4 +703,282 @@ export class EmailService {
 </body>
 </html>`;
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Accounting Notification Emails
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Send a payment reminder for an upcoming or due invoice.
+   */
+  static async sendPaymentReminder(params: {
+    customerEmail: string;
+    customerName: string;
+    invoiceNumber: string;
+    totalAmount: number;
+    dueDate: string;
+    companyName: string;
+    currency?: string;
+    daysUntilDue?: number;
+  }): Promise<void> {
+    const {
+      customerEmail,
+      customerName,
+      invoiceNumber,
+      totalAmount,
+      dueDate,
+      companyName,
+      currency = "PHP",
+      daysUntilDue = 0,
+    } = params;
+
+    const resend = EmailService.getResendClient();
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+    const currencySymbols: Record<string, string> = {
+      PHP: "₱",
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+    };
+    const sym = currencySymbols[currency] || currency + " ";
+    const urgency =
+      daysUntilDue <= 0
+        ? "is due today"
+        : `is due in ${daysUntilDue} day${daysUntilDue === 1 ? "" : "s"}`;
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Payment Reminder</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #1f2937; background: #f9fafb; }
+  .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; }
+  .header { background: linear-gradient(135deg, #d97706, #b45309); color: white; padding: 32px 40px; }
+  .content { padding: 32px 40px; }
+  .card { background: #fffbeb; border: 2px solid #fcd34d; border-radius: 12px; padding: 20px; margin: 20px 0; }
+  .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #fde68a; }
+  .row:last-child { border-bottom: none; }
+  .label { font-weight: 600; color: #92400e; font-size: 13px; text-transform: uppercase; }
+  .value { font-weight: 600; color: #1f2937; }
+  .amount { font-size: 28px; font-weight: 700; color: #d97706; }
+  .footer { background: #f9fafb; padding: 24px 40px; text-align: center; font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header"><h1>⏰ Payment Reminder</h1><p>Invoice ${invoiceNumber} ${urgency}</p></div>
+    <div class="content">
+      <p>Dear <strong>${customerName}</strong>,</p>
+      <p>This is a friendly reminder that the following invoice from <strong>${companyName}</strong> ${urgency}.</p>
+      <div class="card">
+        <div class="row"><span class="label">Invoice</span><span class="value">${invoiceNumber}</span></div>
+        <div class="row"><span class="label">Due Date</span><span class="value" style="color:#dc2626">${dueDate}</span></div>
+        <div class="row"><span class="label">Amount Due</span><span class="amount">${sym}${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></div>
+      </div>
+      <p>Please ensure payment is made by the due date to avoid any late fees.</p>
+    </div>
+    <div class="footer">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</div>
+  </div>
+</body></html>`;
+
+    try {
+      await resend.emails.send({
+        from: `${companyName} <${fromEmail}>`,
+        to: customerEmail,
+        subject: `Payment Reminder: Invoice ${invoiceNumber} ${urgency} — ${companyName}`,
+        html,
+      });
+      logger.info(`[Email Service] Payment reminder sent to ${customerEmail}`, {
+        invoiceNumber,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "sendPaymentReminder",
+        invoiceNumber,
+        customerEmail,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Send a payment receipt to a customer after a payment is recorded.
+   */
+  static async sendPaymentReceipt(params: {
+    customerEmail: string;
+    customerName: string;
+    invoiceNumber: string;
+    paymentAmount: number;
+    paymentDate: string;
+    paymentMethod?: string;
+    remainingBalance?: number;
+    companyName: string;
+    currency?: string;
+  }): Promise<void> {
+    const {
+      customerEmail,
+      customerName,
+      invoiceNumber,
+      paymentAmount,
+      paymentDate,
+      paymentMethod = "Bank Transfer",
+      remainingBalance = 0,
+      companyName,
+      currency = "PHP",
+    } = params;
+
+    const resend = EmailService.getResendClient();
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+    const currencySymbols: Record<string, string> = {
+      PHP: "₱",
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+    };
+    const sym = currencySymbols[currency] || currency + " ";
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Payment Receipt</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #1f2937; background: #f9fafb; }
+  .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; }
+  .header { background: linear-gradient(135deg, #16a34a, #15803d); color: white; padding: 32px 40px; }
+  .content { padding: 32px 40px; }
+  .card { background: #f0fdf4; border: 2px solid #86efac; border-radius: 12px; padding: 20px; margin: 20px 0; }
+  .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #bbf7d0; }
+  .row:last-child { border-bottom: none; }
+  .label { font-weight: 600; color: #166534; font-size: 13px; text-transform: uppercase; }
+  .value { font-weight: 600; color: #1f2937; }
+  .amount { font-size: 28px; font-weight: 700; color: #16a34a; }
+  .footer { background: #f9fafb; padding: 24px 40px; text-align: center; font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header"><h1>✅ Payment Received</h1><p>Thank you for your payment!</p></div>
+    <div class="content">
+      <p>Dear <strong>${customerName}</strong>,</p>
+      <p>We have received your payment for invoice <strong>${invoiceNumber}</strong>. Here are the details:</p>
+      <div class="card">
+        <div class="row"><span class="label">Invoice</span><span class="value">${invoiceNumber}</span></div>
+        <div class="row"><span class="label">Payment Date</span><span class="value">${paymentDate}</span></div>
+        <div class="row"><span class="label">Method</span><span class="value">${paymentMethod}</span></div>
+        <div class="row"><span class="label">Amount Paid</span><span class="amount">${sym}${paymentAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></div>
+        ${remainingBalance > 0 ? `<div class="row"><span class="label">Balance Due</span><span class="value" style="color:#dc2626">${sym}${remainingBalance.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></div>` : ""}
+      </div>
+      <p>${remainingBalance > 0 ? "A remaining balance is still outstanding. Please arrange payment at your earliest convenience." : "This invoice is now fully paid. Thank you for your prompt payment!"}</p>
+    </div>
+    <div class="footer">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</div>
+  </div>
+</body></html>`;
+
+    try {
+      await resend.emails.send({
+        from: `${companyName} <${fromEmail}>`,
+        to: customerEmail,
+        subject: `Payment Receipt: Invoice ${invoiceNumber} — ${companyName}`,
+        html,
+      });
+      logger.info(`[Email Service] Payment receipt sent to ${customerEmail}`, {
+        invoiceNumber,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "sendPaymentReceipt",
+        invoiceNumber,
+        customerEmail,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Send an overdue invoice notification to a customer.
+   */
+  static async sendOverdueNotification(params: {
+    customerEmail: string;
+    customerName: string;
+    invoiceNumber: string;
+    totalAmount: number;
+    dueDate: string;
+    daysOverdue: number;
+    companyName: string;
+    currency?: string;
+  }): Promise<void> {
+    const {
+      customerEmail,
+      customerName,
+      invoiceNumber,
+      totalAmount,
+      dueDate,
+      daysOverdue,
+      companyName,
+      currency = "PHP",
+    } = params;
+
+    const resend = EmailService.getResendClient();
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+    const currencySymbols: Record<string, string> = {
+      PHP: "₱",
+      USD: "$",
+      EUR: "€",
+      GBP: "£",
+    };
+    const sym = currencySymbols[currency] || currency + " ";
+
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Overdue Invoice</title>
+<style>
+  body { font-family: Arial, sans-serif; color: #1f2937; background: #f9fafb; }
+  .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; }
+  .header { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 32px 40px; }
+  .content { padding: 32px 40px; }
+  .card { background: #fef2f2; border: 2px solid #fca5a5; border-radius: 12px; padding: 20px; margin: 20px 0; }
+  .row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #fecaca; }
+  .row:last-child { border-bottom: none; }
+  .label { font-weight: 600; color: #991b1b; font-size: 13px; text-transform: uppercase; }
+  .value { font-weight: 600; color: #1f2937; }
+  .amount { font-size: 28px; font-weight: 700; color: #dc2626; }
+  .footer { background: #f9fafb; padding: 24px 40px; text-align: center; font-size: 12px; color: #6b7280; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header"><h1>🔴 Invoice Overdue</h1><p>${daysOverdue} day${daysOverdue === 1 ? "" : "s"} past due</p></div>
+    <div class="content">
+      <p>Dear <strong>${customerName}</strong>,</p>
+      <p>Our records show that the following invoice from <strong>${companyName}</strong> is now <strong>${daysOverdue} day${daysOverdue === 1 ? "" : "s"} overdue</strong>. Immediate payment is required.</p>
+      <div class="card">
+        <div class="row"><span class="label">Invoice</span><span class="value">${invoiceNumber}</span></div>
+        <div class="row"><span class="label">Original Due Date</span><span class="value" style="color:#dc2626">${dueDate}</span></div>
+        <div class="row"><span class="label">Days Overdue</span><span class="value" style="color:#dc2626">${daysOverdue} days</span></div>
+        <div class="row"><span class="label">Amount Due</span><span class="amount">${sym}${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span></div>
+      </div>
+      <p>Please contact us immediately to arrange payment or discuss a payment plan. Continued non-payment may result in further action.</p>
+    </div>
+    <div class="footer">&copy; ${new Date().getFullYear()} ${companyName}. All rights reserved.</div>
+  </div>
+</body></html>`;
+
+    try {
+      await resend.emails.send({
+        from: `${companyName} <${fromEmail}>`,
+        to: customerEmail,
+        subject: `OVERDUE: Invoice ${invoiceNumber} is ${daysOverdue} days past due — ${companyName}`,
+        html,
+      });
+      logger.info(
+        `[Email Service] Overdue notification sent to ${customerEmail}`,
+        { invoiceNumber, daysOverdue },
+      );
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "sendOverdueNotification",
+        invoiceNumber,
+        customerEmail,
+      });
+      throw error;
+    }
+  }
 }

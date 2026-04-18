@@ -15,6 +15,9 @@ const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
 export const authClient = createAuthClient({
   baseURL: AUTH_BASE_URL,
+  fetchOptions: {
+    credentials: "include",
+  },
   plugins: [
     organizationClient({
       // Define additional Company fields for the organization schema

@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { useEffect, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { AuthNavbar } from "@/components/common/auth-navbar";
 import { SignupForm } from "@/components/forms/register-form/form";
 import { EmailOTPVerification } from "@/components/common/auth/email-otp-verification";
@@ -12,6 +13,7 @@ import { useAuth } from "@/lib/contexts/auth-context";
 function SignupPageContent() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const oauthError = searchParams.get("error");
   const { isLoading } = useGuestRoute({ redirectTo: callbackUrl });
   const { user } = useAuth();
   const router = useRouter();
@@ -34,6 +36,25 @@ function SignupPageContent() {
     setStep("register");
     setPendingEmail("");
   };
+
+  // Surface OAuth errors (e.g. state-mismatch) that Better Auth encodes as
+  // ?error= on the callback redirect back to the frontend.
+  useEffect(() => {
+    if (oauthError) {
+      const messages: Record<string, string> = {
+        state_mismatch: "Sign-in was interrupted. Please try again.",
+        account_not_found: "No account found. Please sign up first.",
+        email_not_verified: "Please verify your email before continuing.",
+      };
+      toast.error(
+        messages[oauthError] ?? "Google sign-in failed. Please try again.",
+      );
+      // Clean the error param from the URL without a full page reload
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("error");
+      router.replace(`/signup?${params.toString()}`);
+    }
+  }, [oauthError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Verified user → useGuestRoute is redirecting, show spinner.
   if (user && user.emailVerified) {
