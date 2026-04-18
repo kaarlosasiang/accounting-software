@@ -19,17 +19,21 @@ export function GoogleSignInButton({
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      // Always pass a relative path — Better Auth resolves the full URL via
-      // its appUrl config. Passing an absolute URL risks double-encoding if
-      // the callbackURL query param already contains a full URL, which breaks
-      // the OAuth state and causes a state-mismatch on the callback.
-      const relativeCallbackURL = callbackURL.startsWith("/")
+      const frontendOrigin =
+        typeof window !== "undefined" ? window.location.origin : "";
+
+      // Better Auth will redirect to callbackURL after the provider callback.
+      // Passing a relative path causes the backend callback origin to be reused,
+      // which lands on http://localhost:4000/... during local OAuth flows.
+      const normalizedCallbackURL = callbackURL.startsWith("http")
         ? callbackURL
-        : "/dashboard";
+        : frontendOrigin
+          ? `${frontendOrigin}${callbackURL.startsWith("/") ? callbackURL : "/dashboard"}`
+          : "/dashboard";
 
       const { error } = await authClient.signIn.social({
         provider: "google",
-        callbackURL: relativeCallbackURL,
+        callbackURL: normalizedCallbackURL,
       });
 
       if (error) {
