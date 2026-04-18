@@ -21,6 +21,10 @@ export function GoogleSignInButton({
       setIsLoading(true);
       const frontendOrigin =
         typeof window !== "undefined" ? window.location.origin : "";
+      const currentAuthPage =
+        typeof window !== "undefined"
+          ? `${window.location.origin}${window.location.pathname}${window.location.search}`
+          : undefined;
 
       // Better Auth will redirect to callbackURL after the provider callback.
       // Passing a relative path causes the backend callback origin to be reused,
@@ -34,6 +38,8 @@ export function GoogleSignInButton({
       const { error } = await authClient.signIn.social({
         provider: "google",
         callbackURL: normalizedCallbackURL,
+        errorCallbackURL: currentAuthPage,
+        requestSignUp: mode === "signup",
       });
 
       if (error) {

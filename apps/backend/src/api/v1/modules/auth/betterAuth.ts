@@ -52,6 +52,13 @@ export const authServer = betterAuth({
       enabled: !!(constants.googleClientId && constants.googleClientSecret),
     },
   },
+  account: {
+    // Keep OAuth state entirely in the browser cookie for the duration of the
+    // flow. This avoids the shorter 5-minute signed-state cookie check used by
+    // the default database strategy, which is what can trigger intermittent
+    // state mismatches for slower first-time Google signups/consent screens.
+    storeStateStrategy: "cookie",
+  },
   user: {
     additionalFields: {
       companyId: { type: "string", required: false }, // Optional for social login
