@@ -1,0 +1,209 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    // ── Development ──────────────────────────────────────────────────────────
+    {
+      "label": "Dev: All Apps",
+      "type": "shell",
+      "command": "pnpm dev",
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "group": "dev"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Backend",
+      "type": "shell",
+      "command": "pnpm dev:api",
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "group": "dev"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Frontend",
+      "type": "shell",
+      "command": "pnpm dev:app",
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "group": "dev"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Site",
+      "type": "shell",
+      "command": "pnpm dev:site",
+      "group": "build",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "group": "dev"
+      },
+      "problemMatcher": []
+    },
+    // ── Testing ───────────────────────────────────────────────────────────────
+    {
+      "label": "Test: Backend (run once)",
+      "type": "shell",
+      "command": "pnpm --filter api test",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "test"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: Backend (watch)",
+      "type": "shell",
+      "command": "pnpm --filter api test:watch",
+      "group": "test",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "new",
+        "group": "test"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Test: Backend (coverage)",
+      "type": "shell",
+      "command": "pnpm --filter api test:coverage",
+      "group": "test",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "test"
+      },
+      "problemMatcher": []
+    },
+    // ── Build ─────────────────────────────────────────────────────────────────
+    {
+      "label": "Build: Validators",
+      "type": "shell",
+      "command": "pnpm build:validators",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "build"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Build: UI Package",
+      "type": "shell",
+      "command": "pnpm build:ui",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "build"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Build: Backend",
+      "type": "shell",
+      "command": "pnpm build:api",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "build"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Build: Frontend",
+      "type": "shell",
+      "command": "pnpm build:app",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "build"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    // ── Type-checking ─────────────────────────────────────────────────────────
+    {
+      "label": "Typecheck: All",
+      "type": "shell",
+      "command": "pnpm typecheck",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "build"
+      },
+      "problemMatcher": ["$tsc"]
+    },
+    // ── Seeds ─────────────────────────────────────────────────────────────────
+    {
+      "label": "Seed: Chart of Accounts",
+      "type": "shell",
+      "command": "pnpm --filter api seed:accounts",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "seed"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Seed: Suppliers",
+      "type": "shell",
+      "command": "pnpm --filter api seed:suppliers",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "group": "seed"
+      },
+      "problemMatcher": []
+    },
+    // ── Utilities ─────────────────────────────────────────────────────────────
+    {
+      "label": "Install: All Dependencies",
+      "type": "shell",
+      "command": "pnpm install",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint: All",
+      "type": "shell",
+      "command": "pnpm lint",
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": ["$eslint-stylish"]
+    }
+  ]
+}
