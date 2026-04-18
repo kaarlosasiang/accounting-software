@@ -13,7 +13,7 @@ const options: mongoose.ConnectOptions = {
   minPoolSize: 2,
 
   // Timeout settings
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 30000,
   socketTimeoutMS: 45000,
 
   // Retry settings
