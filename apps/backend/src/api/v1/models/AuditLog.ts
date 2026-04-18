@@ -4,7 +4,7 @@ import {
   AuditAction,
   IAuditLog,
   IAuditLogDocument,
-} from '../shared/interface/IAuditLog.js';
+} from "../shared/interface/IAuditLog.js";
 
 /**
  * Audit Log Schema
@@ -18,8 +18,7 @@ const AuditLogSchema = new Schema<IAuditLog>(
       index: true,
     },
     userId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       required: [true, "User ID is required"],
       index: true,
     },
@@ -107,10 +106,7 @@ AuditLogSchema.statics.createLog = function (
 /**
  * Static method: Find logs by user
  */
-AuditLogSchema.statics.findByUser = function (
-  userId: mongoose.Types.ObjectId,
-  limit = 100,
-) {
+AuditLogSchema.statics.findByUser = function (userId: string, limit = 100) {
   return this.find({ userId }).sort({ timestamp: -1 }).limit(limit);
 };
 

@@ -32,16 +32,14 @@ export const reportService = {
             asOfDate,
           );
 
-          // Apply sign correction for contra accounts.
-          // Assets & Expenses expect Debit normal balance; Liabilities, Equity & Revenue expect Credit.
-          // If an account's normalBalance differs from the expected direction, negate the balance so
-          // contra accounts reduce (rather than inflate) their parent group total.
-          const expectedNormalBalance =
-            account.accountType === "Asset" || account.accountType === "Expense"
-              ? "Debit"
-              : "Credit";
+          // runningBalance is stored as (total debit - total credit) for every account.
+          // Credit-normal accounts (Liability, Equity, Revenue) accumulate credits, so their
+          // runningBalance is negative. Negate it so it displays as a positive amount on the
+          // balance sheet. Contra accounts (e.g. Accumulated Depreciation under Asset type)
+          // also have normalBalance "Credit", so negating them makes them positive — the
+          // frontend then treats the positive value as a reduction against the parent group.
           const signedBalance =
-            account.normalBalance !== expectedNormalBalance
+            account.normalBalance === "Credit"
               ? -balanceData.balance
               : balanceData.balance;
 
@@ -415,7 +413,14 @@ export const reportService = {
             endDate,
           );
 
-          const change = endBalance.balance - startBalance.balance;
+          // runningBalance is stored as (debit − credit), so credit-normal accounts
+          // (liabilities) come back negative. Normalize before computing the change so
+          // an increase in A/P produces a positive cashEffect (source of cash).
+          const normalize = (bal: number) =>
+            account.normalBalance === "Credit" ? -bal : bal;
+          const signedEnd = normalize(endBalance.balance);
+          const signedStart = normalize(startBalance.balance);
+          const change = signedEnd - signedStart;
 
           // For assets: increase = use of cash (negative), decrease = source of cash (positive)
           // For liabilities: increase = source of cash (positive), decrease = use of cash (negative)

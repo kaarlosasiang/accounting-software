@@ -1,159 +1,131 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Check, ChevronsUpDown, PlusCircle } from "lucide-react";
+import * as React from "react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
 import {
-  useOrganization,
-  type OrganizationClient,
-} from "@/hooks/use-organization";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+  useActiveOrganization,
+  useListOrganizations,
+  authClient,
+} from "@/lib/config/auth-client";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "@/components/ui/sidebar";
 import type { Organization } from "@/lib/types/auth";
 
 interface OrganizationSwitcherProps {
   onCreateNew?: () => void;
 }
 
-/**
- * Organization Switcher Component
- * Allows users to switch between organizations they're a member of
- */
 export function OrganizationSwitcher({
   onCreateNew,
 }: OrganizationSwitcherProps) {
-  const { activeOrganization, organization } = useOrganization();
-  const orgClient: OrganizationClient | null = organization;
-  const activeOrg: Organization | null = activeOrganization;
-  const [open, setOpen] = useState(false);
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { isMobile } = useSidebar();
+  const { data: activeOrg } = useActiveOrganization() as {
+    data: Organization | null;
+  };
+  const { data: orgsData } = useListOrganizations();
+  const organizations = (orgsData as Organization[] | null | undefined) ?? [];
 
-  if (!organization) {
-    return null;
-  }
-
-  useEffect(() => {
-    loadOrganizations();
-  }, []);
-
-  const loadOrganizations = async () => {
-    try {
-      setLoading(true);
-      const result: any = await orgClient?.list?.();
-      if (result?.data) {
-        setOrganizations(result.data);
-      }
-    } catch (error) {
-      console.error("Failed to load organizations:", error);
-    } finally {
-      setLoading(false);
-    }
+  const handleSelect = async (org: Organization) => {
+    if (org.id === activeOrg?.id) return;
+    await (authClient as any).organization.setActive({
+      organizationId: org.id,
+    });
+    window.location.reload();
   };
 
-  const handleSelectOrganization = async (org: Organization) => {
-    try {
-      await orgClient?.setActive?.({ organizationId: org.id });
-      setOpen(false);
-      // Reload page to reflect new active organization
-      window.location.reload();
-    } catch (error) {
-      console.error("Failed to set active organization:", error);
-    }
-  };
+  if (!activeOrg) return null;
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          aria-label="Select an organization"
-          className="w-[250px] justify-between"
-        >
-          {activeOrg ? (
-            <div className="flex items-center gap-2">
-              {activeOrg?.logo && (
-                <img
-                  src={activeOrg?.logo}
-                  alt={activeOrg?.name}
-                  className="h-5 w-5 rounded"
-                />
-              )}
-              <span className="truncate">{activeOrg?.name}</span>
-            </div>
-          ) : (
-            "Select organization"
-          )}
-          <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0">
-        <Command>
-          <CommandInput placeholder="Search organization..." />
-          <CommandList>
-            <CommandEmpty>
-              {loading ? "Loading..." : "No organization found."}
-            </CommandEmpty>
-            <CommandGroup heading="Organizations">
-              {organizations.map((org) => (
-                <CommandItem
-                  key={org.id}
-                  onSelect={() => handleSelectOrganization(org)}
-                  className="text-sm"
-                >
-                  <div className="flex items-center gap-2 flex-1">
-                    {org.logo && (
-                      <img
-                        src={org.logo}
-                        alt={org.name}
-                        className="h-5 w-5 rounded"
-                      />
-                    )}
-                    <span className="truncate">{org.name}</span>
-                  </div>
-                  <Check
-                    className={cn(
-                      "ml-auto h-4 w-4",
-                      activeOrg?.id === org.id ? "opacity-100" : "opacity-0"
-                    )}
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <SidebarMenuButton
+              size="lg"
+              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+            >
+              <div className="bg-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg text-sm font-semibold shrink-0">
+                {activeOrg.logo ? (
+                  <img
+                    src={activeOrg.logo}
+                    alt={activeOrg.name}
+                    className="size-full rounded-lg object-cover"
                   />
-                </CommandItem>
-              ))}
-            </CommandGroup>
+                ) : (
+                  activeOrg.name.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{activeOrg.name}</span>
+                <span className="truncate text-xs text-muted-foreground">
+                  {activeOrg.slug}
+                </span>
+              </div>
+              <ChevronsUpDown className="ml-auto" />
+            </SidebarMenuButton>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+            align="start"
+            side={isMobile ? "bottom" : "right"}
+            sideOffset={4}
+          >
+            <DropdownMenuLabel className="text-muted-foreground text-xs">
+              Organizations
+            </DropdownMenuLabel>
+            {organizations.map((org, index) => (
+              <DropdownMenuItem
+                key={org.id}
+                onClick={() => handleSelect(org)}
+                className="gap-2 p-2"
+              >
+                <div className="flex size-6 items-center justify-center rounded-md border text-xs font-semibold shrink-0">
+                  {org.logo ? (
+                    <img
+                      src={org.logo}
+                      alt={org.name}
+                      className="size-full rounded-md object-cover"
+                    />
+                  ) : (
+                    org.name.charAt(0).toUpperCase()
+                  )}
+                </div>
+                <span className="flex-1 truncate">{org.name}</span>
+                {org.id === activeOrg.id && (
+                  <Check className="size-4 shrink-0" />
+                )}
+                <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            ))}
             {onCreateNew && (
               <>
-                <CommandSeparator />
-                <CommandGroup>
-                  <CommandItem
-                    onSelect={() => {
-                      setOpen(false);
-                      onCreateNew();
-                    }}
-                  >
-                    <PlusCircle className="mr-2 h-5 w-5" />
-                    Create Organization
-                  </CommandItem>
-                </CommandGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onCreateNew} className="gap-2 p-2">
+                  <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
+                    <Plus className="size-4" />
+                  </div>
+                  <div className="text-muted-foreground font-medium">
+                    New Organization
+                  </div>
+                </DropdownMenuItem>
               </>
             )}
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }

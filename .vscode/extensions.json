@@ -1,0 +1,33 @@
+{
+  "recommendations": [
+    // ── TypeScript / JavaScript ───────────────────────────────────────────────
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+
+    // ── Tailwind CSS ──────────────────────────────────────────────────────────
+    "bradlc.vscode-tailwindcss",
+
+    // ── Astro (apps/site) ─────────────────────────────────────────────────────
+    "astro-build.astro-vscode",
+
+    // ── MongoDB ───────────────────────────────────────────────────────────────
+    "mongodb.mongodb-vscode",
+
+    // ── REST / API testing ────────────────────────────────────────────────────
+    "humao.rest-client",
+
+    // ── Developer Experience ──────────────────────────────────────────────────
+    "usernamehw.errorlens",
+    "eamodio.gitlens",
+    "streetsidesoftware.code-spell-checker",
+    "christian-kohler.path-intellisense",
+    "yoavbls.pretty-ts-errors",
+
+    // ── Vitest ────────────────────────────────────────────────────────────────
+    "vitest.explorer",
+
+    // ── Containers / Deployment ───────────────────────────────────────────────
+    "ms-azuretools.vscode-docker"
+  ]
+}

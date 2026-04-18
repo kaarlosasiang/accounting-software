@@ -3,19 +3,16 @@
 import * as React from "react";
 
 import { NavMain } from "./nav-main";
-import { NavProjects } from "./nav-projects";
 import { NavUser } from "./nav-user";
+import { OrganizationSwitcher } from "@/components/common/organization/organization-switcher";
+import { NewOrgModal } from "@/components/common/new-org-modal";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar";
-import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -201,6 +198,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { organizationName } = useOrganization();
   const { can } = usePermissions();
   const { data: activeOrgData } = useActiveOrganization();
+  const [newOrgOpen, setNewOrgOpen] = React.useState(false);
 
   // Check if the current user is an owner or admin in the active org.
   // Owners/admins bypass permission-gating so all nav items are visible.
@@ -237,7 +235,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       ? `${authUser.first_name} ${authUser.last_name}`
       : authUser?.name) ||
     (authUser?.email ? authUser.email.split("@")[0] : "User");
-  const displayEmail = organizationName || authUser?.email || "";
+  const displayEmail = authUser?.email || "";
   const displayAvatar = (authUser as any)?.image ?? "/avatars/user.jpg";
 
   const sidebarUser = {
@@ -249,24 +247,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar variant="inset" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem className="flex relative mt-2">
-            <div className="flex aspect-square items-center justify-center rounded-lg">
-              <Image
-                src={"/am-fintrass-icon.png"}
-                alt={"AM FINTRASS Icon"}
-                width={32}
-                height={32}
-              />
-            </div>
-            <div className="grid flex-1 text-left text-sm leading-tight absolute left-10">
-              <span className="truncate font-bold">
-                <span className="text-primary">AM</span> FINTRASS
-              </span>
-              <span className="truncate text-xs">Smart Accounting System</span>
-            </div>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <OrganizationSwitcher onCreateNew={() => setNewOrgOpen(true)} />
+        <NewOrgModal open={newOrgOpen} onOpenChange={setNewOrgOpen} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={filteredNavMain} />

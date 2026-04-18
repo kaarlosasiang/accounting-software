@@ -17,6 +17,7 @@ import { reportRoutes } from "../modules/report/reportRoutes.js";
 import periodRoutes from "../modules/period/periodRoutes.js";
 import companySettingsRoutes from "../modules/company-settings/companySettingsRoutes.js";
 import dashboardRoutes from "../modules/dashboard/dashboardRoutes.js";
+import companyRoutes from "../modules/company/companyRoutes.js";
 
 import userRoutes from "../modules/user/userRoutes.js";
 
@@ -72,6 +73,9 @@ export default (app: Application): void => {
 
   // Company Settings routes
   app.use(`${API_PREFIX}/company-settings`, companySettingsRoutes);
+
+  // Company management (delete org with cascade)
+  app.use(`${API_PREFIX}/company`, companyRoutes);
 
   // Dashboard routes
   app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
