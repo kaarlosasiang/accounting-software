@@ -1,7 +1,8 @@
 "use client";
 
-import { useOrganization } from "./use-organization";
 import { formatCurrency, getCurrencySymbol } from "@/lib/format";
+
+import { useOrganization } from "./use-organization";
 
 /**
  * Hook to format currency using the company's currency setting

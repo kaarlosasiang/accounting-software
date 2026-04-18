@@ -1,5 +1,6 @@
+import type { ResourcePermission, RoleDto } from "@sas/validators";
+
 import { apiFetch } from "@/lib/config/api-client";
-import type { RoleDto, ResourcePermission } from "@sas/validators";
 
 // ─── Request shapes ───────────────────────────────────────────────────────────
 

@@ -1,9 +1,11 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 
-import userService from "./userService.js";
 import { createPersonnelSchema } from "@sas/validators";
+
 import { getCompanyId } from "../../shared/helpers/utils.js";
+
+import userService from "./userService.js";
 
 // Define user role update schema
 const userRoleUpdateSchema = z.object({

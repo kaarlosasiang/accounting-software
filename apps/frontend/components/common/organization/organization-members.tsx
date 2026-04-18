@@ -1,11 +1,11 @@
 "use client";
 
+import { Mail, UserCog, UserMinus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Mail, UserMinus, UserCog } from "lucide-react";
-import { useOrganization } from "@/hooks/use-organization";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -13,9 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -23,6 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useOrganization } from "@/hooks/use-organization";
 import type { Member } from "@/lib/types/auth";
 
 /**
@@ -98,7 +99,7 @@ export function OrganizationMembers() {
       alert("Invitation sent successfully!");
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to send invitation"
+        err instanceof Error ? err.message : "Failed to send invitation",
       );
     } finally {
       setInviting(false);

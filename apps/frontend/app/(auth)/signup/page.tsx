@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { EmailOTPVerification } from "@/components/common/auth/email-otp-verification";
 import { AuthNavbar } from "@/components/common/auth-navbar";
 import { SignupForm } from "@/components/forms/register-form/form";
-import { EmailOTPVerification } from "@/components/common/auth/email-otp-verification";
 import { Spinner } from "@/components/ui/spinner";
 import { useGuestRoute } from "@/lib/auth/protected-route";
 import { useAuth } from "@/lib/contexts/auth-context";
@@ -54,7 +55,7 @@ function SignupPageContent() {
       params.delete("error");
       router.replace(`/signup?${params.toString()}`);
     }
-  }, [oauthError]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [oauthError]);
 
   // Verified user → useGuestRoute is redirecting, show spinner.
   if (user && user.emailVerified) {

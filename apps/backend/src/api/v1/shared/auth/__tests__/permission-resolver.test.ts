@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { Action, OrgRole, Resource } from "../../auth/permissions.js";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
   hasPermission,
   resolvePermissions,
 } from "../../auth/permission-resolver.js";
+import { Action, OrgRole, Resource } from "../../auth/permissions.js";
 
 // Mock the Mongoose models before importing the resolver
 vi.mock("../../../models/MemberPermission.js", () => ({

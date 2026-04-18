@@ -1,12 +1,13 @@
 import { Types } from "mongoose";
+
+import logger from "../../config/logger.js";
 import MemberPermission from "../../models/MemberPermission.js";
 import Role from "../../models/Role.js";
 import {
-  resolvePermissions,
   EffectivePermissions,
+  resolvePermissions,
 } from "../../shared/auth/permission-resolver.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
-import logger from "../../config/logger.js";
+import { Action } from "../../shared/auth/permissions.js";
 
 export const memberPermissionService = {
   /**

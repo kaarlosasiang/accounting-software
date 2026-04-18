@@ -9,7 +9,6 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/lib/contexts/auth-context";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -27,6 +26,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 export function NavUser({
   user,

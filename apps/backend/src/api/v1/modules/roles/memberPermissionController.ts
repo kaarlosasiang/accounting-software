@@ -1,9 +1,11 @@
-import { Request, Response, NextFunction } from "express";
+import { NextFunction, Request, Response } from "express";
 import { Types } from "mongoose";
-import { memberPermissionService } from "./member-permission.service.js";
-import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
-import PendingInvitePermission from "../../models/PendingInvitePermission.js";
+
 import logger from "../../config/logger.js";
+import PendingInvitePermission from "../../models/PendingInvitePermission.js";
+import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
+
+import { memberPermissionService } from "./member-permission.service.js";
 
 export const memberPermissionController = {
   /**

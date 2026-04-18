@@ -1,6 +1,7 @@
 import PDFDocument from "pdfkit";
-import { IInvoiceDocument } from "../shared/interface/IInvoice.js";
+
 import logger from "../config/logger.js";
+import { IInvoiceDocument } from "../shared/interface/IInvoice.js";
 
 /**
  * Company information for PDF generation

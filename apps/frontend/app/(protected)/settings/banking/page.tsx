@@ -1,6 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import {
+  AlertCircle,
+  Building2,
+  CheckCircle2,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,17 +22,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -28,6 +31,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -36,22 +49,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { useOrganization } from "@/hooks/use-organization";
-import { companySettingsService } from "@/lib/services/company-settings.service";
 import { accountsService } from "@/lib/services/accounts.service";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Building2,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
+import { companySettingsService } from "@/lib/services/company-settings.service";
 
 interface BankAccount {
   id: string;

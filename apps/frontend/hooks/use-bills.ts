@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
-import { billService, Bill, BillFormData } from "@/lib/services/bill.service";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { Bill, BillFormData, billService } from "@/lib/services/bill.service";
 
 export function useBills() {
   const [bills, setBills] = useState<Bill[]>([]);
@@ -252,19 +253,19 @@ export function useBills() {
   }, []);
 
   return {
-      bills,
-      loading,
-      error,
-      fetchBills,
-      getBillById,
-      createBill,
-      updateBill,
-      deleteBill,
-      voidBill,
-      approveBill,
-      refreshBills,
-      searchBills,
-      getBillsByStatus,
-      getOverdueBills,
-    };
+    bills,
+    loading,
+    error,
+    fetchBills,
+    getBillById,
+    createBill,
+    updateBill,
+    deleteBill,
+    voidBill,
+    approveBill,
+    refreshBills,
+    searchBills,
+    getBillsByStatus,
+    getOverdueBills,
+  };
 }

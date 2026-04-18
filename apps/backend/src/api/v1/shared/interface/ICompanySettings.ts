@@ -120,7 +120,8 @@ export interface ICompanySettings {
  * Company Settings Document (Mongoose)
  */
 export interface ICompanySettingsDocument
-  extends Omit<ICompanySettings, "_id">, Document {
+  extends Omit<ICompanySettings, "_id">,
+    Document {
   // Instance methods
   updateGeneralSettings(settings: Partial<IGeneralSettings>): Promise<this>;
   updateAccountingSettings(

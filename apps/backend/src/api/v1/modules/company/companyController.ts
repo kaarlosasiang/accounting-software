@@ -1,28 +1,27 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
 
-import { authServer } from "../auth/betterAuth.js";
-import { getCompanyId } from "../../shared/helpers/utils.js";
 import logger from "../../config/logger.js";
-
 // All models that store companyId-scoped data
 import Account from "../../models/Account.js";
-import { Invoice } from "../../models/Invoice.js";
+import { AccountingPeriod } from "../../models/AccountingPeriod.js";
+import { AuditLog } from "../../models/AuditLog.js";
 import { Bill } from "../../models/Bill.js";
+import { CompanySettings } from "../../models/CompanySettings.js";
 import { Customer } from "../../models/Customer.js";
-import { Supplier } from "../../models/Supplier.js";
-import { Payment } from "../../models/Payment.js";
-import { JournalEntry } from "../../models/JournalEntry.js";
-import { Ledger } from "../../models/Ledger.js";
 import { InventoryItem } from "../../models/InventoryItem.js";
 import { InventoryTransaction } from "../../models/InventoryTransaction.js";
-import { Report } from "../../models/Report.js";
-import { AccountingPeriod } from "../../models/AccountingPeriod.js";
-import { CompanySettings } from "../../models/CompanySettings.js";
-import { AuditLog } from "../../models/AuditLog.js";
-import Role from "../../models/Role.js";
+import { Invoice } from "../../models/Invoice.js";
+import { JournalEntry } from "../../models/JournalEntry.js";
+import { Ledger } from "../../models/Ledger.js";
 import MemberPermission from "../../models/MemberPermission.js";
+import { Payment } from "../../models/Payment.js";
 import PendingInvitePermission from "../../models/PendingInvitePermission.js";
+import { Report } from "../../models/Report.js";
+import Role from "../../models/Role.js";
+import { Supplier } from "../../models/Supplier.js";
+import { getCompanyId } from "../../shared/helpers/utils.js";
+import { authServer } from "../auth/betterAuth.js";
 
 const SCOPED_MODELS = [
   Account,

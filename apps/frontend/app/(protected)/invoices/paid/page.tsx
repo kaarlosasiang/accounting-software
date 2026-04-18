@@ -1,9 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  CheckCircle2,
+  Download,
+  Loader2,
+  MoreHorizontal,
+  Search,
+  TrendingUp,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -12,25 +29,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Download,
-  MoreHorizontal,
-  Search,
-  CheckCircle2,
-  TrendingUp,
-  Loader2,
-} from "lucide-react";
-import Link from "next/link";
-import { formatCurrency } from "@/lib/utils";
 import { useInvoices } from "@/hooks/use-invoices";
-import type { Invoice } from "@/lib/services/invoice.service";
+import { formatCurrency } from "@/lib/utils";
 
 export default function PaidInvoicesPage() {
   const {

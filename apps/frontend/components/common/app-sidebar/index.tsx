@@ -1,27 +1,28 @@
 "use client";
 
+import { Crown } from "lucide-react";
+import Link from "next/link";
 import * as React from "react";
 
-import { NavMain } from "./nav-main";
-import { NavUser } from "./nav-user";
-import { OrganizationSwitcher } from "@/components/common/organization/organization-switcher";
+import { Action, Resource } from "@sas/validators";
+
 import { NewOrgModal } from "@/components/common/new-org-modal";
+import { OrganizationSwitcher } from "@/components/common/organization/organization-switcher";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
-  SidebarRail,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Crown } from "lucide-react";
-import { useAuth } from "@/lib/contexts/auth-context";
 import { useOrganization } from "@/hooks/use-organization";
 import { usePermissions } from "@/hooks/use-permissions";
 import { useActiveOrganization } from "@/lib/config/auth-client";
-import { Resource, Action } from "@sas/validators";
+import { useAuth } from "@/lib/contexts/auth-context";
+
+import { NavMain } from "./nav-main";
+import { NavUser } from "./nav-user";
 
 // ─── Navigation item types ────────────────────────────────────────────────────
 type NavPermission = { resource: Resource; action: Action };

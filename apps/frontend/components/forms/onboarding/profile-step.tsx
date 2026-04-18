@@ -1,15 +1,13 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { User } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
-import { User } from "lucide-react";
-import { authClient } from "@/lib/config/auth-client";
-import { useOnboarding } from "@/hooks/use-onboarding";
+import { z } from "zod";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -18,6 +16,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { useOnboarding } from "@/hooks/use-onboarding";
+import { authClient } from "@/lib/config/auth-client";
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),

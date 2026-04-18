@@ -1,10 +1,8 @@
-import mongoose, { Schema, Model } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 
 import {
   IInventoryItem,
   IInventoryItemDocument,
-  IInventoryItemModel,
-  IInventoryItemMethods,
 } from "../shared/interface/IInventoryItem.js";
 
 /**

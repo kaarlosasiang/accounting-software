@@ -1,14 +1,16 @@
 "use client";
 
 import { useMemo } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
+
 import {
-  Resource,
   Action,
+  Resource,
   type ResourcePermission,
   type RolePermissionMap,
 } from "@sas/validators";
+
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

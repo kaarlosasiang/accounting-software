@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
+
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 
 export function AuthNavbar() {

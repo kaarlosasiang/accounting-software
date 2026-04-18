@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAuth } from "@/lib/contexts/auth-context";
+
 import { authClient } from "@/lib/config/auth-client";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 /**
  * Hook for admin functionality and permission checking

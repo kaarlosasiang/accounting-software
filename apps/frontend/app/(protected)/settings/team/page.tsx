@@ -1,52 +1,20 @@
 "use client";
 
+import type { ColumnDef } from "@tanstack/react-table";
+import { Clock, Lock, Mail, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Users,
-  Lock,
-  Pencil,
-  Trash2,
-  Plus,
-  UserPlus,
-  Mail,
-  Clock,
-} from "lucide-react";
 import { toast } from "sonner";
-import { Resource, Action, OrgRole, type RoleDto } from "@sas/validators";
-import { withPermissionGuard } from "@/lib/auth/permission-guard";
-import { usePermissions } from "@/hooks/use-permissions";
-import { useRoles } from "@/hooks/use-roles";
-import { useOrganization } from "@/hooks/use-organization";
-import { useDataTable } from "@/hooks/use-data-table";
-import {
-  permissionsService,
-  type AssignRoleData,
-} from "@/lib/services/permissions.service";
+
+import { Action, OrgRole, Resource, type RoleDto } from "@sas/validators";
+
+import { DataTable } from "@/components/common/data-table/data-table";
+import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
+import { DataTableToolbar } from "@/components/common/data-table/data-table-toolbar";
 import { AddPersonnelDialog } from "@/components/forms/add-personnel-dialog/form";
 import {
-  RolePermissionMatrix,
   type PermissionMatrixValue,
+  RolePermissionMatrix,
 } from "@/components/forms/role-permission-matrix/form";
-import { DataTable } from "@/components/common/data-table/data-table";
-import { DataTableToolbar } from "@/components/common/data-table/data-table-toolbar";
-import type { ColumnDef } from "@tanstack/react-table";
-import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
-
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +25,19 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -64,6 +45,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useDataTable } from "@/hooks/use-data-table";
+import { useOrganization } from "@/hooks/use-organization";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useRoles } from "@/hooks/use-roles";
+import { withPermissionGuard } from "@/lib/auth/permission-guard";
+import {
+  type AssignRoleData,
+  permissionsService,
+} from "@/lib/services/permissions.service";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -163,7 +155,6 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [organizationId]);
 
   const handleInvite = async () => {
@@ -472,7 +463,6 @@ function MembersTab({ roles }: { roles: RoleDto[] }) {
         enableHiding: false,
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [roles],
   );
 
@@ -926,7 +916,6 @@ function RolesTab() {
         enableHiding: false,
       },
     ],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

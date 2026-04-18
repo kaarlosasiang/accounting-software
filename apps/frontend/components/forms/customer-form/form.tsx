@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import { customerSchema } from "@sas/validators";
 import { Info } from "lucide-react";
-import type { CustomerForm } from "@/lib/types/customer";
+import { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+
+import { customerSchema } from "@sas/validators";
+
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -30,7 +32,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useCustomers } from "@/hooks/use-customers";
-import { toast } from "sonner";
+import type { CustomerForm } from "@/lib/types/customer";
 
 type CustomerFormValues = CustomerForm;
 

@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useReports } from "@/hooks/use-reports";
+import { AlertCircle, Calendar, Download, FileText } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -17,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -25,11 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Download, Calendar, AlertCircle, FileText } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useReports } from "@/hooks/use-reports";
 import { formatCurrency } from "@/lib/utils";
 import { downloadCsv } from "@/lib/utils/csv-export";
 
@@ -57,10 +58,7 @@ export default function TaxSummaryPage() {
 
   const loadData = useCallback(
     async (year: string) => {
-      const data = await fetchIncomeStatement(
-        `${year}-01-01`,
-        `${year}-12-31`,
-      );
+      const data = await fetchIncomeStatement(`${year}-01-01`, `${year}-12-31`);
       setIncomeData(data);
     },
     [fetchIncomeStatement],
@@ -301,10 +299,7 @@ export default function TaxSummaryPage() {
                           </TableCell>
                           <TableCell className="text-right">
                             {grossRevenue > 0
-                              ? (
-                                  (acct.balance / grossRevenue) *
-                                  100
-                                ).toFixed(1)
+                              ? ((acct.balance / grossRevenue) * 100).toFixed(1)
                               : "0.0"}
                             %
                           </TableCell>
@@ -496,9 +491,7 @@ export default function TaxSummaryPage() {
       {/* Quarterly Payments */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            Quarterly Income Tax Returns (BIR Form 1701Q)
-          </CardTitle>
+          <CardTitle>Quarterly Income Tax Returns (BIR Form 1701Q)</CardTitle>
           <CardDescription>
             Schedule and track your quarterly tax filings with BIR
           </CardDescription>
@@ -529,10 +522,7 @@ export default function TaxSummaryPage() {
                           Paid
                         </Badge>
                       ) : (
-                        <Badge
-                          variant="outline"
-                          className="text-orange-600"
-                        >
+                        <Badge variant="outline" className="text-orange-600">
                           Due Soon
                         </Badge>
                       )}
@@ -600,9 +590,7 @@ export default function TaxSummaryPage() {
                   </div>
                 </div>
                 <Badge
-                  variant={
-                    doc.status === "Completed" ? "default" : "outline"
-                  }
+                  variant={doc.status === "Completed" ? "default" : "outline"}
                 >
                   {doc.status}
                 </Badge>

@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useState } from "react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAdmin } from "@/hooks/use-admin";
 import { useAuth } from "@/lib/contexts/auth-context";
-import type { User, ListUsersResponse } from "@/lib/types/auth";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Skeleton } from "@/components/ui/skeleton";
+import type { User } from "@/lib/types/auth";
 
 /**
  * Admin Dashboard Component - Example implementation
@@ -120,7 +127,8 @@ export function AdminDashboard() {
       {isImpersonated && (
         <Alert>
           <AlertDescription>
-            You are currently impersonating a user. Impersonator ID: {impersonatorId}
+            You are currently impersonating a user. Impersonator ID:{" "}
+            {impersonatorId}
             <Button
               variant="outline"
               size="sm"
@@ -147,7 +155,8 @@ export function AdminDashboard() {
         <CardContent>
           <div className="space-y-2">
             <p>
-              <strong>Current User:</strong> {currentUser?.name} ({currentUser?.email})
+              <strong>Current User:</strong> {currentUser?.name} (
+              {currentUser?.email})
             </p>
             <p>
               <strong>Role:</strong> <Badge>{currentUser?.role}</Badge>
@@ -194,9 +203,13 @@ export function AdminDashboard() {
                       {user.banned && (
                         <Badge variant="destructive">Banned</Badge>
                       )}
-                      {user.role && <Badge variant="secondary">{user.role}</Badge>}
+                      {user.role && (
+                        <Badge variant="secondary">{user.role}</Badge>
+                      )}
                     </div>
-                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {user.email}
+                    </p>
                     {user.banReason && (
                       <p className="text-xs text-destructive">
                         Ban Reason: {user.banReason}

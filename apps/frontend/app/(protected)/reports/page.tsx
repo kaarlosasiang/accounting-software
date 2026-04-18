@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useReports } from "@/hooks/use-reports";
-import { useCurrency } from "@/hooks/use-currency";
-import { downloadCsv } from "@/lib/utils/csv-export";
+import { Download } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,9 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -21,8 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { Download } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useCurrency } from "@/hooks/use-currency";
+import { useReports } from "@/hooks/use-reports";
+import { downloadCsv } from "@/lib/utils/csv-export";
 
 type AccountLineItem = {
   accountCode?: string;
@@ -135,7 +136,6 @@ export default function ReportsPage() {
         if (data) setCfData(data);
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [startDate, endDate],
   );
 

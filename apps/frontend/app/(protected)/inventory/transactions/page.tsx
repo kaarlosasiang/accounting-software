@@ -1,7 +1,17 @@
 "use client";
 
+import {
+  ArrowDown,
+  ArrowUp,
+  Download,
+  Package,
+  Search,
+  TrendingUp,
+} from "lucide-react";
 import { useState } from "react";
-import { useInventoryTransactions } from "@/hooks/use-inventory";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,16 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -28,14 +28,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ArrowUp,
-  ArrowDown,
-  Search,
-  TrendingUp,
-  TrendingDown,
-  Download,
-  Package,
-} from "lucide-react";
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useInventoryTransactions } from "@/hooks/use-inventory";
 import { formatCurrency } from "@/lib/utils";
 
 interface InventoryTransaction {

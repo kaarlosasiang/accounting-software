@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { useDashboard } from "@/hooks/use-dashboard";
-import { useCurrency } from "@/hooks/use-currency";
+import { Badge } from "@ui/badge";
+import { Button } from "@ui/button";
 import {
   Card,
   CardContent,
@@ -10,10 +9,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@ui/card";
-import { Badge } from "@ui/badge";
-import { Button } from "@ui/button";
-import { Skeleton } from "@ui/skeleton";
 import { Progress } from "@ui/progress";
+import { Skeleton } from "@ui/skeleton";
 import {
   Table,
   TableBody,
@@ -23,26 +20,30 @@ import {
   TableRow,
 } from "@ui/table";
 import {
+  AlertTriangle,
+  ArrowDownLeft,
+  ArrowUpLeft,
+  ArrowUpRight,
+  BarChart3,
+  BookOpen,
+  FileText,
+  Package,
+  Plus,
+  Receipt,
+  TrendingDown,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
+import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import {
-  ArrowUpRight,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  FileText,
-  Receipt,
-  Plus,
-  BookOpen,
-  BarChart3,
-  ArrowDownLeft,
-  ArrowUpLeft,
-  Users,
-  Package,
-} from "lucide-react";
-import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { useCurrency } from "@/hooks/use-currency";
+import { useDashboard } from "@/hooks/use-dashboard";
 import { cn } from "@/lib/utils";
 
 const chartConfig = {

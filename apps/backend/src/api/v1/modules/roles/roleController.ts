@@ -1,6 +1,8 @@
-import { Request, Response, NextFunction } from "express";
-import { roleService } from "./role.service.js";
+import { NextFunction, Request, Response } from "express";
+
 import { getCompanyId } from "../../shared/helpers/utils.js";
+
+import { roleService } from "./role.service.js";
 
 export const roleController = {
   async listRoles(req: Request, res: Response, next: NextFunction) {

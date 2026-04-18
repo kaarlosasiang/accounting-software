@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+
 import { supplierService } from "@/lib/services/supplier.service";
 import type { Supplier, SupplierForm } from "@/lib/types/supplier";
-import { toast } from "sonner";
 
 export function useSuppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);

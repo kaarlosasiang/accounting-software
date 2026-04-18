@@ -1,5 +1,6 @@
-import { apiFetch } from "@/lib/config/api-client";
 import type { CreatePersonnel, ResourcePermission } from "@sas/validators";
+
+import { apiFetch } from "@/lib/config/api-client";
 
 // ─── Response shapes ──────────────────────────────────────────────────────────
 

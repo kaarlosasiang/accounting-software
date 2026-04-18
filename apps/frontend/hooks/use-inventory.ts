@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+
 import { inventoryService } from "@/lib/services/inventory.service";
 import type {
   InventoryItem,
   InventoryItemForm,
   InventoryListResponse,
-  InventoryResponse,
 } from "@/lib/types/inventory";
-import { toast } from "sonner";
 
 interface UseInventoryOptions {
   category?: "Food" | "Non-Food" | "Service";

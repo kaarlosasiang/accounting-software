@@ -1,12 +1,8 @@
 "use client";
 
-import * as React from "react";
 import { Check, ChevronsUpDown, Plus } from "lucide-react";
-import {
-  useActiveOrganization,
-  useListOrganizations,
-  authClient,
-} from "@/lib/config/auth-client";
+import * as React from "react";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +18,11 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import {
+  authClient,
+  useActiveOrganization,
+  useListOrganizations,
+} from "@/lib/config/auth-client";
 import type { Organization } from "@/lib/types/auth";
 
 interface OrganizationSwitcherProps {

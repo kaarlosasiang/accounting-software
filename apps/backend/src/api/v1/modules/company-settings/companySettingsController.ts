@@ -1,7 +1,9 @@
 import { Request, Response } from "express";
-import companySettingsService from "./companySettingsService.js";
+
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
+
+import companySettingsService from "./companySettingsService.js";
 
 /**
  * Company Settings Controller

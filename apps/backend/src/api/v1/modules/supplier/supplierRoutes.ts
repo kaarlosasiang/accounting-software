@@ -1,10 +1,12 @@
 import express, { Router } from "express";
-import supplierController from "./supplierController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import supplierController from "./supplierController.js";
 
 const supplierRoutes: Router = express.Router();
 

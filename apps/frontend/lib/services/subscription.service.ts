@@ -1,5 +1,5 @@
-import { authClient } from "@/lib/config/auth-client";
 import { apiFetch } from "@/lib/config/api-client";
+import { authClient } from "@/lib/config/auth-client";
 
 export interface ActivateSubscriptionData {
   userId: string;
@@ -22,7 +22,7 @@ class SubscriptionService {
    * Activate a subscription for a user (mock)
    */
   async activateSubscription(
-    data: ActivateSubscriptionData
+    data: ActivateSubscriptionData,
   ): Promise<SubscriptionResponse> {
     try {
       const result = await apiFetch<SubscriptionResponse>(
@@ -30,7 +30,7 @@ class SubscriptionService {
         {
           method: "POST",
           body: JSON.stringify(data),
-        }
+        },
       );
 
       // Force refresh the session to get updated user data (bypass cookie cache)
@@ -56,7 +56,7 @@ class SubscriptionService {
         `/subscriptions/${userId}`,
         {
           method: "GET",
-        }
+        },
       );
 
       return result;
@@ -75,7 +75,7 @@ class SubscriptionService {
         `/subscriptions/${userId}`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       // Force refresh the session to get updated user data (bypass cookie cache)

@@ -1,9 +1,11 @@
-import { useState, useCallback } from "react";
+import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import type { RoleDto, ResourcePermission } from "@sas/validators";
+
+import type { ResourcePermission, RoleDto } from "@sas/validators";
+
 import {
-  rolesService,
   type CreateRoleData,
+  rolesService,
   type UpdateRoleData,
 } from "@/lib/services/roles.service";
 

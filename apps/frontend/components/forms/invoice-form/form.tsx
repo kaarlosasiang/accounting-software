@@ -1,52 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useCustomers } from "@/hooks/use-customers";
-import { useAccounts } from "@/hooks/use-accounts";
-import { usePeriods } from "@/hooks/use-periods";
-import { useOrganization } from "@/hooks/use-organization";
-import { inventoryService } from "@/lib/services/inventory.service";
-import type { InventoryItem } from "@/lib/types/inventory";
-import {
-  invoiceService,
-  type InvoiceFormData,
-} from "@/lib/services/invoice.service";
-import { toast } from "sonner";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
+import { format } from "date-fns";
+import {
+  AlertTriangle,
+  Calendar as CalendarIcon,
+  Check,
+  Package,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { toast } from "sonner";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -57,6 +25,38 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -65,18 +65,18 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Textarea } from "@/components/ui/textarea";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useCustomers } from "@/hooks/use-customers";
+import { useOrganization } from "@/hooks/use-organization";
+import { usePeriods } from "@/hooks/use-periods";
+import { inventoryService } from "@/lib/services/inventory.service";
 import {
-  Calendar as CalendarIcon,
-  Plus,
-  Trash2,
-  Check,
-  ChevronsUpDown,
-  AlertTriangle,
-  Package,
-} from "lucide-react";
-import { format } from "date-fns";
+  type InvoiceFormData,
+  invoiceService,
+} from "@/lib/services/invoice.service";
+import type { InventoryItem } from "@/lib/types/inventory";
 import { cn } from "@/lib/utils";
-import { Separator } from "@/components/ui/separator";
 
 const invoiceItemSchema = z.object({
   description: z.string().min(1, "Description is required"),

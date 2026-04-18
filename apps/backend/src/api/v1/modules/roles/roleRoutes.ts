@@ -1,10 +1,12 @@
 import express from "express";
-import { roleController } from "./roleController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import { roleController } from "./roleController.js";
 
 const roleRoutes = express.Router();
 

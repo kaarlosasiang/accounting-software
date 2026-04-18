@@ -1,5 +1,38 @@
 "use client";
 
+import {
+  ArrowRight,
+  BarChart3,
+  Bell,
+  CheckCircle2,
+  Clock,
+  Code,
+  CreditCard,
+  FileText,
+  Globe,
+  Headphones,
+  Lock,
+  Mail,
+  MapPin,
+  Package,
+  Palette,
+  Phone,
+  Plug,
+  Shield,
+  Smartphone,
+  Sparkles,
+  Star,
+  TrendingUp,
+  UserCog,
+  Users,
+  X,
+  Zap,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -8,41 +41,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  Check,
-  Zap,
-  Shield,
-  Clock,
-  Sparkles,
-  Users,
-  FileText,
-  BarChart3,
-  Mail,
-  Smartphone,
-  Palette,
-  Bell,
-  CreditCard,
-  Package,
-  MapPin,
-  Phone,
-  UserCog,
-  Plug,
-  Code,
-  Star,
-  TrendingUp,
-  Globe,
-  Lock,
-  Headphones,
-  ArrowRight,
-  CheckCircle2,
-  X,
-} from "lucide-react";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { subscriptionService } from "@/lib/services/subscription.service";
-import { toast } from "sonner";
 
 const billingPeriods = [
   { label: "Monthly", value: "monthly", multiplier: 1 },
@@ -372,7 +372,7 @@ export default function PlansPage() {
         error instanceof Error
           ? error.message
           : "Failed to process subscription",
-        { id: "subscription" }
+        { id: "subscription" },
       );
     } finally {
       setProcessingPlan(null);
@@ -563,10 +563,10 @@ export default function PlansPage() {
                     {processingPlan === plan.id
                       ? "Processing..."
                       : isLoading
-                      ? "Loading..."
-                      : user
-                      ? "Subscribe Now"
-                      : "Get Started"}
+                        ? "Loading..."
+                        : user
+                          ? "Subscribe Now"
+                          : "Get Started"}
                     <ArrowRight className="ml-2 size-4 transition-transform duration-300 group-hover/btn:translate-x-1" />
                   </Button>
 

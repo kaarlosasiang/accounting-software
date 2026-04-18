@@ -1,7 +1,9 @@
-import { Request, Response, NextFunction } from "express";
-import { dashboardService } from "./dashboardService.js";
+import { NextFunction, Request, Response } from "express";
+
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
+
+import { dashboardService } from "./dashboardService.js";
 
 /**
  * GET /api/v1/dashboard/overview

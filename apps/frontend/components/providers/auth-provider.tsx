@@ -1,17 +1,18 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import { authClient, useSession } from "@/lib/config/auth-client";
 import {
   AuthContext,
   type AuthContextValue,
 } from "@/lib/contexts/auth-context";
-import { authClient, useSession } from "@/lib/config/auth-client";
+import type { LoginPayload, SignupPayload } from "@/lib/services/auth.service";
 import {
   signIn as signInService,
   signUp as signUpService,
 } from "@/lib/services/auth.service";
-import type { Session, User } from "@/lib/types/auth";
-import type { LoginPayload, SignupPayload } from "@/lib/services/auth.service";
+import type { User } from "@/lib/types/auth";
 
 export default function AuthProvider({
   children,

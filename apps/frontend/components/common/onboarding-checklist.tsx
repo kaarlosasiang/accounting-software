@@ -1,8 +1,9 @@
 "use client";
 
+import { ArrowRight, CheckCircle2, Circle } from "lucide-react";
 import Link from "next/link";
-import { CheckCircle2, Circle, ArrowRight } from "lucide-react";
-import { useOnboarding } from "@/hooks/use-onboarding";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useOnboarding } from "@/hooks/use-onboarding";
 import { cn } from "@/lib/utils";
 
 const CHECKLIST_ITEMS = [

@@ -46,30 +46,30 @@ export interface IInventoryTransaction {
  */
 export interface IInventoryTransactionModel {
   findByInventoryItem(
-    inventoryItemId: Types.ObjectId
+    inventoryItemId: Types.ObjectId,
   ): Promise<IInventoryTransactionDocument[]>;
   findByType(
     companyId: Types.ObjectId,
-    transactionType: InventoryTransactionType
+    transactionType: InventoryTransactionType,
   ): Promise<IInventoryTransactionDocument[]>;
   findByDateRange(
     companyId: Types.ObjectId,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<IInventoryTransactionDocument[]>;
   findByReference(
     referenceType: InventoryReferenceType,
-    referenceId: Types.ObjectId
+    referenceId: Types.ObjectId,
   ): Promise<IInventoryTransactionDocument[]>;
   getMovementSummary(
     inventoryItemId: Types.ObjectId,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<any[]>;
   calculateCOGS(
     inventoryItemId: Types.ObjectId,
     startDate: Date,
-    endDate: Date
+    endDate: Date,
   ): Promise<{
     totalCOGS: number;
     totalQuantitySold: number;

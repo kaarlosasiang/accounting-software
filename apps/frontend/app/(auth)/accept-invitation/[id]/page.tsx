@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { CheckCircle, Loader2, Mail, XCircle } from "lucide-react";
 import Link from "next/link";
-import { CheckCircle, XCircle, Loader2, Mail } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
 import { AuthNavbar } from "@/components/common/auth-navbar";
 import { Button } from "@/components/ui/button";
 import {
@@ -31,7 +32,6 @@ export default function AcceptInvitationPage() {
   useEffect(() => {
     if (!id) return;
     accept();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const accept = async () => {

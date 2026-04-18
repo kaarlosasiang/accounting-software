@@ -9,6 +9,7 @@
  */
 
 import mongoose from "mongoose";
+
 import Account from "../models/Account.js";
 
 async function migrate() {

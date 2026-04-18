@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { usePermissions } from "@/hooks/use-permissions";
-import { useAuth } from "@/lib/contexts/auth-context";
+import { useEffect } from "react";
+
+import type { Action, Resource } from "@sas/validators";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Resource, Action } from "@sas/validators";
+import { usePermissions } from "@/hooks/use-permissions";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 interface PermissionGuardProps {
   resource: Resource;

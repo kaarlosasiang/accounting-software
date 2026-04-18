@@ -1,19 +1,20 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { z } from "zod";
 
-import { cn } from "@/lib/utils";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { Button } from "@/components/ui/button";
-import { GoogleSignInButton } from "@/components/common/auth/google-signin-button";
+import { userRegistrationSchema } from "@sas/validators";
+
 import { AuthDivider } from "@/components/common/auth/auth-divider";
+import { GoogleSignInButton } from "@/components/common/auth/google-signin-button";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Field,
   FieldDescription,
@@ -21,8 +22,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
-import { userRegistrationSchema } from "@sas/validators";
+import { useAuth } from "@/lib/contexts/auth-context";
+import { cn } from "@/lib/utils";
 
 type FormValues = z.infer<typeof userRegistrationSchema> & {
   companyId?: string;

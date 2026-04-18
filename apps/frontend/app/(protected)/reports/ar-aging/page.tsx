@@ -1,7 +1,10 @@
 "use client";
 
+import { format } from "date-fns";
+import { Calendar, Download, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useReports } from "@/hooks/use-reports";
+
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,7 +12,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -18,12 +22,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Download, Calendar, TrendingUp } from "lucide-react";
+import { useReports } from "@/hooks/use-reports";
 import { formatCurrency } from "@/lib/utils";
 import { downloadCsv } from "@/lib/utils/csv-export";
-import { format } from "date-fns";
 
 export default function ARAgingReportPage() {
   const { arAgingReport, isLoading, fetchARAgingReport } = useReports();

@@ -1,10 +1,12 @@
 import express from "express";
-import { memberPermissionController } from "./memberPermissionController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import { memberPermissionController } from "./memberPermissionController.js";
 
 const memberPermissionRoutes = express.Router();
 

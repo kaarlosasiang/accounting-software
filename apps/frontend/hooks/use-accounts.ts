@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
+
 import { authClient } from "@/lib/config/auth-client";
-import { accountsService, type Account } from "@/lib/services/accounts.service";
+import { type Account, accountsService } from "@/lib/services/accounts.service";
 
 /**
  * Hook to fetch accounts from the API

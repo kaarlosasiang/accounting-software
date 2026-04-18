@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "pnpm --filter @sas/validators build && next build",
-    "vercel-build": "pnpm --filter @sas/validators build && next build",
+    "build": "pnpm --filter @sas/validators build && next build --webpack",
+    "vercel-build": "pnpm --filter @sas/validators build && next build --webpack",
     "start": "next start",
     "lint:fix": "eslint . --ext .ts --fix",
     "lint": "eslint"

@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AccountForm } from "@/components/forms/account-form";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { accountsService, type Account } from "@/lib/services/accounts.service";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { AccountForm } from "@/components/forms/account-form";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/format";
+import { type Account, accountsService } from "@/lib/services/accounts.service";
 
 export default function AccountDetailsPage() {
   const params = useParams();

@@ -1,19 +1,21 @@
 import { Router } from "express";
-import {
-  recordPaymentReceived,
-  getPaymentsReceived,
-  recordPaymentMade,
-  getPaymentsMade,
-  getCustomerPayments,
-  getPaymentById,
-  suggestPaymentAllocations,
-  voidPayment,
-} from "./paymentController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import {
+  getCustomerPayments,
+  getPaymentById,
+  getPaymentsMade,
+  getPaymentsReceived,
+  recordPaymentMade,
+  recordPaymentReceived,
+  suggestPaymentAllocations,
+  voidPayment,
+} from "./paymentController.js";
 
 /**
  * Payment Routes

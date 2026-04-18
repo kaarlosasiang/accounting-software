@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
-import { Customer } from "../../models/Customer.js";
+
 import logger from "../../config/logger.js";
+import { Customer } from "../../models/Customer.js";
 
 /**
  * Customer Input type (inferred from validator)

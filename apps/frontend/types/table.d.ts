@@ -1,5 +1,4 @@
 import "@tanstack/react-table";
-import type { Account } from "@/lib/services/accounts.service";
 
 declare module "@tanstack/react-table" {
   interface TableMeta<TData> {

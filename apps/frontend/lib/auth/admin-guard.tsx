@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAdmin } from "@/hooks/use-admin";
-import { useAuth } from "@/lib/contexts/auth-context";
+import { useEffect } from "react";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useAdmin } from "@/hooks/use-admin";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 interface AdminGuardProps {
   children: React.ReactNode;
@@ -62,7 +63,7 @@ export function AdminGuard({
 
 /**
  * Higher-order component to protect admin pages
- * 
+ *
  * @example
  * ```tsx
  * export default withAdminGuard(AdminDashboard);
@@ -73,14 +74,11 @@ export function withAdminGuard<P extends object>(
   options?: {
     redirectTo?: string;
     fallback?: React.ReactNode;
-  }
+  },
 ) {
   return function AdminProtectedComponent(props: P) {
     return (
-      <AdminGuard
-        redirectTo={options?.redirectTo}
-        fallback={options?.fallback}
-      >
+      <AdminGuard redirectTo={options?.redirectTo} fallback={options?.fallback}>
         <Component {...props} />
       </AdminGuard>
     );
@@ -89,7 +87,7 @@ export function withAdminGuard<P extends object>(
 
 /**
  * Hook to check admin access and optionally redirect
- * 
+ *
  * @example
  * ```tsx
  * function AdminPage() {

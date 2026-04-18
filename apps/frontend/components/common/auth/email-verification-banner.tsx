@@ -1,12 +1,13 @@
 "use client";
 
+import { AlertCircle, Mail } from "lucide-react";
 import React, { useState } from "react";
+import { toast } from "sonner";
+
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Mail } from "lucide-react";
-import { authClient } from "@/lib/config/auth-client";
-import { toast } from "sonner";
 import { useEmailVerification } from "@/hooks/use-email-verification";
+import { authClient } from "@/lib/config/auth-client";
 
 export function EmailVerificationBanner() {
   const { needsVerification, user } = useEmailVerification();
@@ -41,7 +42,10 @@ export function EmailVerificationBanner() {
   };
 
   return (
-    <Alert variant="default" className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950">
+    <Alert
+      variant="default"
+      className="border-yellow-500 bg-yellow-50 dark:bg-yellow-950"
+    >
       <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
       <AlertTitle className="text-yellow-900 dark:text-yellow-100">
         Email Verification Required
@@ -49,7 +53,8 @@ export function EmailVerificationBanner() {
       <AlertDescription className="text-yellow-800 dark:text-yellow-200">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <span>
-            Please verify your email address ({user?.email}) to access all features.
+            Please verify your email address ({user?.email}) to access all
+            features.
           </span>
           <div className="flex gap-2">
             <Button

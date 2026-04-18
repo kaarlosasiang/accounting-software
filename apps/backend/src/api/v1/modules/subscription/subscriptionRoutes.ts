@@ -6,14 +6,14 @@ const subscriptionRoutes = express.Router();
 
 subscriptionRoutes.post(
   "/activate",
-  subscriptionController.activateSubscription
+  subscriptionController.activateSubscription,
 );
 
 subscriptionRoutes.get("/:userId", subscriptionController.getSubscription);
 
 subscriptionRoutes.delete(
   "/:userId",
-  subscriptionController.cancelSubscription
+  subscriptionController.cancelSubscription,
 );
 
 export default subscriptionRoutes;

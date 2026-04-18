@@ -1,13 +1,15 @@
 import { Router } from "express";
-import {
-  getDashboardOverview,
-  getDashboardAnalytics,
-} from "./dashboardController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import {
+  getDashboardAnalytics,
+  getDashboardOverview,
+} from "./dashboardController.js";
 
 const dashboardRoutes = Router();
 

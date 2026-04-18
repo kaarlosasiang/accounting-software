@@ -1,7 +1,9 @@
-import { Router, Request, Response, NextFunction } from "express";
-import { paymentService } from "./paymentService.js";
+import { NextFunction, Request, Response } from "express";
+
 import logger from "../../config/logger.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
+
+import { paymentService } from "./paymentService.js";
 
 /**
  * Payment Controller

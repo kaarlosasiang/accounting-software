@@ -1,22 +1,13 @@
-import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/providers/theme-provider";
+import { NuqsAdapter } from "nuqs/adapters/next/app";
+
 import AuthProvider from "@/components/providers/auth-provider";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { Analytics } from "@vercel/analytics/next";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AM FINTRASS",
@@ -38,9 +29,7 @@ export default function RootLayout({
           defer
         ></script>
       </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className="antialiased">
         <Analytics />
         <NuqsAdapter>
           <ThemeProvider

@@ -1,20 +1,22 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
   Building2,
   Calendar,
-  Landmark,
   CalendarRange,
-  Hash,
-  UserCog,
   CreditCard,
+  Hash,
+  Landmark,
+  UserCog,
   Users,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+import { Action, Resource } from "@sas/validators";
+
 import { usePermissions } from "@/hooks/use-permissions";
-import { Resource, Action } from "@sas/validators";
+import { cn } from "@/lib/utils";
 
 type SettingsNavItem = {
   label: string;

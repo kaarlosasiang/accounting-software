@@ -1,6 +1,17 @@
 "use client";
 
+import {
+  AlertTriangle,
+  Download,
+  MoreHorizontal,
+  Search,
+  ShoppingCart,
+  TrendingDown,
+} from "lucide-react";
 import { useState } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -8,8 +19,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -18,23 +34,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  MoreHorizontal,
-  Search,
-  AlertTriangle,
-  TrendingDown,
-  Download,
-  ShoppingCart,
-} from "lucide-react";
-import { formatCurrency } from "@/lib/utils";
 import { useInventory } from "@/hooks/use-inventory";
+import { formatCurrency } from "@/lib/utils";
 
 interface LowStockItem {
   id: string;

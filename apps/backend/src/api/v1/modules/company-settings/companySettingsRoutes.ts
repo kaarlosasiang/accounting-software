@@ -1,10 +1,12 @@
 import express, { Router } from "express";
-import companySettingsController from "./companySettingsController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import companySettingsController from "./companySettingsController.js";
 
 const companySettingsRoutes: Router = express.Router();
 

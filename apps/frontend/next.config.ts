@@ -4,8 +4,8 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: 'cdn.dribbble.com',
+        protocol: "https",
+        hostname: "cdn.dribbble.com",
       },
     ],
   },

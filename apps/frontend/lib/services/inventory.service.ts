@@ -1,9 +1,8 @@
 import { apiFetch } from "@/lib/config/api-client";
 import type {
-  InventoryItem,
   InventoryItemForm,
-  InventoryResponse,
   InventoryListResponse,
+  InventoryResponse,
   InventoryValueResponse,
 } from "@/lib/types/inventory";
 

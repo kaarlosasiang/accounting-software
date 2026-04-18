@@ -166,8 +166,8 @@ class InvoiceService {
   }
 
   /**
-    * Send invoice to customer
-    */
+   * Send invoice to customer
+   */
   async sendInvoice(id: string, companyName: string): Promise<InvoiceResponse> {
     return apiFetch<InvoiceResponse>(`/invoices/${id}/send`, {
       method: "POST",
@@ -178,7 +178,10 @@ class InvoiceService {
   /**
    * Record payment for an invoice
    */
-  async recordPayment(invoiceId: string, paymentData: PaymentFormData): Promise<PaymentSummary> {
+  async recordPayment(
+    invoiceId: string,
+    paymentData: PaymentFormData,
+  ): Promise<PaymentSummary> {
     return apiFetch<PaymentSummary>(`/invoices/${invoiceId}/payments`, {
       method: "POST",
       body: JSON.stringify(paymentData),

@@ -1,24 +1,23 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  Loader2,
   MoreHorizontal,
   Plus,
   Search,
-  FileText,
-  Download,
-  Eye,
-  Edit,
   Trash,
-  Loader2,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { BillForm } from "@/components/forms";
 
+import { BillForm } from "@/components/forms";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -27,14 +26,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -42,7 +33,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -50,8 +41,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Bill, billService } from "@/lib/services/bill.service";
 import { formatCurrency } from "@/lib/utils";
-import { billService, Bill } from "@/lib/services/bill.service";
 
 export default function BillsPage() {
   const router = useRouter();

@@ -1,15 +1,15 @@
 import { fromNodeHeaders } from "better-auth/node";
 import { NextFunction, Request, Response } from "express";
 
-import { authServer } from "../../modules/auth/betterAuth.js";
-import { AuthenticationError } from "../error-types/authentcation.error.js";
-import { AuthorizationError } from "../error-types/authorization.error.js";
 import logger from "../../config/logger.js";
-import { Action, OrgRole, Resource } from "../auth/permissions.js";
+import { authServer } from "../../modules/auth/betterAuth.js";
 import {
   hasPermission,
   resolvePermissions,
 } from "../auth/permission-resolver.js";
+import { Action, OrgRole, Resource } from "../auth/permissions.js";
+import { AuthenticationError } from "../error-types/authentcation.error.js";
+import { AuthorizationError } from "../error-types/authorization.error.js";
 import { getCompanyId, getUserId } from "../helpers/utils.js";
 
 export const requireAuth = async (

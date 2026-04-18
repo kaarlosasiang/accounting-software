@@ -1,21 +1,23 @@
 "use client";
 
-import { useMemo, useEffect } from "react";
-import type {
-  Organization,
-  ParsedOrganization,
-  CompanyAddress,
-  CompanyContact,
-  CompanyMetadata,
-  BusinessType,
-} from "@/lib/types/auth";
+import { useEffect, useMemo } from "react";
+
+import { OrgRole } from "@sas/validators";
+
 import {
+  authClient,
   useActiveOrganization,
   useListOrganizations,
   useSession,
-  authClient,
 } from "@/lib/config/auth-client";
-import { OrgRole } from "@sas/validators";
+import type {
+  BusinessType,
+  CompanyAddress,
+  CompanyContact,
+  CompanyMetadata,
+  Organization,
+  ParsedOrganization,
+} from "@/lib/types/auth";
 
 export type OrganizationClient = {
   list: () => Promise<{ data?: Organization[]; error?: unknown } | undefined>;

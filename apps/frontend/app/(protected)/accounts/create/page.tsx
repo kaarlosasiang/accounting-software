@@ -1,8 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AccountForm } from "@/components/forms/account-form";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+
+import { AccountForm } from "@/components/forms/account-form";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function CreateAccountPage() {
   return (

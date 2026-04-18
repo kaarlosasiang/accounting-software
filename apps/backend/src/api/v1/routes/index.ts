@@ -1,24 +1,23 @@
 import { Application } from "express";
 
-import authRoutes from "../modules/auth/authRoutes.js";
-import subscriptionRoutes from "../modules/subscription/subscriptionRoutes.js";
 import accountsRoutes from "../modules/accounts/accountsRoutes.js";
-import roleRoutes from "../modules/roles/roleRoutes.js";
-import memberPermissionRoutes from "../modules/roles/memberPermissionRoutes.js";
-import inventoryRoutes from "../modules/inventory/inventoryRoutes.js";
-import supplierRoutes from "../modules/supplier/supplierRoutes.js";
-import customerRoutes from "../modules/customer/customerRoutes.js";
-import { invoiceRoutes } from "../modules/invoice/invoiceRoutes.js";
+import authRoutes from "../modules/auth/authRoutes.js";
 import { billRoutes } from "../modules/bill/billRoutes.js";
-import { paymentRoutes } from "../modules/payment/paymentRoutes.js";
+import companyRoutes from "../modules/company/companyRoutes.js";
+import companySettingsRoutes from "../modules/company-settings/companySettingsRoutes.js";
+import customerRoutes from "../modules/customer/customerRoutes.js";
+import dashboardRoutes from "../modules/dashboard/dashboardRoutes.js";
+import inventoryRoutes from "../modules/inventory/inventoryRoutes.js";
+import { invoiceRoutes } from "../modules/invoice/invoiceRoutes.js";
 import journalEntryRoutes from "../modules/journalEntry/journalEntryRoutes.js";
 import ledgerRoutes from "../modules/ledger/ledgerRoutes.js";
-import { reportRoutes } from "../modules/report/reportRoutes.js";
+import { paymentRoutes } from "../modules/payment/paymentRoutes.js";
 import periodRoutes from "../modules/period/periodRoutes.js";
-import companySettingsRoutes from "../modules/company-settings/companySettingsRoutes.js";
-import dashboardRoutes from "../modules/dashboard/dashboardRoutes.js";
-import companyRoutes from "../modules/company/companyRoutes.js";
-
+import { reportRoutes } from "../modules/report/reportRoutes.js";
+import memberPermissionRoutes from "../modules/roles/memberPermissionRoutes.js";
+import roleRoutes from "../modules/roles/roleRoutes.js";
+import subscriptionRoutes from "../modules/subscription/subscriptionRoutes.js";
+import supplierRoutes from "../modules/supplier/supplierRoutes.js";
 import userRoutes from "../modules/user/userRoutes.js";
 
 /**

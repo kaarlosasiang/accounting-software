@@ -1,9 +1,8 @@
 import { apiFetch } from "@/lib/config/api-client";
 import type {
-  Supplier,
   SupplierForm,
-  SupplierResponse,
   SupplierListResponse,
+  SupplierResponse,
 } from "@/lib/types/supplier";
 
 class SupplierService {
@@ -40,7 +39,7 @@ class SupplierService {
    */
   async searchSuppliers(query: string): Promise<SupplierListResponse> {
     return apiFetch<SupplierListResponse>(
-      `/suppliers/search?q=${encodeURIComponent(query)}`
+      `/suppliers/search?q=${encodeURIComponent(query)}`,
     );
   }
 
@@ -59,7 +58,7 @@ class SupplierService {
    */
   async updateSupplier(
     id: string,
-    updateData: Partial<SupplierForm>
+    updateData: Partial<SupplierForm>,
   ): Promise<SupplierResponse> {
     return apiFetch<SupplierResponse>(`/suppliers/${id}`, {
       method: "PUT",

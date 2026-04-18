@@ -1,8 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useInvoices } from "@/hooks/use-invoices";
-import { useOrganization } from "@/hooks/use-organization";
+import {
+  Download,
+  Edit,
+  Eye,
+  FileText,
+  MoreHorizontal,
+  Plus,
+  Search,
+  Send,
+  TrendingUp,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -10,24 +24,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,22 +32,26 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
+import { Input } from "@/components/ui/input";
 import {
-  Download,
-  MoreHorizontal,
-  Plus,
-  Search,
-  FileText,
-  Send,
-  Eye,
-  Edit,
-  TrendingUp,
-} from "lucide-react";
-import Link from "next/link";
-import { formatCurrency } from "@/lib/utils";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useInvoices } from "@/hooks/use-invoices";
+import { useOrganization } from "@/hooks/use-organization";
 import { generateInvoicePDF } from "@/lib/pdf/invoice-pdf";
-import { toast } from "sonner";
+import { formatCurrency } from "@/lib/utils";
 
 export default function InvoicesPage() {
   const {

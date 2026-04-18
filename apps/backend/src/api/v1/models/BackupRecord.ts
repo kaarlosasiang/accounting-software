@@ -6,7 +6,7 @@ import {
   IBackupRecord,
   IBackupRecordDocument,
   StorageLocation,
-} from '../shared/interface/IBackupRecord.js';
+} from "../shared/interface/IBackupRecord.js";
 
 /**
  * Backup Record Schema

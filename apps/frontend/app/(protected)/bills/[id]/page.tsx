@@ -1,53 +1,40 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { useBills } from "@/hooks/use-bills";
-import { useOrganization } from "@/hooks/use-organization";
-import type { Bill } from "@/lib/services/bill.service";
-import { paymentService } from "@/lib/services/payment.service";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle2,
+  Clock,
+  Download,
+  Edit,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Send,
+  Trash2,
+} from "lucide-react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
-  TableFooter,
 } from "@/components/ui/table";
-import {
-  ArrowLeft,
-  Download,
-  Edit,
-  Trash2,
-  CheckCircle2,
-  FileText,
-  Calendar,
-  Mail,
-  Phone,
-  MapPin,
-  Send,
-  Building2,
-  CreditCard,
-  DollarSign,
-  AlertCircle,
-  Clock,
-  Package,
-} from "lucide-react";
-import Link from "next/link";
+import { useBills } from "@/hooks/use-bills";
+import { useOrganization } from "@/hooks/use-organization";
+import type { Bill } from "@/lib/services/bill.service";
 import { formatCurrency } from "@/lib/utils";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { toast } from "sonner";
 
 export default function BillViewPage() {
   const params = useParams();

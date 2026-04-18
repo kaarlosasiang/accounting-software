@@ -1,19 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Briefcase, DollarSign, Save } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { type InventoryItem, inventoryItemSchema } from "@sas/validators";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -23,13 +19,19 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Save, Briefcase, DollarSign } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { inventoryItemSchema, type InventoryItem } from "@sas/validators";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useAccounts } from "@/hooks/use-accounts";
 import { inventoryService } from "@/lib/services/inventory.service";
-import { toast } from "sonner";
-import { z } from "zod";
 
 // Service-specific schema
 const serviceSchema = inventoryItemSchema

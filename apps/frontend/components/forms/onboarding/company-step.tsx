@@ -1,8 +1,8 @@
 "use client";
 
-import { useOnboarding } from "@/hooks/use-onboarding";
 import { CompanySetupForm } from "@/components/forms/company-setup-form";
 import { Button } from "@/components/ui/button";
+import { useOnboarding } from "@/hooks/use-onboarding";
 
 interface CompanyStepProps {
   onNext: () => void;

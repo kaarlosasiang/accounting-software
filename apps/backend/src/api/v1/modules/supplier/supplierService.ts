@@ -1,7 +1,8 @@
 import { Types } from "mongoose";
+
+import logger from "../../config/logger.js";
 import { Supplier } from "../../models/Supplier.js";
 import { ISupplierModel } from "../../shared/interface/ISupplier.js";
-import logger from "../../config/logger.js";
 
 // Type assertion to ensure static methods are recognized
 const SupplierModel = Supplier as ISupplierModel;

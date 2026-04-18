@@ -1,6 +1,7 @@
-import Role from "../../models/Role.js";
-import { DEFAULT_ROLE_PERMISSIONS, OrgRole, Resource } from "./permissions.js";
 import logger from "../../config/logger.js";
+import Role from "../../models/Role.js";
+
+import { DEFAULT_ROLE_PERMISSIONS, OrgRole, Resource } from "./permissions.js";
 
 const SYSTEM_ROLE_DESCRIPTIONS: Record<OrgRole, string> = {
   [OrgRole.owner]: "Full control over all company resources and settings.",

@@ -1,21 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
 import {
+  CheckCircle,
+  Download,
+  Eye,
+  FileText,
+  Loader2,
   MoreHorizontal,
   Plus,
   Search,
-  FileText,
-  Download,
-  Eye,
-  CheckCircle,
-  Loader2,
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -24,6 +24,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import {
   Table,
   TableBody,
   TableCell,
@@ -31,16 +39,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
+import { Bill, billService } from "@/lib/services/bill.service";
 import { formatCurrency } from "@/lib/utils";
-import { billService, Bill } from "@/lib/services/bill.service";
 
 export default function PaidBillsPage() {
   const [bills, setBills] = useState<Bill[]>([]);

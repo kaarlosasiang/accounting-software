@@ -1,8 +1,9 @@
-import request from "supertest";
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import express from "express";
+import { MongoClient, ObjectId } from "mongodb";
+import request from "supertest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
 import configureApp from "../../../config/app.js";
-import { MongoClient, ObjectId, Decimal128 } from "mongodb";
 import { constants } from "../../../config/index.js";
 import { authServer } from "../../../modules/auth/betterAuth.js";
 

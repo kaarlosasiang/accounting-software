@@ -1,10 +1,12 @@
 import express, { Router } from "express";
-import { periodController } from "./periodController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import { periodController } from "./periodController.js";
 
 const periodRoutes: Router = express.Router();
 

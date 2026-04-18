@@ -1,10 +1,12 @@
 import express, { Router } from "express";
-import inventoryController from "./inventoryController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import inventoryController from "./inventoryController.js";
 
 const inventoryRoutes: Router = express.Router();
 

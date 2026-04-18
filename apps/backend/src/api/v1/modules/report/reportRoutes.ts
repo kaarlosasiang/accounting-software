@@ -1,17 +1,19 @@
 import { Router } from "express";
-import {
-  generateBalanceSheet,
-  generateIncomeStatement,
-  generateCashFlowStatement,
-  generateTrialBalance,
-  generateARAgingReport,
-  generateAPAgingReport,
-} from "./reportController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import {
+  generateAPAgingReport,
+  generateARAgingReport,
+  generateBalanceSheet,
+  generateCashFlowStatement,
+  generateIncomeStatement,
+  generateTrialBalance,
+} from "./reportController.js";
 
 export const reportRoutes = Router();
 

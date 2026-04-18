@@ -1,6 +1,6 @@
 import type {
-  User as BetterAuthUser,
   Session as BetterAuthSession,
+  User as BetterAuthUser,
 } from "better-auth/types";
 
 /**

@@ -1,11 +1,9 @@
 import { defineConfig, globalIgnores } from "eslint/config";
-import baseConfig from "@sas/config-eslint/next.js";
+import baseConfig from "../../packages/config-eslint/index.js";
 
 const eslintConfig = defineConfig([
   ...baseConfig,
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
     "out/**",
     "build/**",

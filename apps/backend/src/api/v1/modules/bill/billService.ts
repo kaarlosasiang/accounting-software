@@ -1,11 +1,12 @@
 import mongoose from "mongoose";
+
+import logger from "../../config/logger.js";
 import { Bill } from "../../models/Bill.js";
-import { Supplier } from "../../models/Supplier.js";
 import { InventoryItem } from "../../models/InventoryItem.js";
 import { InventoryTransaction } from "../../models/InventoryTransaction.js";
-import { BillStatus, IBillDocument } from "../../shared/interface/IBill.js";
-import logger from "../../config/logger.js";
+import { Supplier } from "../../models/Supplier.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
+import { BillStatus, IBillDocument } from "../../shared/interface/IBill.js";
 
 /**
  * Bill Service

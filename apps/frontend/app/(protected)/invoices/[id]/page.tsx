@@ -1,12 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  ArrowLeft,
+  Calendar,
+  CheckCircle2,
+  Download,
+  Edit,
+  FileText,
+  Mail,
+  MapPin,
+  Phone,
+  Send,
+  Trash2,
+  XCircle,
+} from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { useInvoices } from "@/hooks/use-invoices";
-import { useOrganization } from "@/hooks/use-organization";
-import type { Invoice } from "@/lib/services/invoice.service";
-import { paymentService } from "@/lib/services/payment.service";
-import { PaymentFormData } from "@/lib/types/payment";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -14,36 +28,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
   TableCell,
+  TableFooter,
   TableHead,
   TableHeader,
   TableRow,
-  TableFooter,
 } from "@/components/ui/table";
-import {
-  ArrowLeft,
-  Download,
-  Send,
-  Edit,
-  Trash2,
-  CheckCircle2,
-  XCircle,
-  FileText,
-  Calendar,
-  Mail,
-  Phone,
-  MapPin,
-} from "lucide-react";
-import Link from "next/link";
-import { formatCurrency } from "@/lib/utils";
+import { useInvoices } from "@/hooks/use-invoices";
+import { useOrganization } from "@/hooks/use-organization";
 import { generateInvoicePDF } from "@/lib/pdf/invoice-pdf";
-import { toast } from "sonner";
+import type { Invoice } from "@/lib/services/invoice.service";
+import { formatCurrency } from "@/lib/utils";
 
 export default function InvoiceViewPage() {
   const params = useParams();

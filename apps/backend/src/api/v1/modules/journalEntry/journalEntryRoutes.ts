@@ -1,10 +1,12 @@
 import express, { Router } from "express";
-import { journalEntryController } from "./journalEntryController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import { journalEntryController } from "./journalEntryController.js";
 
 const journalEntryRoutes: Router = express.Router();
 

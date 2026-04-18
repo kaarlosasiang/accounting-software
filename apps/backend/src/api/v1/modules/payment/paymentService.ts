@@ -1,19 +1,16 @@
 import mongoose from "mongoose";
-import { Payment } from "../../models/Payment.js";
-import { Invoice } from "../../models/Invoice.js";
+
+import logger from "../../config/logger.js";
+import Account from "../../models/Account.js";
 import { Bill } from "../../models/Bill.js";
 import { Customer } from "../../models/Customer.js";
+import { Invoice } from "../../models/Invoice.js";
+import { Payment } from "../../models/Payment.js";
 import { Supplier } from "../../models/Supplier.js";
-import { JournalEntry } from "../../models/JournalEntry.js";
-import Account from "../../models/Account.js";
-import {
-  PaymentType,
-  IPaymentAllocation,
-} from "../../shared/interface/IPayment.js";
-import { InvoiceStatus } from "../../shared/interface/IInvoice.js";
-import { BillStatus } from "../../shared/interface/IBill.js";
-import logger from "../../config/logger.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
+import { BillStatus } from "../../shared/interface/IBill.js";
+import { InvoiceStatus } from "../../shared/interface/IInvoice.js";
+import { PaymentType } from "../../shared/interface/IPayment.js";
 
 /**
  * Payment Service

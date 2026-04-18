@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { toast } from "sonner";
+
 import { AuthNavbar } from "@/components/common/auth-navbar";
 import { LoginForm } from "@/components/forms/login-form/form";
-import { useGuestRoute } from "@/lib/auth/protected-route";
 import { Spinner } from "@/components/ui/spinner";
+import { useGuestRoute } from "@/lib/auth/protected-route";
 import { useAuth } from "@/lib/contexts/auth-context";
 
 function LoginPageContent() {
@@ -33,7 +34,7 @@ function LoginPageContent() {
       const qs = params.toString();
       router.replace(`/login${qs ? `?${qs}` : ""}`);
     }
-  }, [oauthError]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [oauthError]);
 
   // Show loader while checking auth, or while any logged-in user is being redirected
   // (verified → dashboard/plans, unverified → verify-email).

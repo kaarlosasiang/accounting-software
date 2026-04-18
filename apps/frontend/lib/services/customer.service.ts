@@ -1,10 +1,9 @@
 import { apiFetch } from "@/lib/config/api-client";
 import type {
-  Customer,
-  CustomerForm,
-  CustomerResponse,
-  CustomerListResponse,
   CreditCheckResponse,
+  CustomerForm,
+  CustomerListResponse,
+  CustomerResponse,
 } from "@/lib/types/customer";
 
 class CustomerService {
@@ -41,7 +40,7 @@ class CustomerService {
    */
   async searchCustomers(query: string): Promise<CustomerListResponse> {
     return apiFetch<CustomerListResponse>(
-      `/customers/search?q=${encodeURIComponent(query)}`
+      `/customers/search?q=${encodeURIComponent(query)}`,
     );
   }
 
@@ -60,7 +59,7 @@ class CustomerService {
    */
   async updateCustomer(
     id: string,
-    updateData: Partial<CustomerForm>
+    updateData: Partial<CustomerForm>,
   ): Promise<CustomerResponse> {
     return apiFetch<CustomerResponse>(`/customers/${id}`, {
       method: "PUT",
@@ -91,7 +90,7 @@ class CustomerService {
    */
   async updateCustomerBalance(
     id: string,
-    amount: number
+    amount: number,
   ): Promise<CustomerResponse> {
     return apiFetch<CustomerResponse>(`/customers/${id}/balance`, {
       method: "PATCH",
@@ -104,7 +103,7 @@ class CustomerService {
    */
   async checkCreditAvailability(
     id: string,
-    amount: number
+    amount: number,
   ): Promise<CreditCheckResponse> {
     return apiFetch<CreditCheckResponse>(`/customers/${id}/check-credit`, {
       method: "POST",

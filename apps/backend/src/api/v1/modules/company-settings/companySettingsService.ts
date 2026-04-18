@@ -1,8 +1,8 @@
-import { CompanySettings } from "../../models/CompanySettings.js";
 import logger from "../../config/logger.js";
+import { CompanySettings } from "../../models/CompanySettings.js";
 import {
-  IBankAccountInfo,
   AccountingMethod,
+  IBankAccountInfo,
 } from "../../shared/interface/ICompanySettings.js";
 
 /**

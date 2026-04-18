@@ -31,8 +31,10 @@ module.exports = [
       // TypeScript rules
       "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/explicit-function-return-type": "off",
+      "@typescript-eslint/no-unsafe-function-type": "off",
+      "@typescript-eslint/no-namespace": "off",
       "@typescript-eslint/no-unused-vars": [
-        "error",
+        "warn",
         {
           args: "all",
           argsIgnorePattern: "^_",
@@ -50,7 +52,7 @@ module.exports = [
       "prettier/prettier": ["error", { usePrettierrc: true }],
 
       // Unused imports
-      "unused-imports/no-unused-imports": "error",
+      "unused-imports/no-unused-imports": "warn",
       "unused-imports/no-unused-vars": [
         "warn",
         {

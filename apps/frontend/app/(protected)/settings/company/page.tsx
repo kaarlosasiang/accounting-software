@@ -1,26 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { LogOut, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,11 +16,28 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Save, LogOut, Trash2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { useOrganization, useOrganizationRole } from "@/hooks/use-organization";
+import { authClient, useListOrganizations } from "@/lib/config/auth-client";
 import { useAuth } from "@/lib/contexts/auth-context";
-import { useListOrganizations, authClient } from "@/lib/config/auth-client";
 
 const BUSINESS_TYPES = [
   { value: "sole proprietorship", label: "Sole Proprietorship" },

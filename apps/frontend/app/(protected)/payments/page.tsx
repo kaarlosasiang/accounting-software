@@ -1,47 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { useOrganization } from "@/hooks/use-organization";
 import {
-  MoreHorizontal,
-  Plus,
-  Search,
+  ArrowDownCircle,
+  ArrowUpCircle,
   CreditCard,
   Download,
   Eye,
-  ArrowUpCircle,
-  ArrowDownCircle,
+  MoreHorizontal,
+  Plus,
+  Search,
   XCircle,
-  Loader2,
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -53,6 +26,23 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -60,9 +50,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatCurrency } from "@/lib/utils";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useOrganization } from "@/hooks/use-organization";
 import { paymentService } from "@/lib/services/payment.service";
 import { Payment } from "@/lib/types/payment";
+import { formatCurrency } from "@/lib/utils";
 
 export default function PaymentsPage() {
   const { organizationId } = useOrganization();

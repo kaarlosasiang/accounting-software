@@ -1,10 +1,12 @@
 import express from "express";
-import { invoiceController } from "./invoiceController.js";
+
+import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
-import { Action, Resource } from "../../shared/auth/permissions.js";
+
+import { invoiceController } from "./invoiceController.js";
 
 const invoiceRoutes = express.Router();
 

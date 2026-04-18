@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+import type { Action, Resource } from "@sas/validators";
+
 import { useAuth } from "@/lib/contexts/auth-context";
 import { permissionsService } from "@/lib/services/permissions.service";
-import type { Resource, Action } from "@sas/validators";
 
 export type EffectivePermissionsMap = Record<string, string[]>;
 

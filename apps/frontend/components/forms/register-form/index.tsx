@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { SignupForm } from "./form";
-import { EmailOTPVerification } from "@/components/common/auth/email-otp-verification";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+import { EmailOTPVerification } from "@/components/common/auth/email-otp-verification";
+
+import { SignupForm } from "./form";
 
 export function SignupWithVerification() {
   const router = useRouter();

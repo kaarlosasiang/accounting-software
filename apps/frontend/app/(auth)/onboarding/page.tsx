@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
+
 import { AuthNavbar } from "@/components/common/auth-navbar";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { useOnboarding } from "@/hooks/use-onboarding";
-import { ProfileStep } from "@/components/forms/onboarding/profile-step";
 import { CompanyStep } from "@/components/forms/onboarding/company-step";
-import { TeamInviteStep } from "@/components/forms/onboarding/team-invite-step";
 import { DoneStep } from "@/components/forms/onboarding/done-step";
+import { ProfileStep } from "@/components/forms/onboarding/profile-step";
+import { TeamInviteStep } from "@/components/forms/onboarding/team-invite-step";
 import { Spinner } from "@/components/ui/spinner";
+import { useOnboarding } from "@/hooks/use-onboarding";
+import { useAuth } from "@/lib/contexts/auth-context";
 import { cn } from "@/lib/utils";
 
 const STEP_LABELS = ["Profile", "Company", "Invite Team", "Done"];

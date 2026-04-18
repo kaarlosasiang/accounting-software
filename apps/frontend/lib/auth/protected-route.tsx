@@ -1,9 +1,10 @@
 "use client";
 
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
-import { useAuth } from "@/lib/contexts/auth-context";
+
 import { authClient, useListOrganizations } from "@/lib/config/auth-client";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 /**
  * Higher-order component to protect routes that require authentication.

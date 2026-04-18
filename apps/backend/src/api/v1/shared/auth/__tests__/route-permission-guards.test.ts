@@ -10,11 +10,12 @@
  *   - Confirm 403 is returned when the action is not in the effective permissions
  *   - Confirm 200 (or non-403) is returned when the action is allowed
  */
-import request from "supertest";
-import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import express from "express";
-import configureApp from "../../../config/app.js";
 import { MongoClient, ObjectId } from "mongodb";
+import request from "supertest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+
+import configureApp from "../../../config/app.js";
 import { constants } from "../../../config/index.js";
 import { authServer } from "../../../modules/auth/betterAuth.js";
 

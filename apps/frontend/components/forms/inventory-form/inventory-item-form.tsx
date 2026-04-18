@@ -1,25 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Package, Save, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { toast } from "sonner";
+
+import { type InventoryItem, inventoryItemSchema } from "@sas/validators";
+
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import {
   Form,
   FormControl,
@@ -28,27 +17,25 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import {
-  Info,
-  Save,
-  Percent,
-  Package,
-  DollarSign,
-  TrendingUp,
-  Settings,
-} from "lucide-react";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
-import { formatCurrency } from "@/lib/utils";
-import { inventoryItemSchema, type InventoryItem } from "@sas/validators";
+import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { useAccounts } from "@/hooks/use-accounts";
 import { useSuppliers } from "@/hooks/use-suppliers";
 import { inventoryService } from "@/lib/services/inventory.service";
-import { toast } from "sonner";
 import type {
   InventoryItemForm,
   InventoryItemFormProps,
 } from "@/lib/types/inventory";
-import { z } from "zod";
+import { formatCurrency } from "@/lib/utils";
 
 export function InventoryItemForm({
   onSubmit,

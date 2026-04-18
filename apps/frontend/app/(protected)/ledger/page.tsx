@@ -1,8 +1,16 @@
 "use client";
 
+import { format } from "date-fns";
+import {
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  Download,
+  Filter,
+} from "lucide-react";
 import { useState } from "react";
-import { useGeneralLedger, useTrialBalance } from "@/hooks/use-journal-entries";
-import { useAccounts } from "@/hooks/use-accounts";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,13 +20,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -26,26 +32,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { Badge } from "@/components/ui/badge";
-import {
-  BookOpen,
-  ChevronDown,
-  ChevronRight,
-  Download,
-  Filter,
-  Calendar,
-} from "lucide-react";
+import { useAccounts } from "@/hooks/use-accounts";
+import { useGeneralLedger, useTrialBalance } from "@/hooks/use-journal-entries";
 import { formatCurrency } from "@/lib/utils";
 import { downloadCsv } from "@/lib/utils/csv-export";
-import { format } from "date-fns";
 
 export default function GeneralLedgerPage() {
   const [startDate, setStartDate] = useState<string>("");

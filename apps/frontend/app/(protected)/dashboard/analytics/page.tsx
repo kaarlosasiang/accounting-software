@@ -1,29 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Download, TrendingUp, DollarSign } from "lucide-react";
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart";
+import { DollarSign, Download, TrendingUp } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -34,11 +12,34 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import {
-  dashboardService,
-  type DashboardAnalytics,
-} from "@/lib/services/dashboard.service";
 import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  type DashboardAnalytics,
+  dashboardService,
+} from "@/lib/services/dashboard.service";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEAR_OPTIONS = [CURRENT_YEAR, CURRENT_YEAR - 1, CURRENT_YEAR - 2];

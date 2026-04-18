@@ -1,13 +1,13 @@
 "use client";
 
+import { NewOrgForm } from "@/components/forms/new-org-form";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { NewOrgForm } from "@/components/forms/new-org-form";
 
 interface NewOrgModalProps {
   open: boolean;

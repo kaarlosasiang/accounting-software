@@ -1,45 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { useOrganization } from "@/hooks/use-organization";
-import { permissionsService } from "@/lib/services/permissions.service";
-import type {
-  BusinessType,
-  CompanyAddress,
-  CompanyContact,
-  CompanyMetadata,
-} from "@/lib/types/auth";
 import {
+  ArrowRight,
   Building2,
-  MapPin,
+  CheckCircle2,
   FileText,
   Globe,
-  CheckCircle2,
+  MapPin,
   Sparkles,
-  ArrowRight,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import { z } from "zod";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
 import {
   Card,
   CardContent,
@@ -47,8 +25,26 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Field, FieldDescription, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
+import { useOrganization } from "@/hooks/use-organization";
+import { useAuth } from "@/lib/contexts/auth-context";
+import { permissionsService } from "@/lib/services/permissions.service";
+import type {
+  BusinessType,
+  CompanyAddress,
+  CompanyContact,
+  CompanyMetadata,
+} from "@/lib/types/auth";
 import { cn } from "@/lib/utils";
 
 const INDUSTRIES = [

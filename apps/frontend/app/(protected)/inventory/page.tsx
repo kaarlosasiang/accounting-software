@@ -1,24 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { toast } from "sonner";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-import { DataTable } from "@/components/common/data-table/data-table";
-import { DataTableAdvancedToolbar } from "@/components/common/data-table/data-table-advanced-toolbar";
-import { DataTableFilterMenu } from "@/components/common/data-table/data-table-filter-menu";
-import { DataTableSortList } from "@/components/common/data-table/data-table-sort-list";
-import { useDataTable } from "@/hooks/use-data-table";
-import { columns } from "./columns";
-import { Input } from "@/components/ui/input";
+import type { RowData } from "@tanstack/react-table";
 import {
   Sheet,
   SheetContent,
@@ -28,39 +10,49 @@ import {
   SheetTrigger,
 } from "@ui/sheet";
 import {
+  AlertTriangle,
+  Download,
+  Package,
+  Plus,
+  Search,
+  Settings,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { toast } from "sonner";
+
+import { DataTable } from "@/components/common/data-table/data-table";
+import { DataTableAdvancedToolbar } from "@/components/common/data-table/data-table-advanced-toolbar";
+import { DataTableFilterMenu } from "@/components/common/data-table/data-table-filter-menu";
+import { DataTableSortList } from "@/components/common/data-table/data-table-sort-list";
+import { InventoryItemForm } from "@/components/forms";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-
-import { InventoryItemForm } from "@/components/forms";
-import { inventoryService } from "@/lib/services/inventory.service";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { useDataTable } from "@/hooks/use-data-table";
 import { useInventory } from "@/hooks/use-inventory";
+import { inventoryService } from "@/lib/services/inventory.service";
 import type {
   InventoryItem,
   InventoryItemForm as InventoryItemFormType,
 } from "@/lib/types/inventory";
-
-import {
-  Plus,
-  Search,
-  Package,
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  Download,
-  Settings,
-} from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+
 import type { InventoryItem as ColumnsInventoryItem } from "./columns";
-import type { RowData, TableMeta } from "@tanstack/react-table";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { columns } from "./columns";
 
 declare module "@tanstack/react-table" {
   interface TableMeta<TData extends RowData> {

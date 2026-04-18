@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
+
 import { customerService } from "@/lib/services/customer.service";
 import type { Customer, CustomerForm } from "@/lib/types/customer";
-import { toast } from "sonner";
 
 export function useCustomers() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -70,7 +71,7 @@ export function useCustomers() {
         throw err;
       }
     },
-    [fetchCustomers]
+    [fetchCustomers],
   );
 
   const updateCustomer = useCallback(
@@ -87,7 +88,7 @@ export function useCustomers() {
         throw err;
       }
     },
-    [fetchCustomers]
+    [fetchCustomers],
   );
 
   const deleteCustomer = useCallback(
@@ -103,7 +104,7 @@ export function useCustomers() {
         throw err;
       }
     },
-    [fetchCustomers]
+    [fetchCustomers],
   );
 
   const toggleCustomerStatus = useCallback(
@@ -113,7 +114,7 @@ export function useCustomers() {
         toast.success(
           `Customer ${
             response.data.isActive ? "activated" : "deactivated"
-          } successfully`
+          } successfully`,
         );
         await fetchCustomers(); // Refresh list
         return response.data;
@@ -126,7 +127,7 @@ export function useCustomers() {
         throw err;
       }
     },
-    [fetchCustomers]
+    [fetchCustomers],
   );
 
   const checkCreditAvailability = useCallback(
@@ -134,7 +135,7 @@ export function useCustomers() {
       try {
         const response = await customerService.checkCreditAvailability(
           id,
-          amount
+          amount,
         );
         return response.data;
       } catch (err) {
@@ -146,7 +147,7 @@ export function useCustomers() {
         throw err;
       }
     },
-    []
+    [],
   );
 
   useEffect(() => {

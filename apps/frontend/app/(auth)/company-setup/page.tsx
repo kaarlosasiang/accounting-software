@@ -1,8 +1,8 @@
 "use client";
 
-import { useAuth } from "@/lib/contexts/auth-context";
-import { CompanySetupForm } from "@/components/forms/company-setup-form";
 import { AuthNavbar } from "@/components/common/auth-navbar";
+import { CompanySetupForm } from "@/components/forms/company-setup-form";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 export default function CompanySetupPage() {
   const { user, isLoading } = useAuth();

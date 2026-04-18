@@ -1,8 +1,11 @@
 import { Request, Response } from "express";
+
 import { customerSchema } from "@sas/validators";
-import customerService from "./customerService.js";
+
 import logger from "../../config/logger.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
+
+import customerService from "./customerService.js";
 
 /**
  * Customer Controller

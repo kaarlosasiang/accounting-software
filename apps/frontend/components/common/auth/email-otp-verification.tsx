@@ -1,13 +1,25 @@
 "use client";
 
+import { Loader2 } from "lucide-react";
 import React, { useState } from "react";
 import { toast } from "sonner";
-import { authClient } from "@/lib/config/auth-client";
-import { Button } from "@/components/ui/button";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
+import { authClient } from "@/lib/config/auth-client";
 
 interface EmailOTPVerificationProps {
   email: string;
@@ -64,7 +76,11 @@ export function EmailOTPVerification({
           break;
         case "forget-password":
           // For password reset, we just verify the OTP
-          result = await authClient.emailOtp.checkVerificationOtp({ email, otp, type });
+          result = await authClient.emailOtp.checkVerificationOtp({
+            email,
+            otp,
+            type,
+          });
           break;
       }
 
@@ -124,7 +140,7 @@ export function EmailOTPVerification({
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        
+
         <div className="flex flex-col items-center gap-4">
           <InputOTP
             maxLength={6}
@@ -144,7 +160,7 @@ export function EmailOTPVerification({
               <InputOTPSlot index={5} />
             </InputOTPGroup>
           </InputOTP>
-          
+
           <p className="text-xs text-muted-foreground text-center">
             Didn't receive the code?{" "}
             <button

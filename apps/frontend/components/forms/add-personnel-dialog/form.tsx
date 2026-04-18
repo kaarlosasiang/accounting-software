@@ -1,22 +1,24 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
+import type { CreatePersonnel } from "@sas/validators";
 import {
   createPersonnelSchema,
   OrgRole,
   type RoleDto,
   type RolePermissionMap,
 } from "@sas/validators";
-import type { CreatePersonnel } from "@sas/validators";
-import { ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
-import { toast } from "sonner";
-import { usersService } from "@/lib/services/users.service";
+
 import {
-  RolePermissionMatrix,
   type PermissionMatrixValue,
+  RolePermissionMatrix,
 } from "@/components/forms/role-permission-matrix/form";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -42,7 +44,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
+import { usersService } from "@/lib/services/users.service";
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 

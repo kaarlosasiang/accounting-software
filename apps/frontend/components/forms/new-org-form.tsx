@@ -1,20 +1,12 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { toast } from "sonner";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { useOrganization } from "@/hooks/use-organization";
-import { permissionsService } from "@/lib/services/permissions.service";
-import type {
-  BusinessType,
-  CompanyAddress,
-  CompanyContact,
-  CompanyMetadata,
-} from "@/lib/types/auth";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { z } from "zod";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -24,6 +16,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useOrganization } from "@/hooks/use-organization";
+import { useAuth } from "@/lib/contexts/auth-context";
+import { permissionsService } from "@/lib/services/permissions.service";
+import type {
+  BusinessType,
+  CompanyAddress,
+  CompanyContact,
+  CompanyMetadata,
+} from "@/lib/types/auth";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ────────────────────────────────────────────────────────────────

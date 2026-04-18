@@ -2,7 +2,6 @@ import mongoose, { Schema } from "mongoose";
 
 import { IAddress } from "../shared/interface/IAddress.js";
 import {
-  ISupplier,
   ISupplierDocument,
   ISupplierModel,
 } from "../shared/interface/ISupplier.js";
@@ -38,7 +37,7 @@ const AddressSchema = new Schema<IAddress>(
       trim: true,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 /**
@@ -126,7 +125,7 @@ const SupplierSchema = new Schema<ISupplierDocument>(
   {
     timestamps: true,
     collection: "suppliers",
-  }
+  },
 );
 
 /**
@@ -166,7 +165,7 @@ SupplierSchema.methods.updateBalance = function (amount: number) {
  * Static method: Find active suppliers
  */
 SupplierSchema.statics.findActive = function (
-  companyId: mongoose.Types.ObjectId
+  companyId: mongoose.Types.ObjectId,
 ) {
   return this.find({ companyId, isActive: true }).sort({ supplierName: 1 });
 };
@@ -176,7 +175,7 @@ SupplierSchema.statics.findActive = function (
  */
 SupplierSchema.statics.findBySupplierCode = function (
   companyId: mongoose.Types.ObjectId,
-  supplierCode: string
+  supplierCode: string,
 ) {
   return this.findOne({ companyId, supplierCode });
 };
@@ -186,7 +185,7 @@ SupplierSchema.statics.findBySupplierCode = function (
  */
 SupplierSchema.statics.searchSuppliers = function (
   companyId: mongoose.Types.ObjectId,
-  searchTerm: string
+  searchTerm: string,
 ) {
   const regex = new RegExp(searchTerm, "i");
   return this.find({

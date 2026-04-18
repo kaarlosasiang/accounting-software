@@ -1,17 +1,24 @@
-const baseConfig = require("@sas/config-eslint/node.js");
+import baseConfig from "../../packages/config-eslint/node.js";
 
-module.exports = [
+export default [
   ...baseConfig,
   {
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       parserOptions: {
         project: "./tsconfig.json",
-        tsconfigRootDir: __dirname,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
   },
   {
     ignores: ["eslint.config.js"],
+  },
+  {
+    ignores: [
+      "src/api/v1/__tests__/**",
+      "src/api/v1/scripts/**",
+      "vitest.config.ts",
+    ],
   },
 ];

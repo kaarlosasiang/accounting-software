@@ -1,10 +1,8 @@
 import { Types } from "mongoose";
-import Role from "../../models/Role.js";
-import {
-  DEFAULT_ROLE_PERMISSIONS,
-  OrgRole,
-} from "../../shared/auth/permissions.js";
+
 import logger from "../../config/logger.js";
+import Role from "../../models/Role.js";
+import { DEFAULT_ROLE_PERMISSIONS } from "../../shared/auth/permissions.js";
 
 export const roleService = {
   /**

@@ -2,8 +2,8 @@ import mongoose, { Schema } from "mongoose";
 
 import {
   IPayment,
-  IPaymentDocument,
   IPaymentAllocation,
+  IPaymentDocument,
   PaymentMethod,
   PaymentType,
 } from "../shared/interface/IPayment.js";

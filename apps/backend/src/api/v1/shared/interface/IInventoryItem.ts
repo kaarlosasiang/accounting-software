@@ -81,4 +81,6 @@ export interface IInventoryItemModel {
  * Inventory Item Document (Mongoose)
  */
 export interface IInventoryItemDocument
-  extends Omit<IInventoryItem, "_id">, IInventoryItemMethods, Document {}
+  extends Omit<IInventoryItem, "_id">,
+    IInventoryItemMethods,
+    Document {}

@@ -1,11 +1,12 @@
+import { hashPassword } from "better-auth/crypto";
 import mongoose from "mongoose";
 
+import type { CreatePersonnel } from "@sas/validators";
+
+import logger from "../../config/logger.js";
 import User from "../../models/User.js";
 import { authServer } from "../auth/betterAuth.js";
 import { memberPermissionService } from "../roles/member-permission.service.js";
-import type { CreatePersonnel } from "@sas/validators";
-import { hashPassword } from "better-auth/crypto";
-import logger from "../../config/logger.js";
 
 const userService = {
   updateUserRole: async (userId: string, role: string, companyId: string) => {

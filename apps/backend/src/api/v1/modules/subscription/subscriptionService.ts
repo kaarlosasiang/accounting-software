@@ -34,7 +34,7 @@ const subscriptionService = {
             subscriptionStatus: "active",
             subscriptionActivatedAt: new Date(),
           },
-        }
+        },
       );
 
       logger.info("Subscription activated", { userId, planId, result });
@@ -60,7 +60,7 @@ const subscriptionService = {
             subscriptionPlan: 1,
             subscriptionStatus: 1,
           },
-        }
+        },
       );
 
       return user;
@@ -80,7 +80,7 @@ const subscriptionService = {
             subscriptionStatus: "cancelled",
             subscriptionCancelledAt: new Date(),
           },
-        }
+        },
       );
 
       logger.info("Subscription cancelled", { userId, result });

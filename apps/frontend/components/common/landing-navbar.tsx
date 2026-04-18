@@ -1,15 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
-import { ChevronRight, Menu, X, User, LogOut } from "lucide-react";
+import { ChevronRight, LogOut, Menu, User, X } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
 import { useTheme } from "next-themes";
-import { useAuth } from "@/lib/contexts/auth-context";
-import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);

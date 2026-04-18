@@ -38,7 +38,7 @@ const AddressSchema = new Schema<IAddress>(
       trim: true,
     },
   },
-  { _id: false }
+  { _id: false },
 );
 
 /**
@@ -137,7 +137,7 @@ const CustomerSchema = new Schema<ICustomer>(
   {
     timestamps: true,
     collection: "customers",
-  }
+  },
 );
 
 /**
@@ -190,7 +190,7 @@ CustomerSchema.methods.hasCreditAvailable = function (amount: number) {
  * Static method: Find active customers
  */
 CustomerSchema.statics.findActive = function (
-  companyId: mongoose.Types.ObjectId
+  companyId: mongoose.Types.ObjectId,
 ) {
   return this.find({ companyId, isActive: true }).sort({ customerName: 1 });
 };
@@ -200,7 +200,7 @@ CustomerSchema.statics.findActive = function (
  */
 CustomerSchema.statics.findByCustomerCode = function (
   companyId: mongoose.Types.ObjectId,
-  customerCode: string
+  customerCode: string,
 ) {
   return this.findOne({ companyId, customerCode });
 };
@@ -210,7 +210,7 @@ CustomerSchema.statics.findByCustomerCode = function (
  */
 CustomerSchema.statics.searchCustomers = function (
   companyId: mongoose.Types.ObjectId,
-  searchTerm: string
+  searchTerm: string,
 ) {
   const regex = new RegExp(searchTerm, "i");
   return this.find({
@@ -231,5 +231,5 @@ export const Customer =
   (mongoose.models.Customer as ICustomerModel) ||
   mongoose.model<ICustomerDocument, ICustomerModel>(
     "Customer",
-    CustomerSchema as any
+    CustomerSchema as any,
   );

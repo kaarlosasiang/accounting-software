@@ -1,8 +1,9 @@
-import Role from "../../models/Role.js";
-import MemberPermission from "../../models/MemberPermission.js";
-import { Action, OrgRole, Resource } from "./permissions.js";
-import { IRole } from "../interface/IRole.js";
 import logger from "../../config/logger.js";
+import MemberPermission from "../../models/MemberPermission.js";
+import Role from "../../models/Role.js";
+import { IRole } from "../interface/IRole.js";
+
+import { Action, OrgRole, Resource } from "./permissions.js";
 
 /**
  * Effective permissions for a member in a company.

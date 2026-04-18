@@ -1,4 +1,4 @@
-import { Document, Types, Model } from "mongoose";
+import { Document, Model, Types } from "mongoose";
 
 import { IAddress } from "./IAddress.js";
 
@@ -43,11 +43,11 @@ export interface ICustomerModel
   findActive(companyId: Types.ObjectId): Promise<ICustomerDocument[]>;
   findByCustomerCode(
     companyId: Types.ObjectId,
-    customerCode: string
+    customerCode: string,
   ): Promise<ICustomerDocument | null>;
   searchCustomers(
     companyId: Types.ObjectId,
-    searchTerm: string
+    searchTerm: string,
   ): Promise<ICustomerDocument[]>;
 }
 

@@ -158,8 +158,8 @@ class BillService {
   }
 
   /**
-    * Search bills
-    */
+   * Search bills
+   */
   async searchBills(searchTerm: string): Promise<BillListResponse> {
     return apiFetch<BillListResponse>(
       `/bills/search?q=${encodeURIComponent(searchTerm)}`,
@@ -169,7 +169,10 @@ class BillService {
   /**
    * Record payment for a bill
    */
-  async recordPayment(billId: string, paymentData: PaymentFormData): Promise<PaymentSummary> {
+  async recordPayment(
+    billId: string,
+    paymentData: PaymentFormData,
+  ): Promise<PaymentSummary> {
     return apiFetch<PaymentSummary>(`/bills/${billId}/payments`, {
       method: "POST",
       body: JSON.stringify(paymentData),

@@ -1,7 +1,8 @@
-import mongoose from "mongoose";
-import Account from "../models/Account.js";
-import logger from "../config/logger.js";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
+
+import logger from "../config/logger.js";
+import Account from "../models/Account.js";
 
 dotenv.config();
 

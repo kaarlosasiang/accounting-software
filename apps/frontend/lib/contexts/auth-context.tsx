@@ -1,8 +1,9 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Session, User } from "@/lib/types/auth";
+
 import type { LoginPayload, SignupPayload } from "@/lib/services/auth.service";
+import type { Session, User } from "@/lib/types/auth";
 
 export interface AuthContextValue {
   // Session state
@@ -35,7 +36,7 @@ export interface AuthContextValue {
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(
-  undefined
+  undefined,
 );
 
 export function useAuth(): AuthContextValue {

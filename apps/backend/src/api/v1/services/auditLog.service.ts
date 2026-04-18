@@ -1,9 +1,9 @@
-import mongoose from "mongoose";
 import { Request } from "express";
+import mongoose from "mongoose";
 
+import logger from "../config/logger.js";
 import { AuditLog } from "../models/AuditLog.js";
 import { AuditAction } from "../shared/interface/IAuditLog.js";
-import logger from "../config/logger.js";
 
 export { AuditAction };
 

@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+
 import type { Invoice } from "@/lib/services/invoice.service";
 
 /**
@@ -119,7 +120,10 @@ export const generateInvoicePDF = (
   doc.setFontSize(10);
   doc.text(invoice.customerId.customerName, 20, yPos);
 
-  if (invoice.customerId.displayName && invoice.customerId.displayName !== invoice.customerId.customerName) {
+  if (
+    invoice.customerId.displayName &&
+    invoice.customerId.displayName !== invoice.customerId.customerName
+  ) {
     yPos += 5;
     doc.text(invoice.customerId.displayName, 20, yPos);
   }

@@ -37,7 +37,7 @@ export interface ISupplierDocument extends Omit<ISupplier, "_id">, Document {
  */
 export interface ISupplierModel extends mongoose.Model<ISupplierDocument> {
   findActive(
-    companyId: Types.ObjectId
+    companyId: Types.ObjectId,
   ): mongoose.Query<
     ISupplierDocument[],
     ISupplierDocument,
@@ -46,7 +46,7 @@ export interface ISupplierModel extends mongoose.Model<ISupplierDocument> {
   >;
   findBySupplierCode(
     companyId: Types.ObjectId,
-    supplierCode: string
+    supplierCode: string,
   ): mongoose.Query<
     ISupplierDocument | null,
     ISupplierDocument,
@@ -55,7 +55,7 @@ export interface ISupplierModel extends mongoose.Model<ISupplierDocument> {
   >;
   searchSuppliers(
     companyId: Types.ObjectId,
-    searchTerm: string
+    searchTerm: string,
   ): mongoose.Query<
     ISupplierDocument[],
     ISupplierDocument,

@@ -1,17 +1,24 @@
 "use client";
 
-import { useAuth } from "@/lib/contexts/auth-context";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Building2, Calendar, Mail, Phone, Shield, User } from "lucide-react";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Mail, Phone, User, Building2, Shield, Calendar } from "lucide-react";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 /**
  * Example component demonstrating how to use the auth context.
  * This shows user information and provides sign out functionality.
- * 
+ *
  * Usage: Add this component to any page to display user info.
  */
 export function AuthStatusCard() {
@@ -58,11 +65,12 @@ export function AuthStatusCard() {
   };
 
   // Get user initials for avatar fallback
-  const initials = user.name
-    ?.split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase() || "U";
+  const initials =
+    user.name
+      ?.split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase() || "U";
 
   return (
     <Card className="w-full max-w-2xl">
@@ -103,7 +111,7 @@ export function AuthStatusCard() {
 
         <div className="grid gap-3">
           <h3 className="text-sm font-semibold">Profile Information</h3>
-          
+
           {user.first_name && (
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-muted-foreground" />
@@ -148,7 +156,9 @@ export function AuthStatusCard() {
             <div className="flex items-center gap-2 text-sm">
               <Building2 className="h-4 w-4 text-muted-foreground" />
               <span className="text-muted-foreground">Company ID:</span>
-              <span className="font-medium font-mono text-xs">{user.companyId}</span>
+              <span className="font-medium font-mono text-xs">
+                {user.companyId}
+              </span>
             </div>
           )}
         </div>

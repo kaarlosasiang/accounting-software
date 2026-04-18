@@ -1,4 +1,5 @@
 import { Document, Types } from "mongoose";
+
 import type { ResourcePermission } from "../auth/permissions.js";
 
 export interface IRole extends Document {

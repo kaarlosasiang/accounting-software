@@ -60,4 +60,5 @@ export interface IJournalEntry {
  * Journal Entry Document (Mongoose)
  */
 export interface IJournalEntryDocument
-  extends Omit<IJournalEntry, "_id">, Document {}
+  extends Omit<IJournalEntry, "_id">,
+    Document {}

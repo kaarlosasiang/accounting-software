@@ -1,8 +1,9 @@
-import request from "supertest";
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 import express from "express";
-import configureApp from "../config/app.js";
 import { MongoClient } from "mongodb";
+import request from "supertest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+
+import configureApp from "../config/app.js";
 import { constants } from "../config/index.js";
 
 describe("Authentication Routes", () => {

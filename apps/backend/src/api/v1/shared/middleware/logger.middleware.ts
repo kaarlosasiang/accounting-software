@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 
 import { NextFunction, Request, Response } from "express";
 
-import logger from '../../config/logger.js';
+import logger from "../../config/logger.js";
 
 // Extend Express Request type to include correlation ID
 declare global {

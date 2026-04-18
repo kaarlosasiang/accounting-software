@@ -1,6 +1,6 @@
 import { Document } from "mongoose";
 
-import { IFeatures, PlanType } from './ISubscription.js';
+import { IFeatures, PlanType } from "./ISubscription.js";
 
 /**
  * Subscription Plan Document Interface

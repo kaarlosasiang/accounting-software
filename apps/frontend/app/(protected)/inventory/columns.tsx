@@ -1,7 +1,10 @@
 "use client";
 
-import * as React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import { MoreHorizontal } from "lucide-react";
+import * as React from "react";
+
+import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,8 +15,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
-import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
 import { formatCurrency } from "@/lib/utils";
 
 export interface InventoryItem {

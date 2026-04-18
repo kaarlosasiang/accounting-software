@@ -1,7 +1,26 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import type { ColumnDef } from "@tanstack/react-table";
+import {
+  AlertCircle,
+  CreditCard,
+  DollarSign,
+  FileText,
+  Mail,
+  MoreHorizontal,
+  Phone,
+  Plus,
+  TrendingUp,
+  Users,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+
+import { DataTable } from "@/components/common/data-table/data-table";
+import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
+import { DataTableToolbar } from "@/components/common/data-table/data-table-toolbar";
+import { CustomerForm } from "@/components/forms/customer-form/form";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -9,14 +28,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -25,25 +36,15 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  MoreHorizontal,
-  Plus,
-  Users,
-  DollarSign,
-  TrendingUp,
-  AlertCircle,
-  Mail,
-  Phone,
-  CreditCard,
-  FileText,
-} from "lucide-react";
-import { CustomerForm } from "@/components/forms/customer-form/form";
-import { formatCurrency } from "@/lib/utils";
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCustomers } from "@/hooks/use-customers";
-import { DataTable } from "@/components/common/data-table/data-table";
-import { DataTableColumnHeader } from "@/components/common/data-table/data-table-column-header";
-import { DataTableToolbar } from "@/components/common/data-table/data-table-toolbar";
 import { useDataTable } from "@/hooks/use-data-table";
 import type { Customer } from "@/lib/types/customer";
+import { formatCurrency } from "@/lib/utils";
 
 export default function CustomersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);

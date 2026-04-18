@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { CheckCircle2, LayoutDashboard, Rocket } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
-import { CheckCircle2, Rocket, LayoutDashboard } from "lucide-react";
-import { useOnboarding } from "@/hooks/use-onboarding";
-import { useProductTour } from "@/hooks/use-product-tour";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useOnboarding } from "@/hooks/use-onboarding";
+import { useProductTour } from "@/hooks/use-product-tour";
 
 export function DoneStep() {
   const router = useRouter();

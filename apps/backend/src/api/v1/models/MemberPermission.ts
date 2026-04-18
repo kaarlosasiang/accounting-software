@@ -1,4 +1,5 @@
 import { model, Schema } from "mongoose";
+
 import { IMemberPermission } from "../shared/interface/IMemberPermission.js";
 
 const resourcePermissionSchema = new Schema(

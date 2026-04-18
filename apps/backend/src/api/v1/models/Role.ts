@@ -1,4 +1,5 @@
 import { model, Schema } from "mongoose";
+
 import { IRole } from "../shared/interface/IRole.js";
 
 const resourcePermissionSchema = new Schema(
