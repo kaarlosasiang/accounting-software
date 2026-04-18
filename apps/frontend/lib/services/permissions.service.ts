@@ -48,10 +48,10 @@ class PermissionsService {
     );
   }
 
-  /** Get the fully resolved effective permissions for a user. */
-  async getEffective(userId: string): Promise<Record<string, string[]>> {
+  /** Get the fully resolved effective permissions for the current user (self-read, no user.read permission required). */
+  async getEffective(_userId: string): Promise<Record<string, string[]>> {
     return apiFetch<Record<string, string[]>>(
-      `/members/${userId}/permissions/effective`,
+      `/members/me/permissions/effective`,
     );
   }
 

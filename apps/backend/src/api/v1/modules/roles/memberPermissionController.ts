@@ -166,8 +166,43 @@ export const memberPermissionController = {
   },
 
   /**
+   * GET /members/me/permissions/effective
+   * Returns the caller's own effective permissions. Auth-only — no user.read
+   * permission required so that any role (including accountant) can load theirs.
+   */
+  async getMyEffectivePermissions(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const organizationId = getCompanyId(req);
+      if (!organizationId) {
+        res.status(400).json({ error: "Active company not found in session" });
+        return;
+      }
+
+      const userId = getUserId(req);
+      if (!userId) {
+        res.status(401).json({ error: "Unauthorized" });
+        return;
+      }
+
+      const effective = await memberPermissionService.getEffectivePermissions(
+        userId,
+        organizationId,
+      );
+
+      res.json(effective);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * GET /members/:userId/permissions/effective
    * Returns the fully resolved effective permission set (role + grants − revocations).
+   * Requires user.read permission (admin/owner use-case).
    */
   async getEffectivePermissions(
     req: Request,

@@ -24,6 +24,13 @@ memberPermissionRoutes.get(
   memberPermissionController.getMemberPermissions,
 );
 
+// Self-lookup: any authenticated user can read their own effective permissions.
+// Must be declared BEFORE /:userId routes to avoid "me" being matched as a userId.
+memberPermissionRoutes.get(
+  "/me/permissions/effective",
+  memberPermissionController.getMyEffectivePermissions,
+);
+
 // Get fully resolved effective permissions (useful for the permission matrix UI)
 memberPermissionRoutes.get(
   "/:userId/permissions/effective",
