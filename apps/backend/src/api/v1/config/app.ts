@@ -53,6 +53,7 @@ export default (app: Application): Application => {
         "X-Requested-With",
         "Accept",
         "Origin",
+        "User-Agent", // Safari includes User-Agent in cross-origin preflight requests
       ],
       exposedHeaders: ["Set-Cookie"],
       optionsSuccessStatus: 200,

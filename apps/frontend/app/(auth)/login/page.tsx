@@ -1,7 +1,8 @@
 "use client";
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { AuthNavbar } from "@/components/common/auth-navbar";
 import { LoginForm } from "@/components/forms/login-form/form";
 import { useGuestRoute } from "@/lib/auth/protected-route";
@@ -10,9 +11,29 @@ import { useAuth } from "@/lib/contexts/auth-context";
 
 function LoginPageContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const oauthError = searchParams.get("error");
   const { isLoading } = useGuestRoute({ redirectTo: callbackUrl });
   const { user } = useAuth();
+
+  // Surface OAuth errors that Better Auth encodes as ?error= on the redirect.
+  useEffect(() => {
+    if (oauthError) {
+      const messages: Record<string, string> = {
+        state_mismatch: "Sign-in was interrupted. Please try again.",
+        account_not_found: "No account found. Please sign up first.",
+        email_not_verified: "Please verify your email before continuing.",
+      };
+      toast.error(
+        messages[oauthError] ?? "Google sign-in failed. Please try again.",
+      );
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("error");
+      const qs = params.toString();
+      router.replace(`/login${qs ? `?${qs}` : ""}`);
+    }
+  }, [oauthError]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Show loader while checking auth, or while any logged-in user is being redirected
   // (verified → dashboard/plans, unverified → verify-email).

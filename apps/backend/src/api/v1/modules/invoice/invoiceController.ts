@@ -3,6 +3,10 @@ import { invoiceService } from "./invoiceService.js";
 import { paymentService } from "../payment/paymentService.js";
 import logger from "../../config/logger.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
+import {
+  auditLogService,
+  AuditAction,
+} from "../../services/auditLog.service.js";
 
 /**
  * Invoice Controller
@@ -100,6 +104,19 @@ export const invoiceController = {
         req.body,
       );
 
+      // fire-and-forget audit log
+      auditLogService.log({
+        companyId,
+        userId,
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.CREATE,
+        module: "Invoice",
+        recordId: invoice!._id.toString(),
+        recordType: "Invoice",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(201).json({
         success: true,
         data: invoice,
@@ -137,6 +154,19 @@ export const invoiceController = {
         req.body,
       );
 
+      // fire-and-forget audit log
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.UPDATE,
+        module: "Invoice",
+        recordId: invoice!._id.toString(),
+        recordType: "Invoice",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(200).json({
         success: true,
         data: invoice,
@@ -169,6 +199,19 @@ export const invoiceController = {
       }
 
       const result = await invoiceService.deleteInvoice(companyId, id);
+
+      // fire-and-forget audit log
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.DELETE,
+        module: "Invoice",
+        recordId: id,
+        recordType: "Invoice",
+        changes: {},
+        ...auditLogService.extractRequestInfo(req),
+      });
 
       return res.status(200).json({
         success: true,

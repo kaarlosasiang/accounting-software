@@ -41,8 +41,27 @@ export interface DashboardOverview {
   monthlyTrend: DashboardMonthlyTrend[];
 }
 
+export interface AnalyticsCategoryItem {
+  category: string;
+  amount: number;
+}
+
+export interface DashboardAnalytics {
+  year: number;
+  monthlyTrend: DashboardMonthlyTrend[];
+  revenueByCategory: AnalyticsCategoryItem[];
+  expenseByCategory: AnalyticsCategoryItem[];
+}
+
 export const dashboardService = {
   async getOverview(): Promise<{ success: boolean; data: DashboardOverview }> {
     return apiFetch("/dashboard/overview");
+  },
+
+  async getAnalytics(
+    year?: number,
+  ): Promise<{ success: boolean; data: DashboardAnalytics }> {
+    const query = year ? `?year=${year}` : "";
+    return apiFetch(`/dashboard/analytics${query}`);
   },
 };

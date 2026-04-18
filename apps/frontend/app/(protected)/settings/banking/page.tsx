@@ -51,6 +51,7 @@ import {
 } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 interface BankAccount {
   id: string;
@@ -99,10 +100,10 @@ export default function BankingSettingsPage() {
           setBankAccounts(result.data.banking?.accounts || []);
         }
       } catch (err) {
-        console.error("Failed to fetch bank accounts:", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load bank accounts",
-        );
+        const msg =
+          err instanceof Error ? err.message : "Failed to load bank accounts";
+        setError(msg);
+        toast.error(msg);
       } finally {
         setIsLoading(false);
       }
@@ -126,7 +127,11 @@ export default function BankingSettingsPage() {
           setChartAccounts(bankAccounts);
         }
       } catch (err) {
-        console.error("Failed to fetch chart accounts:", err);
+        toast.error(
+          err instanceof Error
+            ? err.message
+            : "Failed to load chart of accounts",
+        );
       }
     };
 
