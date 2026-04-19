@@ -6,6 +6,7 @@ import {
   ChevronsUpDown,
   CreditCard,
   LogOut,
+  Rocket,
   Sparkles,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -27,6 +28,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { useProductTour } from "@/hooks/use-product-tour";
 
 export function NavUser({
   user,
@@ -49,6 +51,7 @@ export function NavUser({
   const initials = getInitials(user.name, user.email);
   const { signOut } = useAuth();
   const router = useRouter();
+  const { startTour } = useProductTour();
 
   const handleLogout = async () => {
     try {
@@ -123,6 +126,11 @@ export function NavUser({
                 Notifications
               </DropdownMenuItem>
             </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={startTour}>
+              <Rocket />
+              Take a product tour
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
