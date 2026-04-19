@@ -30,6 +30,7 @@ const RESOURCE_LABELS: Record<Resource, string> = {
   [Resource.user]: "Users",
   [Resource.period]: "Accounting Periods",
   [Resource.role]: "Roles",
+  [Resource.auditLog]: "Audit Logs",
 };
 
 const ALL_RESOURCES = Object.values(Resource);
