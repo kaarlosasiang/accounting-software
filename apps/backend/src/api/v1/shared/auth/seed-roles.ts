@@ -16,12 +16,17 @@ const SYSTEM_ROLE_DESCRIPTIONS: Record<OrgRole, string> = {
 
 /**
  * Upsert the 5 system roles into the `roles` collection.
- * Safe to call on every startup — skips existing records.
+ * Safe to call on every startup.
+ * - First run: creates the role with all fields.
+ * - Subsequent runs: always updates `permissions` and `description` so that
+ *   new resources added to DEFAULT_ROLE_PERMISSIONS are reflected immediately
+ *   without requiring a manual DB migration.
  */
 export async function seedRoles(): Promise<void> {
   try {
     const systemRoles = Object.values(OrgRole);
     let seeded = 0;
+    let updated = 0;
 
     for (const roleName of systemRoles) {
       const permissionMap = DEFAULT_ROLE_PERMISSIONS[roleName];
@@ -38,11 +43,15 @@ export async function seedRoles(): Promise<void> {
         // Match on name + null companyId (system scope)
         { name: roleName, companyId: null },
         {
+          // Immutable identity fields — only written on first insert
           $setOnInsert: {
             name: roleName,
-            description: SYSTEM_ROLE_DESCRIPTIONS[roleName],
             companyId: null,
             isSystem: true,
+          },
+          // Always sync permissions and description so new resources are picked up
+          $set: {
+            description: SYSTEM_ROLE_DESCRIPTIONS[roleName],
             permissions,
           },
         },
@@ -50,12 +59,15 @@ export async function seedRoles(): Promise<void> {
       );
 
       if (result.upsertedCount > 0) seeded++;
+      else if (result.modifiedCount > 0) updated++;
     }
 
-    if (seeded > 0) {
-      logger.info(`Seeded ${seeded} system role(s)`);
+    if (seeded > 0 || updated > 0) {
+      logger.info(
+        `System roles: ${seeded} created, ${updated} updated (permissions synced)`,
+      );
     } else {
-      logger.info("System roles already seeded — skipping");
+      logger.info("System roles already up to date — no changes");
     }
   } catch (error) {
     logger.logError(error as Error, { operation: "seedRoles" });
