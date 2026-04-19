@@ -3,7 +3,11 @@ import { Request, Response } from "express";
 import { supplierSchema } from "@sas/validators";
 
 import logger from "../../config/logger.js";
-import { getCompanyId } from "../../shared/helpers/utils.js";
+import {
+  AuditAction,
+  auditLogService,
+} from "../../services/auditLog.service.js";
+import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
 import supplierService from "./supplierService.js";
 
@@ -237,6 +241,18 @@ const supplierController = {
         validationResult.data,
       );
 
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.CREATE,
+        module: "Supplier",
+        recordId: (supplier as any)._id.toString(),
+        recordType: "Supplier",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(201).json({
         success: true,
         message: "Supplier created successfully",
@@ -297,6 +313,18 @@ const supplierController = {
         validationResult.data,
       );
 
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.UPDATE,
+        module: "Supplier",
+        recordId: id,
+        recordType: "Supplier",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(200).json({
         success: true,
         message: "Supplier updated successfully",
@@ -349,6 +377,18 @@ const supplierController = {
       }
 
       const supplier = await supplierService.deleteSupplier(companyId, id);
+
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.DELETE,
+        module: "Supplier",
+        recordId: id,
+        recordType: "Supplier",
+        changes: {},
+        ...auditLogService.extractRequestInfo(req),
+      });
 
       return res.status(200).json({
         success: true,

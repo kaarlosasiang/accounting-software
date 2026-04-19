@@ -76,11 +76,11 @@ export default function TaxSummaryPage() {
   const totalTaxLiability = incomeTax + percentageTax;
   const quarterlyPayment = totalTaxLiability / 4;
 
-  const revenueAccounts: Array<{ accountName: string; balance: number }> =
+  const revenueAccounts: Array<{ accountName: string; amount: number }> =
     incomeData?.revenue?.operatingRevenue ?? [];
-  const costOfSales: Array<{ accountName: string; balance: number }> =
+  const costOfSales: Array<{ accountName: string; amount: number }> =
     incomeData?.expenses?.costOfSales ?? [];
-  const opExpenses: Array<{ accountName: string; balance: number }> =
+  const opExpenses: Array<{ accountName: string; amount: number }> =
     incomeData?.expenses?.operatingExpenses ?? [];
   const allDeductions = [...costOfSales, ...opExpenses];
 
@@ -295,11 +295,11 @@ export default function TaxSummaryPage() {
                         <TableRow key={i}>
                           <TableCell>{acct.accountName}</TableCell>
                           <TableCell className="text-right font-medium">
-                            {formatCurrency(acct.balance)}
+                            {formatCurrency(acct.amount)}
                           </TableCell>
                           <TableCell className="text-right">
                             {grossRevenue > 0
-                              ? ((acct.balance / grossRevenue) * 100).toFixed(1)
+                              ? ((acct.amount / grossRevenue) * 100).toFixed(1)
                               : "0.0"}
                             %
                           </TableCell>
@@ -355,11 +355,11 @@ export default function TaxSummaryPage() {
                         <TableRow key={i}>
                           <TableCell>{acct.accountName}</TableCell>
                           <TableCell className="text-right">
-                            {formatCurrency(acct.balance)}
+                            {formatCurrency(acct.amount)}
                           </TableCell>
                           <TableCell className="text-right">100%</TableCell>
                           <TableCell className="text-right text-green-600">
-                            {formatCurrency(acct.balance)}
+                            {formatCurrency(acct.amount)}
                           </TableCell>
                         </TableRow>
                       ))}

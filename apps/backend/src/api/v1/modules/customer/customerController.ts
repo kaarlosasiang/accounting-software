@@ -3,7 +3,11 @@ import { Request, Response } from "express";
 import { customerSchema } from "@sas/validators";
 
 import logger from "../../config/logger.js";
-import { getCompanyId } from "../../shared/helpers/utils.js";
+import {
+  AuditAction,
+  auditLogService,
+} from "../../services/auditLog.service.js";
+import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
 import customerService from "./customerService.js";
 
@@ -237,6 +241,18 @@ const customerController = {
         validationResult.data,
       );
 
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.CREATE,
+        module: "Customer",
+        recordId: (customer as any)._id.toString(),
+        recordType: "Customer",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(201).json({
         success: true,
         message: "Customer created successfully",
@@ -309,6 +325,18 @@ const customerController = {
         validationResult.data,
       );
 
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.UPDATE,
+        module: "Customer",
+        recordId: id,
+        recordType: "Customer",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(200).json({
         success: true,
         message: "Customer updated successfully",
@@ -372,6 +400,18 @@ const customerController = {
       }
 
       await customerService.deleteCustomer(companyId, id);
+
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.DELETE,
+        module: "Customer",
+        recordId: id,
+        recordType: "Customer",
+        changes: {},
+        ...auditLogService.extractRequestInfo(req),
+      });
 
       return res.status(200).json({
         success: true,

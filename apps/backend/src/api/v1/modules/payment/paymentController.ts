@@ -1,6 +1,10 @@
 import { NextFunction, Request, Response } from "express";
 
 import logger from "../../config/logger.js";
+import {
+  AuditAction,
+  auditLogService,
+} from "../../services/auditLog.service.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
 import { paymentService } from "./paymentService.js";
@@ -32,6 +36,18 @@ export const recordPaymentReceived = async (
       userId,
       req.body,
     );
+
+    auditLogService.log({
+      companyId,
+      userId,
+      userName: (req.authUser as any)?.name ?? "Unknown",
+      action: AuditAction.CREATE,
+      module: "Payment",
+      recordId: (result as any)._id?.toString() ?? userId,
+      recordType: "PaymentReceived",
+      changes: req.body,
+      ...auditLogService.extractRequestInfo(req),
+    });
 
     res.status(201).json({
       success: true,
@@ -94,6 +110,18 @@ export const recordPaymentMade = async (
       userId,
       req.body,
     );
+
+    auditLogService.log({
+      companyId,
+      userId,
+      userName: (req.authUser as any)?.name ?? "Unknown",
+      action: AuditAction.CREATE,
+      module: "Payment",
+      recordId: (result as any)._id?.toString() ?? userId,
+      recordType: "PaymentMade",
+      changes: req.body,
+      ...auditLogService.extractRequestInfo(req),
+    });
 
     res.status(201).json({
       success: true,

@@ -191,6 +191,12 @@ const navData: { navMain: NavItem[] } = {
       permission: { resource: Resource.companySetting, action: Action.read },
       // No sub-items — settings has its own dedicated layout with sidebar
     },
+    {
+      title: "Audit Logs",
+      url: "/audit-logs",
+      icon: "🔍",
+      permission: { resource: Resource.auditLog, action: Action.read },
+    },
   ],
 };
 

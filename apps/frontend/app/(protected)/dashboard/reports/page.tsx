@@ -1,13 +1,15 @@
 "use client";
 
 import {
+  ArrowRight,
   BarChart3,
   Calculator,
-  Download,
   FileText,
   PieChart,
   TrendingUp,
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,66 +20,90 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useDashboard } from "@/hooks/use-dashboard";
+import { useReports } from "@/hooks/use-reports";
+import { formatCurrency } from "@/lib/utils";
 
-// Dummy financial datasets
-const profitLossData = [
-  { month: "Jan", revenue: 45000, cost: 32000, operatingExpenses: 8000 },
-  { month: "Feb", revenue: 52000, cost: 35000, operatingExpenses: 8200 },
-  { month: "Mar", revenue: 48000, cost: 33000, operatingExpenses: 7900 },
-  { month: "Apr", revenue: 61000, cost: 38000, operatingExpenses: 9000 },
-  { month: "May", revenue: 55000, cost: 36000, operatingExpenses: 8500 },
-  { month: "Jun", revenue: 67000, cost: 40000, operatingExpenses: 9200 },
-];
+// Types matching the API response shapes
+interface AccountItem {
+  accountCode: string;
+  accountName: string;
+  balance: number;
+}
 
-const balanceSheet = {
+interface BalanceSheetData {
+  asOfDate: string;
   assets: {
-    cash: 54000,
-    accountsReceivable: 18000,
-    inventory: 12500,
-    fixedAssets: 86000,
-  },
+    currentAssets: AccountItem[];
+    fixedAssets: AccountItem[];
+    otherAssets: AccountItem[];
+    total: number;
+  };
   liabilities: {
-    accountsPayable: 14500,
-    shortTermDebt: 10000,
-    longTermDebt: 42000,
-  },
+    currentLiabilities: AccountItem[];
+    longTermLiabilities: AccountItem[];
+    otherLiabilities: AccountItem[];
+    total: number;
+  };
   equity: {
-    retainedEarnings: 38000,
-    ownerEquity: 58000,
-  },
-};
+    accounts: AccountItem[];
+    total: number;
+  };
+  balanced: boolean;
+}
 
-const cashFlowData = [
-  { period: "Q1", operating: 23500, investing: -6000, financing: 4000 },
-  { period: "Q2", operating: 26800, investing: -7200, financing: 3000 },
-];
-
-const taxSummary = [
-  { quarter: "Q1", taxableIncome: 52000, taxRate: 0.25, paid: 12000 },
-  { quarter: "Q2", taxableIncome: 61000, taxRate: 0.25, paid: 0 },
-];
-
-// Derived totals
-const totalRevenue = profitLossData.reduce((a, m) => a + m.revenue, 0);
-const totalCost = profitLossData.reduce((a, m) => a + m.cost, 0);
-const totalOpEx = profitLossData.reduce((a, m) => a + m.operatingExpenses, 0);
-const grossProfit = totalRevenue - totalCost;
-const netProfit = grossProfit - totalOpEx;
-const grossMarginPct = (grossProfit / totalRevenue) * 100;
-const netMarginPct = (netProfit / totalRevenue) * 100;
-const cashPosition = balanceSheet.assets.cash;
-const workingCapital =
-  balanceSheet.assets.cash +
-  balanceSheet.assets.accountsReceivable +
-  balanceSheet.assets.inventory -
-  (balanceSheet.liabilities.accountsPayable +
-    balanceSheet.liabilities.shortTermDebt);
-const unpaidTax = taxSummary.reduce(
-  (a, q) => a + (q.taxableIncome * q.taxRate - q.paid),
-  0,
-);
+interface CashFlowStatementData {
+  operatingActivities: { netIncome: number; total: number };
+  investingActivities: { total: number };
+  financingActivities: { total: number };
+  summary: {
+    netCashFlow: number;
+    beginningCash: number;
+    endingCash: number;
+  };
+}
 
 export default function DashboardReportsPage() {
+  const { data, isLoading: dashboardLoading } = useDashboard();
+  const { fetchBalanceSheet, fetchCashFlowStatement } = useReports();
+
+  const [balanceSheet, setBalanceSheet] = useState<BalanceSheetData | null>(
+    null,
+  );
+  const [cashFlow, setCashFlow] = useState<CashFlowStatementData | null>(null);
+  const [bsLoading, setBsLoading] = useState(true);
+  const [cfLoading, setCfLoading] = useState(true);
+
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0];
+    const startOfYear = `${new Date().getFullYear()}-01-01`;
+
+    setBsLoading(true);
+    fetchBalanceSheet(today)
+      .then((result) => {
+        if (result) setBalanceSheet(result as BalanceSheetData);
+      })
+      .finally(() => setBsLoading(false));
+
+    setCfLoading(true);
+    fetchCashFlowStatement(startOfYear, today)
+      .then((result) => {
+        if (result) setCashFlow(result as CashFlowStatementData);
+      })
+      .finally(() => setCfLoading(false));
+  }, [fetchBalanceSheet, fetchCashFlowStatement]);
+
+  const ytdRevenue = data?.kpis?.ytdRevenue ?? 0;
+  const ytdProfit = data?.kpis?.ytdProfit ?? 0;
+  const ytdExpenses = data?.kpis?.ytdExpenses ?? 0;
+  const netMarginPct =
+    ytdRevenue > 0 ? ((ytdProfit / ytdRevenue) * 100).toFixed(1) : null;
+  const arBalance = data?.outstandingInvoices?.totalBalance ?? 0;
+  const apBalance = data?.outstandingBills?.totalBalance ?? 0;
+  const arOverdue = data?.outstandingInvoices?.overdueCount ?? 0;
+  const apOverdue = data?.outstandingBills?.overdueCount ?? 0;
+
   return (
     <div className="flex flex-col gap-8 pb-10">
       {/* Header */}
@@ -91,14 +117,10 @@ export default function DashboardReportsPage() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" className="hover:bg-accent/50">
-            <Download className="h-4 w-4 mr-2" /> Export All
-          </Button>
-          <Button
-            size="sm"
-            className="shadow-md hover:shadow-lg transition-all"
-          >
-            <FileText className="h-4 w-4 mr-2" /> Generate PDF
+          <Button variant="outline" size="sm" asChild>
+            <Link href="/reports">
+              <FileText className="h-4 w-4 mr-2" /> View All Reports
+            </Link>
           </Button>
         </div>
       </div>
@@ -114,12 +136,18 @@ export default function DashboardReportsPage() {
             <BarChart3 className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ₱{totalRevenue.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Gross Margin: {grossMarginPct.toFixed(1)}%
-            </p>
+            {dashboardLoading ? (
+              <Skeleton className="h-8 w-32 mt-1" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(ytdRevenue)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Expenses: {formatCurrency(ytdExpenses)}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
@@ -131,334 +159,440 @@ export default function DashboardReportsPage() {
             <TrendingUp className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ₱{netProfit.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Net Margin: {netMarginPct.toFixed(1)}%
-            </p>
+            {dashboardLoading ? (
+              <Skeleton className="h-8 w-32 mt-1" />
+            ) : (
+              <>
+                <div
+                  className={`text-2xl font-bold ${ytdProfit < 0 ? "text-destructive" : ""}`}
+                >
+                  {formatCurrency(ytdProfit)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {netMarginPct !== null
+                    ? `Net Margin: ${netMarginPct}%`
+                    : "No revenue yet"}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
           <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Cash Position
+              Outstanding A/R
             </CardTitle>
             <Calculator className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ₱{cashPosition.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Working Capital: ₱{workingCapital.toLocaleString()}
-            </p>
+            {dashboardLoading ? (
+              <Skeleton className="h-8 w-32 mt-1" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(arBalance)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {arOverdue > 0 ? (
+                    <span className="text-destructive">
+                      {arOverdue} overdue
+                    </span>
+                  ) : (
+                    "No overdue invoices"
+                  )}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card className="group relative overflow-hidden border border-border/50 hover:border-border transition-all duration-300 hover:shadow-lg">
           <div className="absolute inset-0 bg-linear-to-br from-red-500/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Unpaid Tax
+              Outstanding A/P
             </CardTitle>
             <PieChart className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              ₱{unpaidTax.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">
-              Across {taxSummary.length} quarters
-            </p>
+            {dashboardLoading ? (
+              <Skeleton className="h-8 w-32 mt-1" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(apBalance)}
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {apOverdue > 0 ? (
+                    <span className="text-destructive">
+                      {apOverdue} overdue
+                    </span>
+                  ) : (
+                    "No overdue bills"
+                  )}
+                </p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Profit & Loss */}
+      {/* Monthly P&L Table */}
       <Card className="border-border/50">
         <CardHeader className="border-b border-border/50 bg-muted/30">
-          <CardTitle>Profit &amp; Loss (YTD)</CardTitle>
-          <CardDescription>Operational performance by month</CardDescription>
+          <CardTitle>Monthly Performance (YTD)</CardTitle>
+          <CardDescription>Revenue, expenses and profit by month</CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-muted-foreground border-b">
-                  <th className="py-2 text-left font-medium">Month</th>
-                  <th className="py-2 text-left font-medium">Revenue</th>
-                  <th className="py-2 text-left font-medium">Cost</th>
-                  <th className="py-2 text-left font-medium">Gross Profit</th>
-                  <th className="py-2 text-left font-medium">OpEx</th>
-                  <th className="py-2 text-left font-medium">Net Profit</th>
-                  <th className="py-2 text-left font-medium">Margin %</th>
-                </tr>
-              </thead>
-              <tbody>
-                {profitLossData.map((row) => {
-                  const gp = row.revenue - row.cost;
-                  const np = gp - row.operatingExpenses;
-                  return (
+          {dashboardLoading ? (
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-8 w-full" />
+              ))}
+            </div>
+          ) : !data?.monthlyTrend?.length ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No transactions recorded yet
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-muted-foreground">
+                    <th className="py-2 text-left font-medium">Month</th>
+                    <th className="py-2 text-left font-medium">Revenue</th>
+                    <th className="py-2 text-left font-medium">Expenses</th>
+                    <th className="py-2 text-left font-medium">Net Profit</th>
+                    <th className="py-2 text-left font-medium">Margin %</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.monthlyTrend.map((row) => (
                     <tr
                       key={row.month}
                       className="border-b last:border-0 hover:bg-muted/50 transition-colors"
                     >
                       <td className="py-2 font-medium">{row.month}</td>
-                      <td className="py-2">₱{row.revenue.toLocaleString()}</td>
+                      <td className="py-2">{formatCurrency(row.revenue)}</td>
                       <td className="py-2 text-red-600">
-                        ₱{row.cost.toLocaleString()}
+                        {formatCurrency(row.expenses)}
                       </td>
-                      <td className="py-2 text-green-600">
-                        ₱{gp.toLocaleString()}
-                      </td>
-                      <td className="py-2">
-                        ₱{row.operatingExpenses.toLocaleString()}
-                      </td>
-                      <td className="py-2 font-semibold">
-                        ₱{np.toLocaleString()}
+                      <td
+                        className={`py-2 font-semibold ${row.profit < 0 ? "text-destructive" : "text-green-600"}`}
+                      >
+                        {formatCurrency(row.profit)}
                       </td>
                       <td className="py-2">
-                        {((np / row.revenue) * 100).toFixed(1)}%
+                        {row.revenue > 0
+                          ? `${((row.profit / row.revenue) * 100).toFixed(1)}%`
+                          : "—"}
                       </td>
                     </tr>
-                  );
-                })}
-              </tbody>
-              <tfoot>
-                <tr className="font-semibold">
-                  <td className="py-2">Total</td>
-                  <td className="py-2">₱{totalRevenue.toLocaleString()}</td>
-                  <td className="py-2 text-red-600">
-                    ₱{totalCost.toLocaleString()}
-                  </td>
-                  <td className="py-2 text-green-600">
-                    ₱{grossProfit.toLocaleString()}
-                  </td>
-                  <td className="py-2">₱{totalOpEx.toLocaleString()}</td>
-                  <td className="py-2">₱{netProfit.toLocaleString()}</td>
-                  <td className="py-2">{netMarginPct.toFixed(1)}%</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t font-semibold">
+                    <td className="py-2">YTD Total</td>
+                    <td className="py-2">{formatCurrency(ytdRevenue)}</td>
+                    <td className="py-2 text-red-600">
+                      {formatCurrency(ytdExpenses)}
+                    </td>
+                    <td
+                      className={`py-2 ${ytdProfit < 0 ? "text-destructive" : "text-green-600"}`}
+                    >
+                      {formatCurrency(ytdProfit)}
+                    </td>
+                    <td className="py-2">
+                      {netMarginPct !== null ? `${netMarginPct}%` : "—"}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Balance Sheet Snapshot */}
       <Card className="border-border/50">
-        <CardHeader className="border-b border-border/50 bg-muted/30">
-          <CardTitle>Balance Sheet Snapshot</CardTitle>
-          <CardDescription>
-            Assets, liabilities & equity overview
-          </CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between border-b border-border/50 bg-muted/30">
+          <div>
+            <CardTitle>Balance Sheet Snapshot</CardTitle>
+            <CardDescription>
+              Assets, liabilities &amp; equity as of today
+            </CardDescription>
+          </div>
+          {balanceSheet && (
+            <Badge
+              variant="outline"
+              className={
+                balanceSheet.balanced
+                  ? "text-green-600 bg-green-500/10"
+                  : "text-destructive"
+              }
+            >
+              {balanceSheet.balanced ? "Balanced" : "Out of Balance"}
+            </Badge>
+          )}
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="grid gap-6 md:grid-cols-3">
-            <div>
-              <h4 className="text-sm font-semibold mb-2">Assets</h4>
-              <ul className="space-y-1 text-sm">
-                {Object.entries(balanceSheet.assets).map(([k, v]) => (
-                  <li key={k} className="flex justify-between">
-                    <span className="text-muted-foreground capitalize">
-                      {k.replace(/([A-Z])/g, " $1")}
-                    </span>
-                    <span className="font-medium">₱{v.toLocaleString()}</span>
-                  </li>
-                ))}
-              </ul>
+          {bsLoading ? (
+            <div className="grid gap-6 md:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="space-y-2">
+                  <Skeleton className="h-4 w-20" />
+                  {Array.from({ length: 4 }).map((_, j) => (
+                    <Skeleton key={j} className="h-5 w-full" />
+                  ))}
+                </div>
+              ))}
             </div>
-            <div>
-              <h4 className="text-sm font-semibold mb-2">Liabilities</h4>
-              <ul className="space-y-1 text-sm">
-                {Object.entries(balanceSheet.liabilities).map(([k, v]) => (
-                  <li key={k} className="flex justify-between">
-                    <span className="text-muted-foreground capitalize">
-                      {k.replace(/([A-Z])/g, " $1")}
-                    </span>
-                    <span className="font-medium">₱{v.toLocaleString()}</span>
-                  </li>
-                ))}
-              </ul>
+          ) : !balanceSheet ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No chart of accounts data available
+            </p>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* Assets */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold">Assets</h4>
+                {(
+                  [
+                    {
+                      label: "Current Assets",
+                      items: balanceSheet.assets.currentAssets,
+                    },
+                    {
+                      label: "Fixed Assets",
+                      items: balanceSheet.assets.fixedAssets,
+                    },
+                    {
+                      label: "Other Assets",
+                      items: balanceSheet.assets.otherAssets,
+                    },
+                  ] as const
+                ).map(({ label, items }) =>
+                  items.length > 0 ? (
+                    <div key={label}>
+                      <p className="mb-1 text-xs text-muted-foreground">
+                        {label}
+                      </p>
+                      <ul className="space-y-1 text-sm">
+                        {items.map((a) => (
+                          <li key={a.accountCode} className="flex justify-between">
+                            <span className="truncate pr-2 text-muted-foreground">
+                              {a.accountName}
+                            </span>
+                            <span className="whitespace-nowrap font-medium">
+                              {formatCurrency(a.balance)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null,
+                )}
+                <div className="flex justify-between border-t pt-2 text-sm font-semibold">
+                  <span>Total Assets</span>
+                  <span>{formatCurrency(balanceSheet.assets.total)}</span>
+                </div>
+              </div>
+
+              {/* Liabilities */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold">Liabilities</h4>
+                {(
+                  [
+                    {
+                      label: "Current Liabilities",
+                      items: balanceSheet.liabilities.currentLiabilities,
+                    },
+                    {
+                      label: "Long-term Liabilities",
+                      items: balanceSheet.liabilities.longTermLiabilities,
+                    },
+                    {
+                      label: "Other Liabilities",
+                      items: balanceSheet.liabilities.otherLiabilities,
+                    },
+                  ] as const
+                ).map(({ label, items }) =>
+                  items.length > 0 ? (
+                    <div key={label}>
+                      <p className="mb-1 text-xs text-muted-foreground">
+                        {label}
+                      </p>
+                      <ul className="space-y-1 text-sm">
+                        {items.map((a) => (
+                          <li key={a.accountCode} className="flex justify-between">
+                            <span className="truncate pr-2 text-muted-foreground">
+                              {a.accountName}
+                            </span>
+                            <span className="whitespace-nowrap font-medium">
+                              {formatCurrency(a.balance)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null,
+                )}
+                <div className="flex justify-between border-t pt-2 text-sm font-semibold">
+                  <span>Total Liabilities</span>
+                  <span>{formatCurrency(balanceSheet.liabilities.total)}</span>
+                </div>
+              </div>
+
+              {/* Equity */}
+              <div className="space-y-3">
+                <h4 className="text-sm font-semibold">Equity</h4>
+                <ul className="space-y-1 text-sm">
+                  {balanceSheet.equity.accounts.map((a) => (
+                    <li key={a.accountCode} className="flex justify-between">
+                      <span className="truncate pr-2 text-muted-foreground">
+                        {a.accountName}
+                      </span>
+                      <span className="whitespace-nowrap font-medium">
+                        {formatCurrency(a.balance)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex justify-between border-t pt-2 text-sm font-semibold">
+                  <span>Total Equity</span>
+                  <span>{formatCurrency(balanceSheet.equity.total)}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold mb-2">Equity</h4>
-              <ul className="space-y-1 text-sm">
-                {Object.entries(balanceSheet.equity).map(([k, v]) => (
-                  <li key={k} className="flex justify-between">
-                    <span className="text-muted-foreground capitalize">
-                      {k.replace(/([A-Z])/g, " $1")}
-                    </span>
-                    <span className="font-medium">₱{v.toLocaleString()}</span>
-                  </li>
-                ))}
-              </ul>
+          )}
+          {balanceSheet && (
+            <div className="mt-4 flex justify-end border-t pt-4">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/reports/balance-sheet">
+                  View Full Balance Sheet{" "}
+                  <ArrowRight className="ml-1 h-3 w-3" />
+                </Link>
+              </Button>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Cash Flow */}
+      {/* Cash Flow Summary */}
       <Card className="border-border/50">
         <CardHeader className="border-b border-border/50 bg-muted/30">
-          <CardTitle>Cash Flow Summary</CardTitle>
+          <CardTitle>Cash Flow Summary (YTD)</CardTitle>
           <CardDescription>
-            Quarterly operating, investing & financing flows
+            Operating, investing &amp; financing activities
           </CardDescription>
         </CardHeader>
         <CardContent className="pt-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {cashFlowData.map((cf) => {
-              const net = cf.operating + cf.investing + cf.financing;
-              return (
-                <div
-                  key={cf.period}
-                  className="p-4 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-semibold">{cf.period}</h4>
-                    <Badge
-                      variant={net >= 0 ? "secondary" : "outline"}
-                      className={
-                        net >= 0
-                          ? "text-green-600 bg-green-500/10"
-                          : "text-red-600"
-                      }
+          {cfLoading ? (
+            <div className="grid gap-4 md:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-24 w-full" />
+              ))}
+            </div>
+          ) : !cashFlow ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              No cash flow data available
+            </p>
+          ) : (
+            <>
+              <div className="grid gap-4 md:grid-cols-3">
+                {(
+                  [
+                    {
+                      label: "Operating Activities",
+                      value: cashFlow.operatingActivities.total,
+                      desc: `Net income: ${formatCurrency(cashFlow.operatingActivities.netIncome)}`,
+                    },
+                    {
+                      label: "Investing Activities",
+                      value: cashFlow.investingActivities.total,
+                      desc: "Capital expenditures & asset sales",
+                    },
+                    {
+                      label: "Financing Activities",
+                      value: cashFlow.financingActivities.total,
+                      desc: "Debt & equity changes",
+                    },
+                  ] as const
+                ).map(({ label, value, desc }) => (
+                  <div
+                    key={label}
+                    className="rounded-lg border border-border/50 p-4 transition-colors hover:bg-muted/30"
+                  >
+                    <p className="mb-1 text-xs text-muted-foreground">
+                      {label}
+                    </p>
+                    <p
+                      className={`text-xl font-bold ${value < 0 ? "text-destructive" : "text-green-600"}`}
                     >
-                      {net >= 0 ? "Positive" : "Negative"}
-                    </Badge>
+                      {formatCurrency(value)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
                   </div>
-                  <ul className="text-xs space-y-1">
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">Operating</span>
-                      <span className="font-medium">
-                        ₱{cf.operating.toLocaleString()}
-                      </span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">Investing</span>
-                      <span className="font-medium">
-                        ₱{cf.investing.toLocaleString()}
-                      </span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">Financing</span>
-                      <span className="font-medium">
-                        ₱{cf.financing.toLocaleString()}
-                      </span>
-                    </li>
-                    <li className="flex justify-between pt-1 border-t mt-1">
-                      <span className="text-muted-foreground">Net</span>
-                      <span
-                        className={
-                          net >= 0
-                            ? "text-green-600 font-semibold"
-                            : "text-red-600 font-semibold"
-                        }
-                      >
-                        ₱{net.toLocaleString()}
-                      </span>
-                    </li>
-                  </ul>
+                ))}
+              </div>
+              <div className="mt-4 flex items-center justify-between rounded-lg bg-muted/30 p-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Net Cash Flow (YTD)
+                  </p>
+                  <p
+                    className={`text-lg font-bold ${cashFlow.summary.netCashFlow < 0 ? "text-destructive" : "text-green-600"}`}
+                  >
+                    {formatCurrency(cashFlow.summary.netCashFlow)}
+                  </p>
                 </div>
-              );
-            })}
-          </div>
+                <Badge
+                  variant="outline"
+                  className={
+                    cashFlow.summary.netCashFlow >= 0
+                      ? "text-green-600 bg-green-500/10"
+                      : "text-destructive"
+                  }
+                >
+                  {cashFlow.summary.netCashFlow >= 0
+                    ? "Positive Cash Flow"
+                    : "Negative Cash Flow"}
+                </Badge>
+              </div>
+              <div className="mt-4 flex justify-end border-t pt-4">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/reports/cash-flow">
+                    View Full Cash Flow <ArrowRight className="ml-1 h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 
-      {/* Tax Summary */}
+      {/* Tax Summary — links to dedicated page */}
       <Card className="border-border/50">
         <CardHeader className="border-b border-border/50 bg-muted/30">
           <CardTitle>Tax Summary</CardTitle>
           <CardDescription>
-            Quarterly tax liabilities & payments
+            Philippines TRAIN Law graduated income tax computation
           </CardDescription>
         </CardHeader>
-        <CardContent className="pt-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            {taxSummary.map((q) => {
-              const due = q.taxableIncome * q.taxRate;
-              const remaining = due - q.paid;
-              return (
-                <div
-                  key={q.quarter}
-                  className="p-4 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-sm font-semibold">{q.quarter}</h4>
-                    <Badge
-                      variant={remaining === 0 ? "secondary" : "outline"}
-                      className={
-                        remaining === 0
-                          ? "text-green-600 bg-green-500/10"
-                          : "text-yellow-600"
-                      }
-                    >
-                      {remaining === 0 ? "Settled" : "Pending"}
-                    </Badge>
-                  </div>
-                  <ul className="text-xs space-y-1">
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        Taxable Income
-                      </span>
-                      <span className="font-medium">
-                        ₱{q.taxableIncome.toLocaleString()}
-                      </span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">Rate</span>
-                      <span className="font-medium">
-                        {(q.taxRate * 100).toFixed(0)}%
-                      </span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">Due</span>
-                      <span className="font-medium">
-                        ₱{due.toLocaleString()}
-                      </span>
-                    </li>
-                    <li className="flex justify-between">
-                      <span className="text-muted-foreground">Paid</span>
-                      <span className="font-medium">
-                        ₱{q.paid.toLocaleString()}
-                      </span>
-                    </li>
-                    <li className="flex justify-between pt-1 border-t mt-1">
-                      <span className="text-muted-foreground">Remaining</span>
-                      <span
-                        className={
-                          remaining === 0
-                            ? "text-green-600 font-semibold"
-                            : "text-red-600 font-semibold"
-                        }
-                      >
-                        ₱{remaining.toLocaleString()}
-                      </span>
-                    </li>
-                  </ul>
-                </div>
-              );
-            })}
-          </div>
+        <CardContent className="flex flex-col items-center gap-4 py-8 text-center">
+          <p className="max-w-md text-sm text-muted-foreground">
+            View quarterly taxable income, applicable BIR rates, and amounts due
+            or paid in the dedicated Tax Summary report.
+          </p>
+          <Button asChild>
+            <Link href="/reports/tax-summary">
+              <FileText className="mr-2 h-4 w-4" />
+              Open Tax Summary
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
         </CardContent>
       </Card>
-
-      {/* Placeholder for custom builder */}
-      {/* <Card className="border-dashed border-border/50">
-        <CardHeader>
-          <CardTitle>Custom Report Builder</CardTitle>
-          <CardDescription>
-            Drag & drop widgets, filters & export options (coming soon)
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-10 text-muted-foreground text-sm">
-            Interactive builder UI in development. Reach out if you need a specific report sooner.
-          </div>
-        </CardContent>
-      </Card> */}
     </div>
   );
 }

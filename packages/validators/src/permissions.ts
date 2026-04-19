@@ -21,6 +21,7 @@ export enum Resource {
   user = "user",
   period = "period",
   role = "role",
+  auditLog = "auditLog",
 }
 
 export enum Action {
@@ -83,6 +84,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<OrgRole, RolePermissionMap> = {
     [Resource.user]: ALL_ACTIONS,
     [Resource.period]: ALL_ACTIONS,
     [Resource.role]: ALL_ACTIONS,
+    [Resource.auditLog]: ALL_ACTIONS,
   },
 
   [OrgRole.admin]: {
@@ -100,6 +102,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<OrgRole, RolePermissionMap> = {
     [Resource.user]: ALL_ACTIONS,
     [Resource.period]: ALL_ACTIONS,
     [Resource.role]: ALL_ACTIONS,
+    [Resource.auditLog]: ALL_ACTIONS,
   },
 
   [OrgRole.accountant]: {
@@ -117,6 +120,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<OrgRole, RolePermissionMap> = {
     [Resource.user]: NO_ACCESS,
     [Resource.period]: ALL_ACTIONS,
     [Resource.role]: NO_ACCESS,
+    [Resource.auditLog]: READ_ONLY,
   },
 
   [OrgRole.staff]: {
@@ -134,6 +138,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<OrgRole, RolePermissionMap> = {
     [Resource.user]: NO_ACCESS,
     [Resource.period]: NO_ACCESS,
     [Resource.role]: NO_ACCESS,
+    [Resource.auditLog]: NO_ACCESS,
   },
 
   [OrgRole.viewer]: {
@@ -151,6 +156,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<OrgRole, RolePermissionMap> = {
     [Resource.user]: NO_ACCESS,
     [Resource.period]: READ_ONLY,
     [Resource.role]: NO_ACCESS,
+    [Resource.auditLog]: NO_ACCESS,
   },
 };
 

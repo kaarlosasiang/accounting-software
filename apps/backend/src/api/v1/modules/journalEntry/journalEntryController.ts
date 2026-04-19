@@ -2,6 +2,10 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 
 import logger from "../../config/logger.js";
+import {
+  AuditAction,
+  auditLogService,
+} from "../../services/auditLog.service.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 import {
   JournalEntryStatus,
@@ -255,6 +259,18 @@ export const journalEntryController = {
         lines,
       });
 
+      auditLogService.log({
+        companyId,
+        userId,
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.CREATE,
+        module: "JournalEntry",
+        recordId: (entry as any)._id.toString(),
+        recordType: "JournalEntry",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(201).json({
         success: true,
         message: "Journal entry created successfully",
@@ -303,6 +319,18 @@ export const journalEntryController = {
         },
       );
 
+      auditLogService.log({
+        companyId,
+        userId,
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.UPDATE,
+        module: "JournalEntry",
+        recordId: id,
+        recordType: "JournalEntry",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(200).json({
         success: true,
         message: "Journal entry updated successfully",
@@ -341,6 +369,18 @@ export const journalEntryController = {
         companyId,
         id,
       );
+
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.DELETE,
+        module: "JournalEntry",
+        recordId: id,
+        recordType: "JournalEntry",
+        changes: {},
+        ...auditLogService.extractRequestInfo(req),
+      });
 
       return res.status(200).json({
         success: true,

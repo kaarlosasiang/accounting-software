@@ -3,6 +3,10 @@ import { Request, Response } from "express";
 import { createBillSchema, updateBillSchema } from "@sas/validators";
 
 import logger from "../../config/logger.js";
+import {
+  AuditAction,
+  auditLogService,
+} from "../../services/auditLog.service.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 import { paymentService } from "../payment/paymentService.js";
 
@@ -110,6 +114,18 @@ export const billController = {
 
       const bill = await billService.createBill(companyId, userId, req.body);
 
+      auditLogService.log({
+        companyId,
+        userId,
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.CREATE,
+        module: "Bill",
+        recordId: bill!._id.toString(),
+        recordType: "Bill",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(201).json({
         success: true,
         message: "Bill created successfully",
@@ -152,6 +168,18 @@ export const billController = {
 
       const bill = await billService.updateBill(companyId, id, req.body);
 
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.UPDATE,
+        module: "Bill",
+        recordId: bill!._id.toString(),
+        recordType: "Bill",
+        changes: req.body,
+        ...auditLogService.extractRequestInfo(req),
+      });
+
       return res.status(200).json({
         success: true,
         message: "Bill updated successfully",
@@ -183,6 +211,18 @@ export const billController = {
       }
 
       const result = await billService.deleteBill(companyId, id);
+
+      auditLogService.log({
+        companyId,
+        userId: getUserId(req) ?? "",
+        userName: (req.authUser as any)?.name ?? "Unknown",
+        action: AuditAction.DELETE,
+        module: "Bill",
+        recordId: id,
+        recordType: "Bill",
+        changes: {},
+        ...auditLogService.extractRequestInfo(req),
+      });
 
       return res.status(200).json({
         success: true,

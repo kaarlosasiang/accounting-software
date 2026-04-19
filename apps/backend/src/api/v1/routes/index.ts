@@ -1,6 +1,7 @@
 import { Application } from "express";
 
 import accountsRoutes from "../modules/accounts/accountsRoutes.js";
+import auditLogRoutes from "../modules/auditLog/auditLogRoutes.js";
 import authRoutes from "../modules/auth/authRoutes.js";
 import { billRoutes } from "../modules/bill/billRoutes.js";
 import companyRoutes from "../modules/company/companyRoutes.js";
@@ -78,6 +79,9 @@ export default (app: Application): void => {
 
   // Dashboard routes
   app.use(`${API_PREFIX}/dashboard`, dashboardRoutes);
+
+  // Audit log routes
+  app.use(`${API_PREFIX}/audit-logs`, auditLogRoutes);
 
   // Roles routes
   app.use(`${API_PREFIX}/roles`, roleRoutes);
