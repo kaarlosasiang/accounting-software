@@ -19,6 +19,7 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useOnboarding } from "@/hooks/use-onboarding";
 import { authClient } from "@/lib/config/auth-client";
+import { useAuth } from "@/lib/contexts/auth-context";
 
 const profileSchema = z.object({
   firstName: z.string().min(1, "First name is required").max(50),
@@ -40,15 +41,24 @@ interface ProfileStepProps {
 }
 
 export function ProfileStep({ onNext, onSkip }: ProfileStepProps) {
+  const { user } = useAuth();
   const { markStepComplete } = useOnboarding();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Pre-fill from whatever the auth session already has
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
+    defaultValues: {
+      firstName: user?.first_name ?? "",
+      middleName: user?.middle_name ?? "",
+      lastName: user?.last_name ?? "",
+      phoneNumber: user?.phone_number ?? "",
+      username: user?.username ?? "",
+    },
   });
 
   const onSubmit = async (values: ProfileFormValues) => {

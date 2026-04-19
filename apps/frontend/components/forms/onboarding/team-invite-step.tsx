@@ -41,10 +41,10 @@ const teamInviteSchema = z.object({
 type TeamInviteFormValues = z.infer<typeof teamInviteSchema>;
 
 const ROLES = [
-  { value: "accountant", label: "Accountant" },
-  { value: "staff", label: "Staff" },
-  { value: "viewer", label: "Viewer" },
-  { value: "admin", label: "Admin" },
+  { value: "admin", label: "Admin", description: "Full access, can manage team" },
+  { value: "accountant", label: "Accountant", description: "Full financial access, read-only reports" },
+  { value: "staff", label: "Staff", description: "Transactional access only" },
+  { value: "viewer", label: "Viewer", description: "Read-only access" },
 ];
 
 interface TeamInviteStepProps {
@@ -77,21 +77,21 @@ export function TeamInviteStep({ onNext, onSkip }: TeamInviteStepProps) {
 
   const onSubmit = async (values: TeamInviteFormValues) => {
     setIsSubmitting(true);
-    const errors: string[] = [];
+    const inviteErrors: string[] = [];
 
     try {
       for (const invite of values.invites) {
         const result = await authClient.organization.inviteMember({
           email: invite.email,
-          role: invite.role as "admin" | "member" | "owner",
+          role: invite.role as "owner" | "admin" | "member",
         });
         if (result?.error) {
-          errors.push(`${invite.email}: ${result.error.message}`);
+          inviteErrors.push(`${invite.email}: ${result.error.message}`);
         }
       }
 
-      if (errors.length > 0) {
-        errors.forEach((e) => toast.error(e));
+      if (inviteErrors.length > 0) {
+        inviteErrors.forEach((e) => toast.error(e));
         return;
       }
 
@@ -158,7 +158,10 @@ export function TeamInviteStep({ onNext, onSkip }: TeamInviteStepProps) {
                     <SelectContent>
                       {ROLES.map((r) => (
                         <SelectItem key={r.value} value={r.value}>
-                          {r.label}
+                          <span>{r.label}</span>
+                          <span className="ml-2 text-xs text-muted-foreground hidden sm:inline">
+                            — {r.description}
+                          </span>
                         </SelectItem>
                       ))}
                     </SelectContent>

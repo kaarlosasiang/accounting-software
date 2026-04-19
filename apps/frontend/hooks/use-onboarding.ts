@@ -4,12 +4,14 @@ import { useCallback } from "react";
 
 import { authClient } from "@/lib/config/auth-client";
 import { useAuth } from "@/lib/contexts/auth-context";
+import type { User } from "@/lib/types/auth";
 
-export type OnboardingStep = "profile" | "company" | "team";
+export type OnboardingStep = "profile" | "company" | "accounting" | "team";
 
 export interface OnboardingSteps {
   profile: boolean;
   company: boolean;
+  accounting: boolean;
   team: boolean;
 }
 
@@ -21,9 +23,10 @@ export interface UseOnboardingReturn {
   markOnboardingComplete: () => Promise<void>;
 }
 
-const STEP_FIELD_MAP: Record<OnboardingStep, string> = {
+const STEP_FIELD_MAP: Record<OnboardingStep, keyof User> = {
   profile: "profileSetupCompletedAt",
   company: "companySetupCompletedAt",
+  accounting: "accountingSetupCompletedAt",
   team: "teamInviteCompletedAt",
 };
 
@@ -31,13 +34,15 @@ export function useOnboarding(): UseOnboardingReturn {
   const { user, refetchSession } = useAuth();
 
   const steps: OnboardingSteps = {
-    profile: !!(user as any)?.profileSetupCompletedAt,
-    company: !!(user as any)?.companySetupCompletedAt,
-    team: !!(user as any)?.teamInviteCompletedAt,
+    profile: !!user?.profileSetupCompletedAt,
+    company: !!user?.companySetupCompletedAt,
+    accounting: !!user?.accountingSetupCompletedAt,
+    team: !!user?.teamInviteCompletedAt,
   };
 
-  const allComplete = steps.profile && steps.company && steps.team;
-  const onboardingComplete = !!(user as any)?.onboardingCompletedAt;
+  const allComplete =
+    steps.profile && steps.company && steps.accounting && steps.team;
+  const onboardingComplete = !!user?.onboardingCompletedAt;
 
   const markStepComplete = useCallback(
     async (step: OnboardingStep) => {

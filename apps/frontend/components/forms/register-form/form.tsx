@@ -282,7 +282,10 @@ export function SignupForm({
         </FieldGroup>
         {/* Social Login */}
         <AuthDivider />
-        <GoogleSignInButton callbackURL={callbackUrl} mode="signup" />
+        <GoogleSignInButton
+          callbackURL={callbackUrl === "/dashboard" ? "/onboarding" : callbackUrl}
+          mode="signup"
+        />
       </form>
       <FieldDescription className="px-6 text-center text-sm">
         By clicking continue, you agree to our{" "}

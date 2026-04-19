@@ -26,6 +26,11 @@ const CHECKLIST_ITEMS = [
     description: "Enter company details, address, and currency",
   },
   {
+    key: "accounting" as const,
+    label: "Configure accounting",
+    description: "Set your accounting method and fiscal year",
+  },
+  {
     key: "team" as const,
     label: "Invite your team",
     description: "Add teammates so they can collaborate with you",

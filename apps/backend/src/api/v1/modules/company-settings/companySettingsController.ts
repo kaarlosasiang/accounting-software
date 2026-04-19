@@ -83,6 +83,43 @@ const companySettingsController = {
   },
 
   /**
+   * PUT /api/v1/company-settings/accounting
+   * Update accounting settings (method, fiscal year end, currency)
+   */
+  updateAccountingSettings: async (req: Request, res: Response) => {
+    try {
+      const companyId = getCompanyId(req);
+
+      if (!companyId) {
+        return res.status(401).json({
+          success: false,
+          message: "Organization ID is required",
+        });
+      }
+
+      const settings = await companySettingsService.updateAccountingSettings(
+        companyId,
+        req.body,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: "Accounting settings updated successfully",
+        data: settings,
+      });
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "update-accounting-settings-controller",
+      });
+      return res.status(500).json({
+        success: false,
+        message: "Failed to update accounting settings",
+        error: (error as Error).message,
+      });
+    }
+  },
+
+  /**
    * POST /api/v1/company-settings/banking/accounts
    * Add bank account
    */

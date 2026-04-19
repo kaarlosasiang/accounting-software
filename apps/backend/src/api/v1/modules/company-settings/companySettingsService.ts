@@ -111,6 +111,29 @@ export const companySettingsService = {
   },
 
   /**
+   * Update accounting settings
+   */
+  async updateAccountingSettings(companyId: string, accountingData: any) {
+    try {
+      let settings = await CompanySettings.findOne({ companyId });
+
+      if (!settings) {
+        // Auto-create with defaults, then update
+        settings = await this.getCompanySettings(companyId);
+      }
+
+      await settings.updateAccountingSettings(accountingData);
+
+      return settings;
+    } catch (error) {
+      logger.logError(error as Error, {
+        operation: "updateAccountingSettings",
+      });
+      throw error;
+    }
+  },
+
+  /**
    * Add bank account
    */
   async addBankAccount(companyId: string, bankAccountData: IBankAccountInfo) {

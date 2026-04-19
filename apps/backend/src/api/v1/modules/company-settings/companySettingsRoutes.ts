@@ -27,6 +27,13 @@ companySettingsRoutes.put(
   companySettingsController.updateGeneralSettings,
 );
 
+// Update accounting settings (method, fiscal year end, currency)
+companySettingsRoutes.put(
+  "/accounting",
+  requirePermission(Resource.companySetting, Action.update),
+  companySettingsController.updateAccountingSettings,
+);
+
 // Banking routes
 // Get specific bank account
 companySettingsRoutes.get(

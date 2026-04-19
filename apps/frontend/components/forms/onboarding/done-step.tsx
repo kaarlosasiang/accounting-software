@@ -36,10 +36,16 @@ export function DoneStep() {
   };
 
   const handleStartTour = async () => {
-    await markOnboardingComplete();
-    router.push("/dashboard");
-    // Tour starts after navigation settles (handled in use-product-tour.ts)
-    startTour();
+    setIsNavigating(true);
+    try {
+      await markOnboardingComplete();
+      router.push("/dashboard");
+      // Tour starts after navigation settles (handled in use-product-tour.ts)
+      startTour();
+    } catch {
+      toast.error("Something went wrong, please try again.");
+      setIsNavigating(false);
+    }
   };
 
   return (
@@ -50,9 +56,9 @@ export function DoneStep() {
         </div>
         <CardTitle className="text-2xl">You&apos;re all set!</CardTitle>
         <CardDescription className="text-base">
-          {completedCount === 3
+          {completedCount === 4
             ? "You've completed all setup steps. Your accounting workspace is ready."
-            : `You completed ${completedCount} of 3 setup steps. You can finish the rest anytime from your dashboard.`}
+            : `You completed ${completedCount} of 4 setup steps. You can finish the rest anytime from your dashboard.`}
         </CardDescription>
       </CardHeader>
 

@@ -58,6 +58,20 @@ class CompanySettingsService {
   }
 
   /**
+   * Update accounting settings (method, fiscal year end, currency)
+   */
+  async updateAccountingSettings(data: {
+    accountingMethod?: "Accrual" | "Cash";
+    fiscalYearEnd?: string;
+    baseCurrency?: string;
+  }): Promise<CompanySettingsResponse> {
+    return apiFetch<CompanySettingsResponse>("/company-settings/accounting", {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
    * Add bank account
    */
   async addBankAccount(

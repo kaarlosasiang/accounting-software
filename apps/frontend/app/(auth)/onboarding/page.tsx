@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { AuthNavbar } from "@/components/common/auth-navbar";
+import { AccountingSetupStep } from "@/components/forms/onboarding/accounting-setup-step";
 import { CompanyStep } from "@/components/forms/onboarding/company-step";
 import { DoneStep } from "@/components/forms/onboarding/done-step";
 import { ProfileStep } from "@/components/forms/onboarding/profile-step";
@@ -13,27 +14,51 @@ import { useOnboarding } from "@/hooks/use-onboarding";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { cn } from "@/lib/utils";
 
-const STEP_LABELS = ["Profile", "Company", "Invite Team", "Done"];
+const STEP_LABELS = [
+  "Profile",
+  "Company",
+  "Accounting",
+  "Invite Team",
+  "Done",
+];
 
 export default function OnboardingPage() {
   const { user, isLoading } = useAuth();
-  const { steps } = useOnboarding();
+  const { steps, onboardingComplete } = useOnboarding();
   const router = useRouter();
 
-  // Determine the initial step based on completed steps
   const getInitialStep = () => {
     if (!steps.profile) return 0;
     if (!steps.company) return 1;
-    if (!steps.team) return 2;
-    return 3;
+    if (!steps.accounting) return 2;
+    if (!steps.team) return 3;
+    return 4;
   };
 
-  const [currentStep, setCurrentStep] = useState<number>(getInitialStep);
+  const [currentStep, setCurrentStep] = useState<number>(0);
+  const [stepInitialized, setStepInitialized] = useState(false);
 
-  const handleNext = () => setCurrentStep((s) => Math.min(s + 1, 3));
-  const handleSkip = () => setCurrentStep((s) => Math.min(s + 1, 3));
+  // Sync step once user data is loaded — the lazy initializer runs before
+  // the auth session resolves, so we need a useEffect to set the correct step.
+  useEffect(() => {
+    if (!isLoading && user && !stepInitialized) {
+      setCurrentStep(getInitialStep());
+      setStepInitialized(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, user]);
 
-  if (isLoading) {
+  // Redirect users who have already finished onboarding
+  useEffect(() => {
+    if (!isLoading && onboardingComplete) {
+      router.replace("/dashboard");
+    }
+  }, [isLoading, onboardingComplete, router]);
+
+  const handleNext = () => setCurrentStep((s) => Math.min(s + 1, 4));
+  const handleSkip = () => setCurrentStep((s) => Math.min(s + 1, 4));
+
+  if (isLoading || !stepInitialized) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <Spinner className="size-8 text-primary" />
@@ -117,9 +142,12 @@ export default function OnboardingPage() {
             <CompanyStep onNext={handleNext} onSkip={handleSkip} />
           )}
           {currentStep === 2 && (
+            <AccountingSetupStep onNext={handleNext} onSkip={handleSkip} />
+          )}
+          {currentStep === 3 && (
             <TeamInviteStep onNext={handleNext} onSkip={handleSkip} />
           )}
-          {currentStep === 3 && <DoneStep />}
+          {currentStep === 4 && <DoneStep />}
         </div>
       </div>
     </div>

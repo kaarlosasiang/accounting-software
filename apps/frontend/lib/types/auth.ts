@@ -29,7 +29,9 @@ export interface User extends BetterAuthUser {
 
   // Onboarding tracking fields
   profileSetupCompletedAt?: string | null;
+  companySetupCompletedAt?: string | null;
   teamInviteCompletedAt?: string | null;
+  accountingSetupCompletedAt?: string | null;
   onboardingCompletedAt?: string | null;
 
   // Admin plugin fields
