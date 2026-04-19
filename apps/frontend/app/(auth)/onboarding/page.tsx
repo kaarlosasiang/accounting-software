@@ -14,13 +14,7 @@ import { useOnboarding } from "@/hooks/use-onboarding";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { cn } from "@/lib/utils";
 
-const STEP_LABELS = [
-  "Profile",
-  "Company",
-  "Accounting",
-  "Invite Team",
-  "Done",
-];
+const STEP_LABELS = ["Profile", "Company", "Accounting", "Invite Team", "Done"];
 
 export default function OnboardingPage() {
   const { user, isLoading } = useAuth();
@@ -45,7 +39,7 @@ export default function OnboardingPage() {
       setCurrentStep(getInitialStep());
       setStepInitialized(true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoading, user]);
 
   // Redirect users who have already finished onboarding

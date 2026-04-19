@@ -14,11 +14,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Select,
   SelectContent,
@@ -137,7 +139,11 @@ export function AccountingSetupStep({
                   htmlFor="accrual"
                   className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors hover:bg-muted/50 has-data-[state=checked]:border-primary has-data-[state=checked]:bg-primary/5"
                 >
-                  <RadioGroupItem value="Accrual" id="accrual" className="mt-0.5" />
+                  <RadioGroupItem
+                    value="Accrual"
+                    id="accrual"
+                    className="mt-0.5"
+                  />
                   <div>
                     <p className="text-sm font-medium leading-none">Accrual</p>
                     <p className="mt-1.5 text-xs text-muted-foreground">

@@ -41,8 +41,16 @@ const teamInviteSchema = z.object({
 type TeamInviteFormValues = z.infer<typeof teamInviteSchema>;
 
 const ROLES = [
-  { value: "admin", label: "Admin", description: "Full access, can manage team" },
-  { value: "accountant", label: "Accountant", description: "Full financial access, read-only reports" },
+  {
+    value: "admin",
+    label: "Admin",
+    description: "Full access, can manage team",
+  },
+  {
+    value: "accountant",
+    label: "Accountant",
+    description: "Full financial access, read-only reports",
+  },
   { value: "staff", label: "Staff", description: "Transactional access only" },
   { value: "viewer", label: "Viewer", description: "Read-only access" },
 ];

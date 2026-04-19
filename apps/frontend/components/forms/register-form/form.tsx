@@ -283,7 +283,9 @@ export function SignupForm({
         {/* Social Login */}
         <AuthDivider />
         <GoogleSignInButton
-          callbackURL={callbackUrl === "/dashboard" ? "/onboarding" : callbackUrl}
+          callbackURL={
+            callbackUrl === "/dashboard" ? "/onboarding" : callbackUrl
+          }
           mode="signup"
         />
       </form>
