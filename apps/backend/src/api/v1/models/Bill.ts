@@ -67,8 +67,6 @@ const BillSchema = new Schema<IBill>(
       type: String,
       required: [true, "Bill number is required"],
       trim: true,
-      unique: true,
-      index: true,
     },
     dueDate: {
       type: Date,
