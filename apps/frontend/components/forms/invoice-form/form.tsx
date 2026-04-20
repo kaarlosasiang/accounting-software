@@ -87,6 +87,7 @@ const invoiceItemSchema = z.object({
     message: "Rate must be a positive number",
   }),
   accountId: z.string().min(1, "Account is required"),
+  inventoryItemId: z.string().optional(),
 });
 
 const invoiceFormSchema = z
@@ -182,6 +183,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
           quantity: "1",
           rate: "0",
           accountId: "",
+          inventoryItemId: undefined,
         },
       ],
       notes: "",
@@ -275,6 +277,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
           quantity: parseFloat(item.quantity),
           unitPrice: parseFloat(item.rate),
           accountId: item.accountId,
+          inventoryItemId: item.inventoryItemId || undefined,
           amount: parseFloat(item.quantity) * parseFloat(item.rate),
         })),
         taxRate: parseFloat(data.taxRate),
@@ -719,11 +722,31 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                                                     field.onChange(
                                                       item.itemName,
                                                     );
+                                                    // Track the inventory item so the backend can deduct stock
+                                                    form.setValue(
+                                                      `items.${index}.inventoryItemId`,
+                                                      item._id,
+                                                    );
                                                     // Auto-fill rate
                                                     form.setValue(
                                                       `items.${index}.rate`,
                                                       item.sellingPrice.toString(),
                                                     );
+                                                    // Auto-fill income account when available
+                                                    const incomeAccountId =
+                                                      typeof item.incomeAccountId ===
+                                                      "string"
+                                                        ? item.incomeAccountId
+                                                        : item.incomeAccountId
+                                                          ? item.incomeAccountId
+                                                              ._id
+                                                          : "";
+                                                    if (incomeAccountId) {
+                                                      form.setValue(
+                                                        `items.${index}.accountId`,
+                                                        incomeAccountId,
+                                                      );
+                                                    }
                                                     // Set quantity to 1 if empty
                                                     const currentQty =
                                                       form.getValues(
@@ -782,11 +805,31 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                                                     field.onChange(
                                                       item.itemName,
                                                     );
+                                                    // Track the inventory item so service selections can still reference the source item
+                                                    form.setValue(
+                                                      `items.${index}.inventoryItemId`,
+                                                      item._id,
+                                                    );
                                                     // Auto-fill rate
                                                     form.setValue(
                                                       `items.${index}.rate`,
                                                       item.sellingPrice.toString(),
                                                     );
+                                                    // Auto-fill income account when available
+                                                    const incomeAccountId =
+                                                      typeof item.incomeAccountId ===
+                                                      "string"
+                                                        ? item.incomeAccountId
+                                                        : item.incomeAccountId
+                                                          ? item.incomeAccountId
+                                                              ._id
+                                                          : "";
+                                                    if (incomeAccountId) {
+                                                      form.setValue(
+                                                        `items.${index}.accountId`,
+                                                        incomeAccountId,
+                                                      );
+                                                    }
                                                     // Set quantity to 1 if empty
                                                     const currentQty =
                                                       form.getValues(
@@ -962,6 +1005,7 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                   quantity: "1",
                   rate: "",
                   accountId: "",
+                  inventoryItemId: undefined,
                 })
               }
             >

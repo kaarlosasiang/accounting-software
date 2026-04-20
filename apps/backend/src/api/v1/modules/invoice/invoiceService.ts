@@ -414,9 +414,10 @@ export const invoiceService = {
     try {
       for (const lineItem of invoice.lineItems) {
         if (lineItem.inventoryItemId) {
-          const inventoryItem = await InventoryItem.findById(
-            lineItem.inventoryItemId,
-          ).session(session);
+          const inventoryItem = await InventoryItem.findOne({
+            _id: lineItem.inventoryItemId,
+            companyId: invoice.companyId,
+          }).session(session);
 
           if (!inventoryItem) {
             throw new Error(
@@ -424,15 +425,20 @@ export const invoiceService = {
             );
           }
 
+          // Service items do not reduce on-hand inventory.
+          if (inventoryItem.itemType !== "Product") {
+            continue;
+          }
+
           // Check if enough stock is available
-          if (inventoryItem.currentStock < lineItem.quantity) {
+          if (inventoryItem.quantityOnHand < lineItem.quantity) {
             throw new Error(
-              `Insufficient stock for ${inventoryItem.itemName}. Available: ${inventoryItem.currentStock}, Required: ${lineItem.quantity}`,
+              `Insufficient stock for ${inventoryItem.itemName}. Available: ${inventoryItem.quantityOnHand}, Required: ${lineItem.quantity}`,
             );
           }
 
           // Reduce inventory
-          inventoryItem.currentStock -= lineItem.quantity;
+          inventoryItem.quantityOnHand -= lineItem.quantity;
           await inventoryItem.save({ session });
 
           // Create inventory transaction
@@ -445,7 +451,7 @@ export const invoiceService = {
             quantityOut: lineItem.quantity,
             unitCost: lineItem.unitPrice,
             totalValue: lineItem.amount,
-            balanceAfter: inventoryItem.currentStock,
+            balanceAfter: inventoryItem.quantityOnHand,
             referenceType: "INVOICE",
             referenceId: invoice._id,
             notes: `Sale via Invoice ${invoice.invoiceNumber}`,
@@ -468,13 +474,18 @@ export const invoiceService = {
     try {
       for (const lineItem of invoice.lineItems) {
         if (lineItem.inventoryItemId) {
-          const inventoryItem = await InventoryItem.findById(
-            lineItem.inventoryItemId,
-          ).session(session);
+          const inventoryItem = await InventoryItem.findOne({
+            _id: lineItem.inventoryItemId,
+            companyId: invoice.companyId,
+          }).session(session);
 
           if (inventoryItem) {
+            if (inventoryItem.itemType !== "Product") {
+              continue;
+            }
+
             // Restore inventory
-            inventoryItem.currentStock += lineItem.quantity;
+            inventoryItem.quantityOnHand += lineItem.quantity;
             await inventoryItem.save({ session });
 
             // Create reversal transaction
@@ -487,7 +498,7 @@ export const invoiceService = {
               quantityOut: 0,
               unitCost: lineItem.unitPrice,
               totalValue: lineItem.amount,
-              balanceAfter: inventoryItem.currentStock,
+              balanceAfter: inventoryItem.quantityOnHand,
               referenceType: "INVOICE",
               referenceId: invoice._id,
               notes: `Reversal - Invoice ${invoice.invoiceNumber} voided`,
