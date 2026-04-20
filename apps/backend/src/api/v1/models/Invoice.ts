@@ -67,8 +67,6 @@ const InvoiceSchema = new Schema<IInvoice>(
       type: String,
       required: [true, "Invoice number is required"],
       trim: true,
-      unique: true,
-      index: true,
     },
     invoiceDate: {
       type: Date,
@@ -173,6 +171,7 @@ const InvoiceSchema = new Schema<IInvoice>(
 /**
  * Indexes for performance
  */
+InvoiceSchema.index({ companyId: 1, invoiceNumber: 1 }, { unique: true });
 InvoiceSchema.index({ companyId: 1, customerId: 1 });
 InvoiceSchema.index({ companyId: 1, status: 1 });
 InvoiceSchema.index({ companyId: 1, invoiceDate: -1 });
