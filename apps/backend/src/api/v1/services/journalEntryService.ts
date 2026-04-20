@@ -295,6 +295,11 @@ export class JournalEntryService {
 
     const lines: JournalEntryLineInput[] = [];
 
+    // Resolve customer name whether customerId is populated or a raw ObjectId
+    const customerRef = invoice.customerId as any;
+    const customerName =
+      customerRef?.customerName || customerRef?.displayName || "Customer";
+
     // Debit Accounts Receivable for the total amount
     lines.push({
       accountId: arAccount._id,
@@ -302,7 +307,7 @@ export class JournalEntryService {
       accountName: arAccount.accountName,
       debit: invoice.totalAmount,
       credit: 0,
-      description: `Invoice ${invoice.invoiceNumber} - ${invoice.customerId?.toString() || "Customer"}`,
+      description: `Invoice ${invoice.invoiceNumber} - ${customerName}`,
     });
 
     // Credit Sales for the subtotal (excluding tax)

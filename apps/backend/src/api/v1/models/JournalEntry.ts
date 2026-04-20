@@ -62,8 +62,6 @@ const JournalEntrySchema = new Schema<IJournalEntry>(
       type: String,
       required: [true, "Entry number is required"],
       trim: true,
-      unique: true,
-      index: true,
     },
     entryDate: {
       type: Date,
@@ -158,7 +156,7 @@ const JournalEntrySchema = new Schema<IJournalEntry>(
 JournalEntrySchema.index({ companyId: 1, entryDate: -1 });
 JournalEntrySchema.index({ companyId: 1, status: 1 });
 JournalEntrySchema.index({ companyId: 1, entryType: 1 });
-JournalEntrySchema.index({ companyId: 1, entryNumber: 1 });
+JournalEntrySchema.index({ companyId: 1, entryNumber: 1 }, { unique: true });
 
 /**
  * Pre-validate: Calculate totals and ensure debits equal credits
