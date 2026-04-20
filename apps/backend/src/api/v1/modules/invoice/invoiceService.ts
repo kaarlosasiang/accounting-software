@@ -14,6 +14,10 @@ import {
   IInvoiceDocument,
   InvoiceStatus,
 } from "../../shared/interface/IInvoice.js";
+import {
+  InventoryReferenceType,
+  InventoryTransactionType,
+} from "../../shared/interface/IInventoryTransaction.js";
 
 /**
  * Invoice Service
@@ -445,14 +449,14 @@ export const invoiceService = {
           const transaction = new InventoryTransaction({
             companyId: invoice.companyId,
             inventoryItemId: lineItem.inventoryItemId,
-            transactionType: "SALE",
+            transactionType: InventoryTransactionType.SALE,
             transactionDate: invoice.invoiceDate || new Date(),
             quantityIn: 0,
             quantityOut: lineItem.quantity,
             unitCost: lineItem.unitPrice,
             totalValue: lineItem.amount,
             balanceAfter: inventoryItem.quantityOnHand,
-            referenceType: "INVOICE",
+            referenceType: InventoryReferenceType.INVOICE,
             referenceId: invoice._id,
             notes: `Sale via Invoice ${invoice.invoiceNumber}`,
             createdBy: invoice.createdBy,
@@ -492,14 +496,14 @@ export const invoiceService = {
             const transaction = new InventoryTransaction({
               companyId: invoice.companyId,
               inventoryItemId: lineItem.inventoryItemId,
-              transactionType: "ADJUSTMENT",
+              transactionType: InventoryTransactionType.ADJUSTMENT,
               transactionDate: new Date(),
               quantityIn: lineItem.quantity,
               quantityOut: 0,
               unitCost: lineItem.unitPrice,
               totalValue: lineItem.amount,
               balanceAfter: inventoryItem.quantityOnHand,
-              referenceType: "INVOICE",
+              referenceType: InventoryReferenceType.INVOICE,
               referenceId: invoice._id,
               notes: `Reversal - Invoice ${invoice.invoiceNumber} voided`,
               createdBy: invoice.createdBy,

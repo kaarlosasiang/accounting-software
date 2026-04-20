@@ -7,6 +7,10 @@ import { InventoryTransaction } from "../../models/InventoryTransaction.js";
 import { Supplier } from "../../models/Supplier.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
 import { BillStatus, IBillDocument } from "../../shared/interface/IBill.js";
+import {
+  InventoryReferenceType,
+  InventoryTransactionType,
+} from "../../shared/interface/IInventoryTransaction.js";
 
 /**
  * Bill Service
@@ -411,14 +415,19 @@ export const billService = {
     try {
       for (const lineItem of bill.lineItems) {
         if (lineItem.inventoryItemId) {
-          const inventoryItem = await InventoryItem.findById(
-            lineItem.inventoryItemId,
-          ).session(session);
+          const inventoryItem = await InventoryItem.findOne({
+            _id: lineItem.inventoryItemId,
+            companyId: bill.companyId,
+          }).session(session);
 
           if (!inventoryItem) {
             throw new Error(
               `Inventory item not found: ${lineItem.inventoryItemId}`,
             );
+          }
+
+          if (inventoryItem.itemType !== "Product") {
+            continue;
           }
 
           // Increase inventory quantity (purchase increases stock)
@@ -429,15 +438,17 @@ export const billService = {
           const transaction = new InventoryTransaction({
             companyId: bill.companyId,
             inventoryItemId: lineItem.inventoryItemId,
-            transactionType: "PURCHASE",
-            quantity: lineItem.quantity,
-            unitCost: lineItem.unitPrice,
-            totalCost: lineItem.amount,
-            referenceType: "BILL",
-            referenceId: bill._id,
-            referenceNumber: bill.billNumber,
+            transactionType: InventoryTransactionType.PURCHASE,
             transactionDate: bill.createdAt,
+            quantityIn: lineItem.quantity,
+            quantityOut: 0,
+            unitCost: lineItem.unitPrice,
+            totalValue: lineItem.amount,
+            balanceAfter: inventoryItem.quantityOnHand,
+            referenceType: InventoryReferenceType.BILL,
+            referenceId: bill._id,
             notes: `Purchase from bill ${bill.billNumber}`,
+            createdBy: bill.createdBy,
           });
 
           await transaction.save({ session });
@@ -456,16 +467,21 @@ export const billService = {
     try {
       for (const lineItem of bill.lineItems) {
         if (lineItem.inventoryItemId) {
-          const inventoryItem = await InventoryItem.findById(
-            lineItem.inventoryItemId,
-          ).session(session);
+          const inventoryItem = await InventoryItem.findOne({
+            _id: lineItem.inventoryItemId,
+            companyId: bill.companyId,
+          }).session(session);
 
           if (inventoryItem) {
+            if (inventoryItem.itemType !== "Product") {
+              continue;
+            }
+
             // Decrease inventory quantity
             inventoryItem.quantityOnHand -= lineItem.quantity;
             if (inventoryItem.quantityOnHand < 0) {
               logger.warn(
-                `Negative inventory after reversing bill: Item ${inventoryItem.itemCode}`,
+                `Negative inventory after reversing bill: Item ${inventoryItem.sku}`,
               );
             }
             await inventoryItem.save({ session });
@@ -474,15 +490,17 @@ export const billService = {
             const transaction = new InventoryTransaction({
               companyId: bill.companyId,
               inventoryItemId: lineItem.inventoryItemId,
-              transactionType: "ADJUSTMENT",
-              quantity: -lineItem.quantity,
-              unitCost: lineItem.unitPrice,
-              totalCost: -lineItem.amount,
-              referenceType: "BILL",
-              referenceId: bill._id,
-              referenceNumber: bill.billNumber,
+              transactionType: InventoryTransactionType.ADJUSTMENT,
               transactionDate: new Date(),
+              quantityIn: 0,
+              quantityOut: lineItem.quantity,
+              unitCost: lineItem.unitPrice,
+              totalValue: lineItem.amount,
+              balanceAfter: inventoryItem.quantityOnHand,
+              referenceType: InventoryReferenceType.BILL,
+              referenceId: bill._id,
               notes: `Reversal of bill ${bill.billNumber} (voided)`,
+              createdBy: bill.createdBy,
             });
 
             await transaction.save({ session });
