@@ -333,44 +333,75 @@ export const paymentService = {
   },
 
   /**
-   * Calculate payment allocation from multiple invoices
+   * Calculate payment allocation from multiple invoices (customer) or bills (supplier)
    * Useful for UI to suggest allocations
    */
   async suggestPaymentAllocations(
     companyId: string,
-    customerId: string,
+    customerId: string | undefined,
     paymentAmount: number,
+    supplierId?: string,
   ) {
     try {
-      // Get all unpaid/partial invoices for customer
-      const invoices = await Invoice.find({
-        companyId,
-        customerId,
-        status: { $in: [InvoiceStatus.SENT, InvoiceStatus.PARTIAL] },
-      }).sort({ invoiceDate: 1 }); // Oldest first (FIFO)
-
       const allocations = [];
       let remainingAmount = paymentAmount;
 
-      // Allocate payment to invoices in order (oldest first)
-      for (const invoice of invoices) {
-        if (remainingAmount <= 0) break;
+      if (supplierId) {
+        // Get all unpaid/partial bills for supplier
+        const bills = await Bill.find({
+          companyId,
+          supplierId,
+          status: { $in: [BillStatus.SENT, BillStatus.PARTIAL] },
+        }).sort({ billDate: 1 }); // Oldest first (FIFO)
 
-        const invoiceBalance =
-          invoice.balanceDue || invoice.totalAmount - (invoice.amountPaid || 0);
-        const allocationAmount = Math.min(remainingAmount, invoiceBalance);
+        for (const bill of bills) {
+          if (remainingAmount <= 0) break;
 
-        if (allocationAmount > 0) {
-          allocations.push({
-            documentId: invoice._id,
-            documentNumber: invoice.invoiceNumber,
-            allocatedAmount: allocationAmount,
-            documentType: "INVOICE",
-            invoiceBalance,
-            remainingBalance: invoiceBalance - allocationAmount,
-          });
+          const billBalance =
+            bill.balanceDue || bill.totalAmount - (bill.amountPaid || 0);
+          const allocationAmount = Math.min(remainingAmount, billBalance);
 
-          remainingAmount -= allocationAmount;
+          if (allocationAmount > 0) {
+            allocations.push({
+              documentId: bill._id,
+              documentNumber: bill.billNumber,
+              allocatedAmount: allocationAmount,
+              documentType: "BILL",
+              invoiceBalance: billBalance,
+              remainingBalance: billBalance - allocationAmount,
+            });
+
+            remainingAmount -= allocationAmount;
+          }
+        }
+      } else if (customerId) {
+        // Get all unpaid/partial invoices for customer
+        const invoices = await Invoice.find({
+          companyId,
+          customerId,
+          status: { $in: [InvoiceStatus.SENT, InvoiceStatus.PARTIAL] },
+        }).sort({ invoiceDate: 1 }); // Oldest first (FIFO)
+
+        for (const invoice of invoices) {
+          if (remainingAmount <= 0) break;
+
+          const invoiceBalance =
+            invoice.balanceDue ||
+            invoice.totalAmount - (invoice.amountPaid || 0);
+          const allocationAmount = Math.min(remainingAmount, invoiceBalance);
+
+          if (allocationAmount > 0) {
+            allocations.push({
+              documentId: invoice._id,
+              documentNumber: invoice.invoiceNumber,
+              allocatedAmount: allocationAmount,
+              documentType: "INVOICE",
+              invoiceBalance,
+              remainingBalance: invoiceBalance - allocationAmount,
+            });
+
+            remainingAmount -= allocationAmount;
+          }
         }
       }
 
@@ -384,6 +415,7 @@ export const paymentService = {
         operation: "suggestPaymentAllocations",
         companyId,
         customerId,
+        supplierId,
       });
       throw error;
     }

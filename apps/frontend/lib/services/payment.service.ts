@@ -65,6 +65,23 @@ export const paymentService = {
   },
 
   /**
+   * Get payment suggestions for a supplier
+   */
+  async getSupplierPaymentSuggestions(
+    supplierId: string,
+    amount: number,
+    companyId: string,
+  ): Promise<PaymentSuggestionResponse> {
+    return await apiFetch<PaymentSuggestionResponse>(
+      "/payments/suggest-allocations",
+      {
+        method: "POST",
+        body: JSON.stringify({ companyId, supplierId, paymentAmount: amount }),
+      },
+    );
+  },
+
+  /**
    * Record payment received with allocations
    */
   async recordPaymentReceived(payload: any): Promise<any> {

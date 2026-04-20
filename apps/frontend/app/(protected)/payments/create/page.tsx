@@ -406,10 +406,25 @@ export default function RecordPaymentPage() {
       }
 
       try {
-        // Only fetch suggestions for invoice payments (customer payments)
-        if (paymentType === "invoice") {
+        if (paymentType === "invoice" && selectedCustomerId) {
           const result = await paymentService.getPaymentSuggestions(
-            selectedCustomerId!,
+            selectedCustomerId,
+            paymentAmount,
+            organizationId!,
+          );
+
+          setSuggestedAllocations(
+            (result.data?.allocations || []).map((a) => ({
+              documentId: a.documentId,
+              documentNumber: a.documentNumber,
+              allocatedAmount: a.allocatedAmount,
+              documentBalance: a.invoiceBalance ?? 0,
+              remainingBalance: a.remainingBalance ?? 0,
+            })),
+          );
+        } else if (paymentType === "bill" && selectedSupplierId) {
+          const result = await paymentService.getSupplierPaymentSuggestions(
+            selectedSupplierId,
             paymentAmount,
             organizationId!,
           );
@@ -424,7 +439,6 @@ export default function RecordPaymentPage() {
             })),
           );
         } else {
-          // For bill payments, clear suggestions since backend doesn't support it yet
           setSuggestedAllocations([]);
         }
       } catch (err) {

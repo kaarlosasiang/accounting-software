@@ -235,16 +235,16 @@ export const suggestPaymentAllocations = async (
 ) => {
   try {
     const companyId = req.body.companyId || getCompanyId(req);
-    const { customerId, paymentAmount } = req.body;
+    const { customerId, supplierId, paymentAmount } = req.body;
 
     if (!companyId) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    if (!customerId || !paymentAmount) {
+    if ((!customerId && !supplierId) || !paymentAmount) {
       return res.status(400).json({
         success: false,
-        message: "customerId and paymentAmount are required",
+        message: "customerId or supplierId, and paymentAmount are required",
       });
     }
 
@@ -252,6 +252,7 @@ export const suggestPaymentAllocations = async (
       companyId,
       customerId,
       paymentAmount,
+      supplierId,
     );
 
     res.status(200).json({
