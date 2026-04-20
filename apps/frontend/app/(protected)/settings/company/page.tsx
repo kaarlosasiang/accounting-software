@@ -102,7 +102,13 @@ export default function CompanySettingsPage() {
     const rawMeta = activeOrganization.metadata;
     const meta: Record<string, any> =
       typeof rawMeta === "string"
-        ? (() => { try { return JSON.parse(rawMeta); } catch { return {}; } })()
+        ? (() => {
+            try {
+              return JSON.parse(rawMeta);
+            } catch {
+              return {};
+            }
+          })()
         : (rawMeta ?? {});
     const addr = meta?.address?.[0] ?? {};
     const contact = meta?.contact?.[0] ?? {};
