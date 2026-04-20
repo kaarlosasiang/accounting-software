@@ -17,7 +17,33 @@ const accountsService = {
       const accounts = await Account.find({ companyId }).sort({
         accountCode: 1,
       });
-      return accounts;
+
+      // Enrich each account with its live balance from the Ledger so the
+      // chart of accounts always reflects the current state without needing
+      // a manual reconciliation step.
+      const accountsWithBalances = await Promise.all(
+        accounts.map(async (account) => {
+          const latestEntry = await Ledger.findOne({
+            companyId,
+            accountId: account._id,
+          })
+            .sort({ transactionDate: -1, createdAt: -1 })
+            .lean();
+
+          const liveBalance = latestEntry?.runningBalance ?? 0;
+
+          // Silently sync the stored balance if it has drifted, so future
+          // reads are accurate even if ledger entries were written externally.
+          if (Math.abs(liveBalance - account.balance) > 0.01) {
+            account.balance = liveBalance;
+            await account.save();
+          }
+
+          return account;
+        }),
+      );
+
+      return accountsWithBalances;
     } catch (error) {
       logger.logError(error as Error, {
         operation: "get-all-accounts",
