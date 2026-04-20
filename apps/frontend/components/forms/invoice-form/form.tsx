@@ -333,7 +333,7 @@ export function InvoiceForm({
     }, 0);
   };
 
-  const calculateDiscount = (subtotal: number) => {
+  const calculateDiscount = () => {
     const discount = parseFloat(form.watch("discount") || "0");
     return discount;
   };
@@ -345,7 +345,7 @@ export function InvoiceForm({
 
   const calculateTotal = () => {
     const subtotal = calculateSubtotal();
-    const discount = calculateDiscount(subtotal);
+    const discount = calculateDiscount();
     const tax = calculateTax(subtotal, discount);
     return subtotal - discount + tax;
   };
@@ -376,7 +376,8 @@ export function InvoiceForm({
       const response =
         isEditMode && invoiceId
           ? await invoiceService.updateInvoice(invoiceId, invoiceData)
-  
+          : await invoiceService.createInvoice(invoiceData);
+
       if (response.success) {
         if (!saveAsDraft && response.data?._id) {
           const companyName = company?.name || "Your Company";
@@ -1166,7 +1167,7 @@ export function InvoiceForm({
                   ₱
                   {calculateTax(
                     calculateSubtotal(),
-                    calculateDiscount(calculateSubtotal()),
+                    calculateDiscount(),
                   ).toLocaleString("en-PH", {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
