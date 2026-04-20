@@ -198,7 +198,7 @@ export const createColumns = (currency?: string): ColumnDef<Account>[] => [
       </div>
     ),
     cell: ({ row }) => {
-      const isActive = row.getValue<boolean>("isActive") !== false; // Default to true if undefined
+      const isActive = row.original.isActive !== false; // Default to true if undefined
       return (
         <div className="flex justify-center">
           <Badge

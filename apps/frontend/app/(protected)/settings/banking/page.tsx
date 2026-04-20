@@ -121,11 +121,7 @@ export default function BankingSettingsPage() {
       try {
         const result = await accountsService.getAccountsByType("Asset");
         if (result.success && result.data) {
-          // Filter for Bank and Cash subtypes
-          const bankAccounts = result.data.filter(
-            (acc) => acc.subType === "Bank" || acc.subType === "Cash",
-          );
-          setChartAccounts(bankAccounts);
+          setChartAccounts(result.data);
         }
       } catch (err) {
         toast.error(
