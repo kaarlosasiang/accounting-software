@@ -222,11 +222,12 @@ export default function PaymentsPage() {
     return matchesSearch && matchesType;
   });
 
-  const totalPayments = payments.reduce((sum, p) => sum + p.amount, 0);
-  const received = payments
+  const activePayments = payments.filter((p) => p.status !== "VOIDED");
+  const totalPayments = activePayments.reduce((sum, p) => sum + p.amount, 0);
+  const received = activePayments
     .filter((p) => isReceivedPayment(p))
     .reduce((sum, p) => sum + p.amount, 0);
-  const made = payments
+  const made = activePayments
     .filter((p) => !isReceivedPayment(p))
     .reduce((sum, p) => sum + p.amount, 0);
 
@@ -268,7 +269,7 @@ export default function PaymentsPage() {
               {formatCurrency(totalPayments)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {payments.length} transactions
+              {activePayments.length} transactions
             </p>
           </CardContent>
         </Card>
@@ -283,7 +284,8 @@ export default function PaymentsPage() {
               {formatCurrency(received)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => isReceivedPayment(p)).length} payments
+              {activePayments.filter((p) => isReceivedPayment(p)).length}{" "}
+              payments
             </p>
           </CardContent>
         </Card>
@@ -298,7 +300,9 @@ export default function PaymentsPage() {
               {formatCurrency(made)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {payments.filter((p) => !isReceivedPayment(p)).length} payments
+              {" "}
+              {activePayments.filter((p) => !isReceivedPayment(p)).length}{" "}
+              payments
             </p>
           </CardContent>
         </Card>
