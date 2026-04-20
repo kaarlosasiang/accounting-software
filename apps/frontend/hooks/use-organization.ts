@@ -162,8 +162,19 @@ export function useOrganization(): UseOrganizationReturn {
     [activeOrganization],
   );
 
-  // Get data from metadata (nested objects)
-  const metadata = activeOrganization?.metadata;
+  // Parse metadata — Better Auth stores it as a JSON string in MongoDB
+  const rawMetadata = activeOrganization?.metadata;
+  const metadata = useMemo<CompanyMetadata | undefined>(() => {
+    if (!rawMetadata) return undefined;
+    if (typeof rawMetadata === "string") {
+      try {
+        return JSON.parse(rawMetadata) as CompanyMetadata;
+      } catch {
+        return undefined;
+      }
+    }
+    return rawMetadata as CompanyMetadata;
+  }, [rawMetadata]);
   const addresses = useMemo(() => metadata?.address, [metadata?.address]);
   const contacts = useMemo(() => metadata?.contact, [metadata?.contact]);
   const industry = useMemo(() => metadata?.industry, [metadata?.industry]);

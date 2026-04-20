@@ -98,14 +98,20 @@ export default function CompanySettingsPage() {
   // Pre-fill form when org data loads
   useEffect(() => {
     if (!activeOrganization) return;
-    const addr = activeOrganization.metadata?.address?.[0] ?? {};
-    const contact = activeOrganization.metadata?.contact?.[0] ?? {};
+    // Better Auth stores metadata as a JSON string in MongoDB — parse it
+    const rawMeta = activeOrganization.metadata;
+    const meta: Record<string, any> =
+      typeof rawMeta === "string"
+        ? (() => { try { return JSON.parse(rawMeta); } catch { return {}; } })()
+        : (rawMeta ?? {});
+    const addr = meta?.address?.[0] ?? {};
+    const contact = meta?.contact?.[0] ?? {};
     setForm({
       name: activeOrganization.name ?? "",
       businessType: activeOrganization.businessType ?? "",
       taxId: activeOrganization.taxId ?? "",
-      industry: activeOrganization.metadata?.industry ?? "",
-      description: activeOrganization.metadata?.description ?? "",
+      industry: meta?.industry ?? "",
+      description: meta?.description ?? "",
       street: addr.street ?? "",
       city: addr.city ?? "",
       state: addr.state ?? "",
