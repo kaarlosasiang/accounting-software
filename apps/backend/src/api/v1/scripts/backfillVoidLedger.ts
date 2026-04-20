@@ -52,8 +52,7 @@ const AccountSchema = new Schema<IAccount>(
 );
 
 const Account =
-  mongoose.models.Account ||
-  mongoose.model<IAccount>("Account", AccountSchema);
+  mongoose.models.Account || mongoose.model<IAccount>("Account", AccountSchema);
 
 // ─── JournalEntry ───────────────────────────────────────────────────────────────
 
@@ -197,7 +196,11 @@ async function backfillCaseA(
 
       const key = line.accountId.toString();
       if (!balanceMap.has(key)) {
-        const prev = await getRunningBalance(je.companyId, line.accountId, voidDate);
+        const prev = await getRunningBalance(
+          je.companyId,
+          line.accountId,
+          voidDate,
+        );
         balanceMap.set(key, prev);
       }
 
@@ -281,7 +284,11 @@ async function backfillCaseB(
 
       const key = line.accountId.toString();
       if (!balanceMap.has(key)) {
-        const prev = await getRunningBalance(je.companyId, line.accountId, je.entryDate);
+        const prev = await getRunningBalance(
+          je.companyId,
+          line.accountId,
+          je.entryDate,
+        );
         balanceMap.set(key, prev);
       }
 
@@ -347,7 +354,9 @@ async function main() {
 
   console.log("=".repeat(60));
   console.log("  Void Ledger Backfill");
-  console.log(`  Mode    : ${dryRun ? "DRY RUN (no writes)" : "⚠ APPLY — writing to database"}`);
+  console.log(
+    `  Mode    : ${dryRun ? "DRY RUN (no writes)" : "⚠ APPLY — writing to database"}`,
+  );
   console.log(`  Company : ${companyFilter ?? "all companies"}`);
   console.log("=".repeat(60));
 
@@ -358,8 +367,12 @@ async function main() {
   const fixedB = await backfillCaseB(companyFilter, dryRun);
 
   console.log("\n" + "=".repeat(60));
-  console.log(`  Case A (VOID JEs missing reversal rows) : ${fixedA} JE(s) ${dryRun ? "would be fixed" : "fixed"}`);
-  console.log(`  Case B (REV-* JEs missing ledger rows)  : ${fixedB} JE(s) ${dryRun ? "would be fixed" : "fixed"}`);
+  console.log(
+    `  Case A (VOID JEs missing reversal rows) : ${fixedA} JE(s) ${dryRun ? "would be fixed" : "fixed"}`,
+  );
+  console.log(
+    `  Case B (REV-* JEs missing ledger rows)  : ${fixedB} JE(s) ${dryRun ? "would be fixed" : "fixed"}`,
+  );
   if (dryRun) {
     console.log("\n  Run with --apply to write these changes to the database.");
   }
