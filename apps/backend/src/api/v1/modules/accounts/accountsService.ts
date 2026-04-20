@@ -20,20 +20,38 @@ const accountsService = {
 
       // Enrich each account with its live balance from the Ledger so the
       // chart of accounts always reflects the current state without needing
-      // a manual reconciliation step.
+      // a manual reconciliation step. Use an aggregate sum (not runningBalance)
+      // to avoid stale values from out-of-order insertions.
       const accountsWithBalances = await Promise.all(
         accounts.map(async (account) => {
-          const latestEntry = await Ledger.findOne({
-            companyId,
-            accountId: account._id,
-          })
-            .sort({ transactionDate: -1, createdAt: -1 })
-            .lean();
+          const result = await Ledger.aggregate([
+            {
+              $match: {
+                companyId: account.companyId,
+                accountId: account._id,
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                totalDebit: { $sum: { $toDouble: "$debit" } },
+                totalCredit: { $sum: { $toDouble: "$credit" } },
+              },
+            },
+          ]);
 
-          const liveBalance = latestEntry?.runningBalance ?? 0;
+          let liveBalance = 0;
+          if (result.length > 0) {
+            const { totalDebit, totalCredit } = result[0];
+            const isDebitNormal =
+              account.accountType === "Asset" ||
+              account.accountType === "Expense";
+            liveBalance = isDebitNormal
+              ? totalDebit - totalCredit
+              : totalCredit - totalDebit;
+          }
 
-          // Silently sync the stored balance if it has drifted, so future
-          // reads are accurate even if ledger entries were written externally.
+          // Silently sync the stored balance if it has drifted.
           if (Math.abs(liveBalance - account.balance) > 0.01) {
             account.balance = liveBalance;
             await account.save();

@@ -623,7 +623,10 @@ export const journalEntryService = {
   },
 
   /**
-   * Helper: Get account balance up to a date
+   * Helper: Get account balance up to a date.
+   * Computes from the sum of all debit/credit entries rather than relying
+   * on the denormalized runningBalance field, which can become stale when
+   * entries are inserted out of chronological order.
    */
   async getAccountBalance(
     companyId: string,
@@ -631,15 +634,35 @@ export const journalEntryService = {
     upToDate: Date,
   ): Promise<number> {
     try {
-      const ledgerEntries = await Ledger.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountId: new mongoose.Types.ObjectId(accountId),
-        transactionDate: { $lte: upToDate }, // $lte so same-date prior entries are included
-      })
-        .sort({ transactionDate: -1, createdAt: -1 })
-        .limit(1);
+      const account = await Account.findById(
+        new mongoose.Types.ObjectId(accountId),
+      ).lean();
 
-      return ledgerEntries.length > 0 ? ledgerEntries[0].runningBalance : 0;
+      const result = await Ledger.aggregate([
+        {
+          $match: {
+            companyId: new mongoose.Types.ObjectId(companyId),
+            accountId: new mongoose.Types.ObjectId(accountId),
+            transactionDate: { $lte: upToDate },
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalDebit: { $sum: { $toDouble: "$debit" } },
+            totalCredit: { $sum: { $toDouble: "$credit" } },
+          },
+        },
+      ]);
+
+      if (!result.length) return 0;
+
+      const { totalDebit, totalCredit } = result[0];
+      const isDebitNormal =
+        account?.accountType === "Asset" || account?.accountType === "Expense";
+      return isDebitNormal
+        ? totalDebit - totalCredit
+        : totalCredit - totalDebit;
     } catch (error) {
       logger.logError(error as Error, {
         operation: "get-account-balance",

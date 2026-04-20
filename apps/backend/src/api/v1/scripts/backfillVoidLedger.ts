@@ -1,7 +1,7 @@
 /**
- * backfillVoidLedger.ts
+ * backfillLedger.ts
  *
- * Fixes two categories of missing ledger entries caused by earlier bugs:
+ * Fixes missing ledger entries caused by earlier bugs in three cases:
  *
  * CASE A — Manually voided JEs (status = VOID, module-level void path)
  *   The old code used `if (!account) continue`, so if any account lookup
@@ -12,6 +12,12 @@
  *   The shared JournalEntryService.voidJournalEntry created these documents but
  *   never called postLinesToLedger, so they exist as Posted JEs with no ledger rows.
  *   Fix: find POSTED REV-* JEs with no ledger rows and create them.
+ *
+ * CASE C — All POSTED JEs with zero ledger entries
+ *   Auto-generated JEs (invoices, bills, payments) were created before
+ *   postLinesToLedger existed in the shared service, so they were never
+ *   written to the ledger at all. This is the main cause of all ₱0 balances.
+ *   Fix: find any POSTED JE with no ledger entries and post its lines.
  *
  * Usage:
  *   # Dry run (default — prints what would be inserted, no writes)
@@ -27,7 +33,9 @@
 import dotenv from "dotenv";
 import mongoose, { Schema } from "mongoose";
 
-dotenv.config();
+// Load .env but do NOT let it override an already-set MONGODB_URI env var
+// (so passing MONGODB_URI=... before the command always wins).
+dotenv.config({ override: false });
 
 // ─── Inline minimal models (avoids importing the full app) ─────────────────────
 
@@ -97,7 +105,7 @@ const JESchema = new Schema<IJournalEntry>(
       },
     ],
   },
-  { collection: "journalentries" },
+  { collection: "journalEntries" },
 );
 
 const JournalEntry =
@@ -165,7 +173,7 @@ async function backfillCaseA(
   companyFilter: mongoose.Types.ObjectId | null,
   dryRun: boolean,
 ): Promise<number> {
-  const query: any = { status: "VOID" };
+  const query: any = { status: "Void" };
   if (companyFilter) query.companyId = companyFilter;
 
   const voidedJEs = await JournalEntry.find(query).lean();
@@ -180,6 +188,14 @@ async function backfillCaseA(
     }).lean();
 
     if (existingVoidLedger) continue; // Already has reversal entries
+
+    // Skip if a separate REV-* reversing JE exists — that JE's ledger rows are
+    // handled by Case B. Double-inserting here would double-reverse the entry.
+    const reversingJE = await JournalEntry.findOne({
+      companyId: je.companyId,
+      referenceNumber: `REV-${je.entryNumber}`,
+    }).lean();
+    if (reversingJE) continue;
 
     const voidDate = je.voidedAt ?? new Date();
     const balanceMap = new Map<string, number>();
@@ -254,7 +270,7 @@ async function backfillCaseB(
   dryRun: boolean,
 ): Promise<number> {
   const query: any = {
-    status: "POSTED",
+    status: "Posted",
     referenceNumber: { $regex: /^REV-/ },
   };
   if (companyFilter) query.companyId = companyFilter;
@@ -335,6 +351,93 @@ async function backfillCaseB(
   return totalFixed;
 }
 
+// ─── Case C: All POSTED JEs with zero ledger entries ──────────────────────────
+
+async function backfillCaseC(
+  companyFilter: mongoose.Types.ObjectId | null,
+  dryRun: boolean,
+): Promise<number> {
+  const query: any = { status: "Posted" };
+  if (companyFilter) query.companyId = companyFilter;
+
+  const postedJEs = await JournalEntry.find(query)
+    .sort({ entryDate: 1 })
+    .lean();
+  let totalFixed = 0;
+
+  for (const je of postedJEs) {
+    const existingLedger = await Ledger.findOne({
+      companyId: je.companyId,
+      journalEntryId: je._id,
+    }).lean();
+
+    if (existingLedger) continue; // Already has ledger entries
+
+    const balanceMap = new Map<string, number>();
+    const entriesToInsert: Omit<ILedger, "_id">[] = [];
+
+    for (const line of je.lines) {
+      const account = await Account.findById(line.accountId).lean();
+      if (!account) {
+        console.warn(
+          `  [WARN] Account ${line.accountId} not found — skipping line in JE ${je.entryNumber}`,
+        );
+        continue;
+      }
+
+      const key = line.accountId.toString();
+      if (!balanceMap.has(key)) {
+        const prev = await getRunningBalance(
+          je.companyId,
+          line.accountId,
+          je.entryDate,
+        );
+        balanceMap.set(key, prev);
+      }
+
+      let runningBalance = balanceMap.get(key)!;
+      if (isDebitNormal(account.accountType)) {
+        runningBalance += line.debit - line.credit;
+      } else {
+        runningBalance += line.credit - line.debit;
+      }
+      balanceMap.set(key, runningBalance);
+
+      entriesToInsert.push({
+        companyId: je.companyId,
+        accountId: line.accountId,
+        accountName: line.accountName,
+        journalEntryId: je._id,
+        entryNumber: je.entryNumber,
+        transactionDate: je.entryDate,
+        description: line.description ?? je.description,
+        debit: line.debit.toString(),
+        credit: line.credit.toString(),
+        runningBalance,
+      });
+    }
+
+    if (entriesToInsert.length === 0) continue;
+
+    console.log(
+      `\n[CASE C] JE ${je.entryNumber} (${je.description}) — ${entriesToInsert.length} ledger rows missing`,
+    );
+    for (const e of entriesToInsert) {
+      console.log(
+        `  ${dryRun ? "[DRY RUN] Would insert" : "Inserting"}: account=${e.accountName}, debit=${e.debit}, credit=${e.credit}, runningBalance=${e.runningBalance}`,
+      );
+    }
+
+    if (!dryRun) {
+      await Ledger.insertMany(entriesToInsert);
+      console.log(`  ✓ Inserted ${entriesToInsert.length} ledger rows`);
+    }
+    totalFixed++;
+  }
+
+  return totalFixed;
+}
+
 // ─── Main ────────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -353,7 +456,8 @@ async function main() {
   }
 
   console.log("=".repeat(60));
-  console.log("  Void Ledger Backfill");
+  console.log("  Ledger Backfill");
+  console.log(`  Database: ${mongoUri.split("@")[1] ?? mongoUri}`);
   console.log(
     `  Mode    : ${dryRun ? "DRY RUN (no writes)" : "⚠ APPLY — writing to database"}`,
   );
@@ -365,13 +469,17 @@ async function main() {
 
   const fixedA = await backfillCaseA(companyFilter, dryRun);
   const fixedB = await backfillCaseB(companyFilter, dryRun);
+  const fixedC = await backfillCaseC(companyFilter, dryRun);
 
   console.log("\n" + "=".repeat(60));
   console.log(
-    `  Case A (VOID JEs missing reversal rows) : ${fixedA} JE(s) ${dryRun ? "would be fixed" : "fixed"}`,
+    `  Case A (VOID JEs missing reversal rows)   : ${fixedA} JE(s) ${dryRun ? "would be fixed" : "fixed"}`,
   );
   console.log(
-    `  Case B (REV-* JEs missing ledger rows)  : ${fixedB} JE(s) ${dryRun ? "would be fixed" : "fixed"}`,
+    `  Case B (REV-* JEs missing ledger rows)    : ${fixedB} JE(s) ${dryRun ? "would be fixed" : "fixed"}`,
+  );
+  console.log(
+    `  Case C (POSTED JEs with no ledger rows)   : ${fixedC} JE(s) ${dryRun ? "would be fixed" : "fixed"}`,
   );
   if (dryRun) {
     console.log("\n  Run with --apply to write these changes to the database.");

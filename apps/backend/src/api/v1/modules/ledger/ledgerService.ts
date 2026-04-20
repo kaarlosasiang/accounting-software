@@ -285,30 +285,52 @@ export const ledgerService = {
     asOfDate?: Date,
   ) {
     try {
-      const query: any = {
+      const account = await Account.findOne({
+        _id: new mongoose.Types.ObjectId(accountId),
+        companyId: new mongoose.Types.ObjectId(companyId),
+      }).lean();
+
+      const matchStage: any = {
         companyId: new mongoose.Types.ObjectId(companyId),
         accountId: new mongoose.Types.ObjectId(accountId),
       };
 
       if (asOfDate) {
-        query.transactionDate = { $lte: asOfDate };
+        matchStage.transactionDate = { $lte: asOfDate };
       }
 
-      const latestEntry = await Ledger.findOne(query)
-        .sort({ transactionDate: -1, createdAt: -1 })
-        .lean();
+      // Compute balance by summing all debit/credit amounts rather than
+      // relying on the denormalized runningBalance field, which can become
+      // stale when entries are inserted out of chronological order (e.g.
+      // a void reversal followed by a new posting on the same date).
+      const result = await Ledger.aggregate([
+        { $match: matchStage },
+        {
+          $group: {
+            _id: null,
+            totalDebit: { $sum: { $toDouble: "$debit" } },
+            totalCredit: { $sum: { $toDouble: "$credit" } },
+          },
+        },
+      ]);
 
-      const account = await Account.findOne({
-        _id: new mongoose.Types.ObjectId(accountId),
-        companyId: new mongoose.Types.ObjectId(companyId),
-      }).lean();
+      let balance = 0;
+      if (result.length > 0) {
+        const { totalDebit, totalCredit } = result[0];
+        const isDebitNormal =
+          account?.accountType === "Asset" ||
+          account?.accountType === "Expense";
+        balance = isDebitNormal
+          ? totalDebit - totalCredit
+          : totalCredit - totalDebit;
+      }
 
       return {
         accountId,
         accountCode: account?.accountCode,
         accountName: account?.accountName,
         accountType: account?.accountType,
-        balance: latestEntry?.runningBalance || 0,
+        balance,
         asOfDate: asOfDate || new Date(),
       };
     } catch (error) {
