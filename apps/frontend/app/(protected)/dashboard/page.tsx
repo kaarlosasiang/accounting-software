@@ -28,6 +28,7 @@ import {
   BookOpen,
   FileText,
   Package,
+  Percent,
   Plus,
   Receipt,
   TrendingDown,
@@ -122,6 +123,7 @@ export default function DashboardPage() {
     (kpis?.ytdRevenue ?? 0) > 0
       ? ((kpis!.ytdProfit / kpis!.ytdRevenue) * 100).toFixed(1)
       : null;
+  const ytdRoi = kpis?.ytdRoi;
 
   const arOverdueRatio =
     (outstandingInvoices?.count ?? 0) > 0
@@ -197,9 +199,10 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {isLoading ? (
           <>
+            <KpiSkeleton />
             <KpiSkeleton />
             <KpiSkeleton />
             <KpiSkeleton />
@@ -269,6 +272,26 @@ export default function DashboardPage() {
                     {outstandingInvoices!.overdueCount} overdue
                   </Badge>
                 ) : undefined
+              }
+            />
+            <KpiCard
+              label="Period ROI"
+              value={ytdRoi !== null && ytdRoi !== undefined ? `${ytdRoi.toFixed(1)}%` : "N/A"}
+              sub={`vs ${format(kpis?.totalOwnerCapitalContributions ?? 0)} capital`}
+              accent="bg-linear-to-r from-amber-500 to-orange-400"
+              icon={<Percent className="h-4 w-4 text-amber-600" />}
+              valueClass={
+                ytdRoi !== null && ytdRoi !== undefined && ytdRoi < 0
+                  ? "text-red-600"
+                  : ""
+              }
+              badge={
+                <Badge
+                  variant="secondary"
+                  className="text-xs px-1.5 py-0 bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                >
+                  YTD
+                </Badge>
               }
             />
           </>

@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+import Account from "../../models/Account.js";
 import { Bill } from "../../models/Bill.js";
 import { Invoice } from "../../models/Invoice.js";
 import { Ledger } from "../../models/Ledger.js";
@@ -66,6 +67,48 @@ export const dashboardService = {
 
     const ytdExpenses = expenseAgg[0]?.ytdExpenses ?? 0;
     const monthExpenses = expenseAgg[0]?.monthExpenses ?? 0;
+
+    // ── 2b. Owner capital contributions for ROI denominator ──────────────────
+    // First-pass ROI uses only contribution-style equity accounts and excludes
+    // retained earnings / current-year earnings / drawings.
+    const capitalAccounts = await Account.find({
+      companyId: cId,
+      accountType: "Equity",
+      normalBalance: "Credit",
+      subType: { $in: ["Owner's Equity", "Share Capital"] },
+    })
+      .select("_id")
+      .lean();
+
+    const capitalAccountIds = capitalAccounts.map((account) => account._id);
+    const capitalContributionAgg =
+      capitalAccountIds.length > 0
+        ? await Ledger.aggregate([
+            {
+              $match: {
+                companyId: cId,
+                accountId: { $in: capitalAccountIds },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                totalDebit: { $sum: { $toDouble: "$debit" } },
+                totalCredit: { $sum: { $toDouble: "$credit" } },
+              },
+            },
+          ])
+        : [];
+
+    const totalOwnerCapitalContributions =
+      (capitalContributionAgg[0]?.totalCredit ?? 0) -
+      (capitalContributionAgg[0]?.totalDebit ?? 0);
+    const ytdProfit = ytdRevenue - ytdExpenses;
+    const monthProfit = monthRevenue - monthExpenses;
+    const ytdRoi =
+      totalOwnerCapitalContributions > 0
+        ? (ytdProfit / totalOwnerCapitalContributions) * 100
+        : null;
 
     // ── 3. Outstanding invoices ───────────────────────────────────────────────
     const outstandingInvoicesAgg = await Invoice.aggregate([
@@ -212,8 +255,10 @@ export const dashboardService = {
         monthRevenue,
         ytdExpenses,
         monthExpenses,
-        ytdProfit: ytdRevenue - ytdExpenses,
-        monthProfit: monthRevenue - monthExpenses,
+        ytdProfit,
+        monthProfit,
+        totalOwnerCapitalContributions,
+        ytdRoi,
       },
       outstandingInvoices,
       outstandingBills,

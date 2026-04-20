@@ -7,6 +7,8 @@ export interface DashboardKPIs {
   monthExpenses: number;
   ytdProfit: number;
   monthProfit: number;
+  totalOwnerCapitalContributions: number;
+  ytdRoi: number | null;
 }
 
 export interface DashboardOutstanding {

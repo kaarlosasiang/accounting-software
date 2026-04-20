@@ -347,9 +347,11 @@ export const ledgerService = {
    */
   async getTrialBalance(companyId: string, asOfDate?: Date) {
     try {
+      const companyObjectId = new mongoose.Types.ObjectId(companyId);
+
       // Get all accounts
       const accounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
+        companyId: companyObjectId,
       })
         .sort({ accountCode: 1 })
         .lean();
@@ -359,28 +361,37 @@ export const ledgerService = {
       let totalCredits = 0;
 
       for (const account of accounts) {
-        const query: any = {
-          companyId: new mongoose.Types.ObjectId(companyId),
+        const matchStage: any = {
+          companyId: companyObjectId,
           accountId: account._id,
         };
 
         if (asOfDate) {
-          query.transactionDate = { $lte: asOfDate };
+          matchStage.transactionDate = { $lte: asOfDate };
         }
 
-        const latestEntry = await Ledger.findOne(query)
-          .sort({ transactionDate: -1, createdAt: -1 })
-          .lean();
+        const result = await Ledger.aggregate([
+          { $match: matchStage },
+          {
+            $group: {
+              _id: null,
+              totalDebit: { $sum: { $toDouble: "$debit" } },
+              totalCredit: { $sum: { $toDouble: "$credit" } },
+            },
+          },
+        ]);
 
-        const balance = latestEntry?.runningBalance || 0;
+        const { totalDebit, totalCredit } = result[0] ?? {
+          totalDebit: 0,
+          totalCredit: 0,
+        };
+        const isDebitNormal = ["Asset", "Expense"].includes(account.accountType);
+        const balance = isDebitNormal
+          ? totalDebit - totalCredit
+          : totalCredit - totalDebit;
 
         // Determine if account has debit or credit balance
-        const isDebitBalance = ["Asset", "Expense"].includes(
-          account.accountType,
-        );
-
-        const debitBalance = isDebitBalance && balance > 0 ? balance : 0;
-        const creditBalance = !isDebitBalance && balance > 0 ? balance : 0;
+        const isDebitBalance = isDebitNormal;
 
         // Handle negative balances (contra accounts)
         const finalDebit =
