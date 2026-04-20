@@ -72,6 +72,7 @@ import { useOrganization } from "@/hooks/use-organization";
 import { usePeriods } from "@/hooks/use-periods";
 import { inventoryService } from "@/lib/services/inventory.service";
 import {
+  type Invoice,
   type InvoiceFormData,
   invoiceService,
 } from "@/lib/services/invoice.service";
@@ -117,10 +118,111 @@ type InvoiceFormValues = z.infer<typeof invoiceFormSchema>;
 
 interface InvoiceFormProps {
   onSuccess?: () => void;
+  initialData?: Invoice;
+  invoiceId?: string;
 }
 
-export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
+const getPaymentTerms = (issueDate: Date, dueDate: Date) => {
+  const millisecondsPerDay = 1000 * 60 * 60 * 24;
+  const differenceInDays = Math.round(
+    (dueDate.getTime() - issueDate.getTime()) / millisecondsPerDay,
+  );
+
+  switch (differenceInDays) {
+    case 0:
+      return "due_on_receipt";
+    case 15:
+      return "net15";
+    case 30:
+      return "net30";
+    case 45:
+      return "net45";
+    case 60:
+      return "net60";
+    default:
+      return "net30";
+  }
+};
+
+const getIdValue = (value?: string | { _id: string } | null) => {
+  if (!value) {
+    return undefined;
+  }
+
+  return typeof value === "string" ? value : value._id;
+};
+
+const getDefaultInvoiceValues = (
+  initialData?: Invoice,
+): InvoiceFormValues => {
+  if (!initialData) {
+    return {
+      client: "",
+      clientEmail: "",
+      invoiceNumber: "",
+      issueDate: new Date(),
+      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      paymentTerms: "net30",
+      taxRate: "0",
+      discount: "0",
+      items: [
+        {
+          description: "",
+          quantity: "1",
+          rate: "0",
+          accountId: "",
+          inventoryItemId: undefined,
+        },
+      ],
+      notes: "",
+      terms: "",
+    };
+  }
+
+  const issueDate = initialData.invoiceDate
+    ? new Date(initialData.invoiceDate)
+    : new Date(initialData.createdAt);
+  const dueDate = new Date(initialData.dueDate);
+
+  return {
+    client: initialData.customerId._id,
+    clientEmail: initialData.customerId.email,
+    invoiceNumber: initialData.invoiceNumber,
+    issueDate,
+    dueDate,
+    paymentTerms: getPaymentTerms(issueDate, dueDate),
+    taxRate: String(initialData.taxRate ?? 0),
+    discount: String(initialData.discount ?? 0),
+    items:
+      initialData.lineItems.length > 0
+        ? initialData.lineItems.map((item) => ({
+            description: item.description,
+            quantity: String(item.quantity),
+            rate: String(item.unitPrice),
+            accountId: getIdValue(item.accountId) || "",
+            inventoryItemId: getIdValue(item.inventoryItemId),
+          }))
+        : [
+            {
+              description: "",
+              quantity: "1",
+              rate: "0",
+              accountId: "",
+              inventoryItemId: undefined,
+            },
+          ],
+    notes: initialData.notes || "",
+    terms: initialData.terms || "",
+  };
+};
+
+export function InvoiceForm({
+  onSuccess,
+  initialData,
+  invoiceId,
+}: InvoiceFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isEditMode = Boolean(initialData && invoiceId);
   const { customers, fetchCustomers } = useCustomers();
   const { accounts } = useAccounts("Revenue"); // Auto-fetches revenue accounts
   const { checkDateInClosedPeriod } = usePeriods();
@@ -168,28 +270,14 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
 
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
-    defaultValues: {
-      client: "",
-      clientEmail: "",
-      invoiceNumber: "",
-      issueDate: new Date(),
-      dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-      paymentTerms: "net30",
-      taxRate: "0",
-      discount: "0",
-      items: [
-        {
-          description: "",
-          quantity: "1",
-          rate: "0",
-          accountId: "",
-          inventoryItemId: undefined,
-        },
-      ],
-      notes: "",
-      terms: "",
-    },
+    defaultValues: getDefaultInvoiceValues(initialData),
   });
+
+  useEffect(() => {
+    if (initialData) {
+      form.reset(getDefaultInvoiceValues(initialData));
+    }
+  }, [form, initialData]);
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -267,8 +355,8 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
   async function submitInvoice(data: InvoiceFormValues, saveAsDraft = false) {
     setIsSubmitting(true);
     try {
-      // Convert form data to API format - always create as Draft first
       const invoiceData: InvoiceFormData = {
+        invoiceNumber: data.invoiceNumber || undefined,
         customerId: data.client,
         invoiceDate: data.issueDate,
         dueDate: data.dueDate,
@@ -284,36 +372,56 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
         discount: parseFloat(data.discount || "0"),
         notes: data.notes,
         terms: data.terms,
-        status: "Draft", // Always create as draft
+        status: "Draft",
       };
 
-      const response = await invoiceService.createInvoice(invoiceData);
+      const response = isEditMode && invoiceId
+        ? await invoiceService.updateInvoice(invoiceId, invoiceData)
+        : await invoiceService.createInvoice(invoiceData);
 
       if (response.success) {
-        // If user wants to send (not just save as draft), call sendInvoice endpoint
         if (!saveAsDraft && response.data?._id) {
           const companyName = company?.name || "Your Company";
 
           try {
             await invoiceService.sendInvoice(response.data._id, companyName);
-            toast.success("Invoice created and sent successfully!");
+            toast.success(
+              isEditMode
+                ? "Invoice updated and sent successfully!"
+                : "Invoice created and sent successfully!",
+            );
           } catch (sendError) {
             toast.warning(
-              "Invoice created but failed to send email. You can send it later from the invoice list.",
+              isEditMode
+                ? "Invoice updated but failed to send email. You can send it later from the invoice list."
+                : "Invoice created but failed to send email. You can send it later from the invoice list.",
             );
             console.error("Failed to send invoice email:", sendError);
           }
         } else {
-          toast.success("Invoice saved as draft successfully");
+          toast.success(
+            isEditMode
+              ? "Invoice updated successfully"
+              : "Invoice saved as draft successfully",
+          );
         }
 
         onSuccess?.();
       } else {
-        throw new Error(response.error || "Failed to create invoice");
+        throw new Error(
+          response.error ||
+            (isEditMode
+              ? "Failed to update invoice"
+              : "Failed to create invoice"),
+        );
       }
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to create invoice";
+        error instanceof Error
+          ? error.message
+          : isEditMode
+            ? "Failed to update invoice"
+            : "Failed to create invoice";
       toast.error(message);
       console.error(error);
     } finally {
@@ -1154,7 +1262,11 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                 disabled={isSubmitting}
                 onClick={handleSaveAsDraft}
               >
-                {isSubmitting ? "Saving..." : "Save as draft"}
+                {isSubmitting
+                  ? "Saving..."
+                  : isEditMode
+                    ? "Save changes"
+                    : "Save as draft"}
               </Button>
               <Button
                 type="submit"
@@ -1162,7 +1274,11 @@ export function InvoiceForm({ onSuccess }: InvoiceFormProps) {
                 className="bg-green-600 hover:bg-green-700 text-white shadow-md"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Sending..." : "Save and send"}
+                {isSubmitting
+                  ? isEditMode
+                    ? "Updating..."
+                    : "Sending..."
+                  : "Save and send"}
               </Button>
             </div>
           </div>
