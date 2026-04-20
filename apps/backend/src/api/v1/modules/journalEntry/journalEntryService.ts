@@ -454,7 +454,11 @@ export const journalEntryService = {
       entry.postedBy = new mongoose.Types.ObjectId(userId);
       await entry.save({ session });
 
-      // Create ledger entries for each line
+      // Create ledger entries for each line.
+      // Use an in-memory map so that if the same account appears more than once
+      // in a single JE, each subsequent line's running balance chains off the
+      // previous line's computed balance rather than re-fetching a stale DB value.
+      const runningBalanceMap = new Map<string, number>();
       const ledgerEntries = [];
       for (const line of entry.lines) {
         const account = await Account.findById(line.accountId).session(session);
@@ -462,14 +466,17 @@ export const journalEntryService = {
           throw new Error(`Account not found: ${line.accountId}`);
         }
 
-        // Calculate running balance (simplified - should get previous balance)
-        const previousBalance = await this.getAccountBalance(
-          companyId,
-          line.accountId.toString(),
-          entry.entryDate,
-        );
+        const accountKey = line.accountId.toString();
+        if (!runningBalanceMap.has(accountKey)) {
+          const previousBalance = await this.getAccountBalance(
+            companyId,
+            accountKey,
+            entry.entryDate,
+          );
+          runningBalanceMap.set(accountKey, previousBalance);
+        }
 
-        let runningBalance = previousBalance;
+        let runningBalance = runningBalanceMap.get(accountKey)!;
 
         // Update balance based on account type
         if (["Asset", "Expense"].includes(account.accountType)) {
@@ -479,6 +486,8 @@ export const journalEntryService = {
           // Normal credit balance accounts (Liability, Equity, Revenue)
           runningBalance += line.credit - line.debit;
         }
+
+        runningBalanceMap.set(accountKey, runningBalance);
 
         const ledgerEntry = new Ledger({
           companyId: entry.companyId,
@@ -542,26 +551,41 @@ export const journalEntryService = {
       entry.voidedBy = new mongoose.Types.ObjectId(userId);
       await entry.save({ session });
 
-      // Create reversing ledger entries
+      // Create reversing ledger entries.
+      // Use an in-memory map so that same-account lines chain correctly and
+      // throw immediately if any account is missing so the transaction aborts
+      // cleanly rather than silently committing an incomplete reversal.
+      const voidDate = new Date();
+      const voidBalanceMap = new Map<string, number>();
       const reversalEntries = [];
       for (const line of entry.lines) {
         const account = await Account.findById(line.accountId).session(session);
-        if (!account) continue;
-
-        const previousBalance = await this.getAccountBalance(
-          companyId,
-          line.accountId.toString(),
-          new Date(),
-        );
-
-        let runningBalance = previousBalance;
-
-        // Reverse the original entry
-        if (["Asset", "Expense"].includes(account.accountType)) {
-          runningBalance += line.credit - line.debit; // Opposite of posting
-        } else {
-          runningBalance += line.debit - line.credit; // Opposite of posting
+        if (!account) {
+          throw new Error(
+            `Account not found during void: ${line.accountId}. Transaction aborted.`,
+          );
         }
+
+        const accountKey = line.accountId.toString();
+        if (!voidBalanceMap.has(accountKey)) {
+          const previousBalance = await this.getAccountBalance(
+            companyId,
+            accountKey,
+            voidDate,
+          );
+          voidBalanceMap.set(accountKey, previousBalance);
+        }
+
+        let runningBalance = voidBalanceMap.get(accountKey)!;
+
+        // Reverse the original entry (opposite sign of posting)
+        if (["Asset", "Expense"].includes(account.accountType)) {
+          runningBalance += line.credit - line.debit;
+        } else {
+          runningBalance += line.debit - line.credit;
+        }
+
+        voidBalanceMap.set(accountKey, runningBalance);
 
         const reversalEntry = new Ledger({
           companyId: entry.companyId,
@@ -569,7 +593,7 @@ export const journalEntryService = {
           accountName: line.accountName,
           journalEntryId: entry._id,
           entryNumber: `${entry.entryNumber}-VOID`,
-          transactionDate: new Date(),
+          transactionDate: voidDate,
           description: `VOID: ${line.description || entry.description || ""}`,
           debit: line.credit.toString(), // Swap debit and credit
           credit: line.debit.toString(),

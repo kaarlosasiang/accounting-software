@@ -60,9 +60,17 @@ export default function BalanceSheetPage() {
   const [data, setData] = useState<BalanceSheetData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split("T")[0],
-  );
+
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+
+  // Use today for the current year, Dec 31 for past years
+  const selectedDate =
+    selectedYear === currentYear
+      ? new Date().toISOString().split("T")[0]
+      : `${selectedYear}-12-31`;
+
+  const yearOptions = [currentYear, currentYear - 1, currentYear - 2];
 
   useEffect(() => {
     async function fetchBalanceSheet() {
@@ -183,15 +191,20 @@ export default function BalanceSheetPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Select defaultValue="2025">
+          <Select
+            value={selectedYear.toString()}
+            onValueChange={(val) => setSelectedYear(parseInt(val, 10))}
+          >
             <SelectTrigger className="w-[120px]">
               <Calendar className="mr-2 h-4 w-4" />
               <SelectValue placeholder="Year" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="2025">2025</SelectItem>
-              <SelectItem value="2024">2024</SelectItem>
-              <SelectItem value="2023">2023</SelectItem>
+              {yearOptions.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button variant="outline" onClick={handleExport} disabled={!data}>
