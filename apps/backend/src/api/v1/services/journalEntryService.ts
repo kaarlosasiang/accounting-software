@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import logger from "../config/logger.js";
 import Account from "../models/Account.js";
 import { AccountingPeriod } from "../models/AccountingPeriod.js";
+import { Customer } from "../models/Customer.js";
 import { JournalEntry } from "../models/JournalEntry.js";
 import { Ledger } from "../models/Ledger.js";
 import { PeriodStatus } from "../shared/interface/IAccountingPeriod.js";
@@ -295,10 +296,21 @@ export class JournalEntryService {
 
     const lines: JournalEntryLineInput[] = [];
 
-    // Resolve customer name whether customerId is populated or a raw ObjectId
+    // Resolve customer name whether customerId is populated or a raw ObjectId.
     const customerRef = invoice.customerId as any;
-    const customerName =
-      customerRef?.customerName || customerRef?.displayName || "Customer";
+    let customerName = customerRef?.customerName || customerRef?.displayName;
+
+    if (!customerName) {
+      const customerId = customerRef?._id || customerRef;
+      const customer = await Customer.findOne({
+        _id: customerId,
+        companyId,
+      })
+        .select("customerName displayName")
+        .lean();
+
+      customerName = customer?.customerName || customer?.displayName;
+    }
 
     // Debit Accounts Receivable for the total amount
     lines.push({
@@ -307,7 +319,7 @@ export class JournalEntryService {
       accountName: arAccount.accountName,
       debit: invoice.totalAmount,
       credit: 0,
-      description: `Invoice ${invoice.invoiceNumber} - ${customerName}`,
+      description: `Invoice ${invoice.invoiceNumber} - ${customerName || "Customer"}`,
     });
 
     // Credit Sales for the subtotal (excluding tax)

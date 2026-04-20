@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import logger from "../../config/logger.js";
 import Account from "../../models/Account.js";
+import { Invoice } from "../../models/Invoice.js";
 import { JournalEntry } from "../../models/JournalEntry.js";
 import { Ledger } from "../../models/Ledger.js";
 import {
@@ -25,6 +26,40 @@ interface UpdateJournalEntryInput {
   description?: string;
   lines?: IJournalEntryLine[];
 }
+
+const hasMalformedInvoiceDescription = (description?: string | null) =>
+  typeof description === "string" &&
+  (description.includes("new ObjectId(") ||
+    description.includes("[object Object]") ||
+    description.includes("customerName"));
+
+const getInvoiceCustomerDescription = async (
+  companyId: mongoose.Types.ObjectId,
+  journalEntryId: mongoose.Types.ObjectId,
+) => {
+  const invoice = await Invoice.findOne({
+    companyId,
+    journalEntryId,
+  })
+    .populate("customerId", "customerName displayName")
+    .lean();
+
+  if (!invoice) {
+    return null;
+  }
+
+  const customer = invoice.customerId as
+    | { customerName?: string; displayName?: string }
+    | null
+    | undefined;
+  const customerName = customer?.customerName || customer?.displayName;
+
+  if (!customerName) {
+    return null;
+  }
+
+  return `Invoice ${invoice.invoiceNumber} - ${customerName}`;
+};
 
 /**
  * Journal Entry Service
@@ -79,9 +114,12 @@ export const journalEntryService = {
    */
   async getJournalEntryById(companyId: string, entryId: string) {
     try {
+      const companyObjectId = new mongoose.Types.ObjectId(companyId);
+      const entryObjectId = new mongoose.Types.ObjectId(entryId);
+
       const entry = await JournalEntry.findOne({
-        _id: new mongoose.Types.ObjectId(entryId),
-        companyId: new mongoose.Types.ObjectId(companyId),
+        _id: entryObjectId,
+        companyId: companyObjectId,
       })
         .populate("createdBy", "firstName lastName email")
         .populate("postedBy", "firstName lastName email")
@@ -90,6 +128,22 @@ export const journalEntryService = {
 
       if (!entry) {
         throw new Error("Journal entry not found");
+      }
+
+      if (entry.entryType === JournalEntryType.AUTO_INVOICE) {
+        const correctedDescription = await getInvoiceCustomerDescription(
+          companyObjectId,
+          entryObjectId,
+        );
+
+        if (correctedDescription) {
+          entry.lines = entry.lines.map((line) => ({
+            ...line,
+            description: hasMalformedInvoiceDescription(line.description)
+              ? correctedDescription
+              : line.description,
+          }));
+        }
       }
 
       return entry;

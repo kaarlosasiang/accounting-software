@@ -2,7 +2,42 @@ import mongoose from "mongoose";
 
 import logger from "../../config/logger.js";
 import Account from "../../models/Account.js";
+import { Invoice } from "../../models/Invoice.js";
 import { Ledger } from "../../models/Ledger.js";
+
+const hasMalformedInvoiceDescription = (description?: string | null) =>
+  typeof description === "string" &&
+  (description.includes("new ObjectId(") ||
+    description.includes("[object Object]") ||
+    description.includes("customerName"));
+
+const getInvoiceCustomerDescription = async (
+  companyId: mongoose.Types.ObjectId,
+  journalEntryId: mongoose.Types.ObjectId,
+) => {
+  const invoice = await Invoice.findOne({
+    companyId,
+    journalEntryId,
+  })
+    .populate("customerId", "customerName displayName")
+    .lean();
+
+  if (!invoice) {
+    return null;
+  }
+
+  const customer = invoice.customerId as
+    | { customerName?: string; displayName?: string }
+    | null
+    | undefined;
+  const customerName = customer?.customerName || customer?.displayName;
+
+  if (!customerName) {
+    return null;
+  }
+
+  return `Invoice ${invoice.invoiceNumber} - ${customerName}`;
+};
 
 /**
  * Ledger Service
@@ -177,14 +212,35 @@ export const ledgerService = {
    */
   async getByJournalEntry(companyId: string, journalEntryId: string) {
     try {
+      const companyObjectId = new mongoose.Types.ObjectId(companyId);
+      const journalEntryObjectId = new mongoose.Types.ObjectId(journalEntryId);
+
       const entries = await Ledger.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        journalEntryId: new mongoose.Types.ObjectId(journalEntryId),
+        companyId: companyObjectId,
+        journalEntryId: journalEntryObjectId,
       })
         .sort({ accountId: 1 })
         .lean();
 
-      return entries;
+      if (!entries.some((entry) => hasMalformedInvoiceDescription(entry.description))) {
+        return entries;
+      }
+
+      const correctedDescription = await getInvoiceCustomerDescription(
+        companyObjectId,
+        journalEntryObjectId,
+      );
+
+      if (!correctedDescription) {
+        return entries;
+      }
+
+      return entries.map((entry) => ({
+        ...entry,
+        description: hasMalformedInvoiceDescription(entry.description)
+          ? correctedDescription
+          : entry.description,
+      }));
     } catch (error) {
       logger.logError(error as Error, {
         operation: "get-ledger-by-journal-entry",
