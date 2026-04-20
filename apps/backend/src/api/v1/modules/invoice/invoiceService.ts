@@ -11,13 +11,13 @@ import { EmailService } from "../../services/email.service.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
 import { PDFService } from "../../services/pdf.service.js";
 import {
-  IInvoiceDocument,
-  InvoiceStatus,
-} from "../../shared/interface/IInvoice.js";
-import {
   InventoryReferenceType,
   InventoryTransactionType,
 } from "../../shared/interface/IInventoryTransaction.js";
+import {
+  IInvoiceDocument,
+  InvoiceStatus,
+} from "../../shared/interface/IInvoice.js";
 
 /**
  * Invoice Service
