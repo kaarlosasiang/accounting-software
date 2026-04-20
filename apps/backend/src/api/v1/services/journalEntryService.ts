@@ -211,6 +211,9 @@ export class JournalEntryService {
 
     await reversingEntry.save({ session });
 
+    // Post the reversing entry lines to the ledger so the General Ledger is updated
+    await JournalEntryService.postLinesToLedger(reversingEntry);
+
     // Mark original entry as voided
     originalEntry.status = JournalEntryStatus.VOID;
     originalEntry.voidedAt = new Date();
