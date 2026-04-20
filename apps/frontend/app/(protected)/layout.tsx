@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/common/app-sidebar";
 import { EmailVerificationBanner } from "@/components/common/auth/email-verification-banner";
+import { SearchModal } from "@/components/common/search-modal";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import {
   Breadcrumb,
@@ -45,7 +46,10 @@ function ProtectedLayout({ children }: { children: React.ReactNode }) {
               </BreadcrumbList>
             </Breadcrumb>
           </div>
-          <AnimatedThemeToggler className="cursor-pointer" />
+          <div className="flex items-center gap-2">
+            <SearchModal />
+            <AnimatedThemeToggler className="cursor-pointer" />
+          </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 px-4 pt-0 pb-2">
           <EmailVerificationBanner />
