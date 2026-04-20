@@ -2,6 +2,8 @@ import { Request } from "express";
 
 import logger from "../../config/logger.js";
 
+const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
 /**
  * Helper to resolve the active company ID for the request user.
  * Checks multiple sources for company/organization ID.
@@ -54,4 +56,35 @@ export const getUserId = (req: Request): string | undefined => {
   }
 
   return userId;
+};
+
+/**
+ * Parse a query date string.
+ * For date-only inputs (YYYY-MM-DD), normalize to the local start/end of day
+ * so reports include the full selected calendar day instead of midnight only.
+ */
+export const parseQueryDate = (
+  value: string | undefined,
+  boundary: "start" | "end" = "start",
+): Date | undefined => {
+  if (!value) {
+    return undefined;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return undefined;
+  }
+
+  if (!DATE_ONLY_PATTERN.test(value)) {
+    return parsed;
+  }
+
+  if (boundary === "start") {
+    parsed.setHours(0, 0, 0, 0);
+  } else {
+    parsed.setHours(23, 59, 59, 999);
+  }
+
+  return parsed;
 };

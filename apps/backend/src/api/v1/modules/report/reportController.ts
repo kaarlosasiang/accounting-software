@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import logger from "../../config/logger.js";
-import { getCompanyId } from "../../shared/helpers/utils.js";
+import { getCompanyId, parseQueryDate } from "../../shared/helpers/utils.js";
 
 import { reportService } from "./reportService.js";
 
@@ -23,7 +23,7 @@ export const generateBalanceSheet = async (
   try {
     const companyId = getCompanyId(req);
     const asOfDate = req.query.asOfDate
-      ? new Date(req.query.asOfDate as string)
+      ? parseQueryDate(req.query.asOfDate as string, "end")
       : new Date();
 
     if (!companyId) {
@@ -57,12 +57,12 @@ export const generateIncomeStatement = async (
 ) => {
   try {
     const companyId = getCompanyId(req);
-    const startDate = req.query.startDate
-      ? new Date(req.query.startDate as string)
-      : new Date(new Date().getFullYear(), 0, 1); // Jan 1 of current year
-    const endDate = req.query.endDate
-      ? new Date(req.query.endDate as string)
-      : new Date();
+    const startDate =
+      parseQueryDate(req.query.startDate as string | undefined, "start") ??
+      new Date(new Date().getFullYear(), 0, 1); // Jan 1 of current year
+    const endDate =
+      parseQueryDate(req.query.endDate as string | undefined, "end") ??
+      new Date();
 
     if (!companyId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -96,12 +96,12 @@ export const generateCashFlowStatement = async (
 ) => {
   try {
     const companyId = getCompanyId(req);
-    const startDate = req.query.startDate
-      ? new Date(req.query.startDate as string)
-      : new Date(new Date().getFullYear(), 0, 1);
-    const endDate = req.query.endDate
-      ? new Date(req.query.endDate as string)
-      : new Date();
+    const startDate =
+      parseQueryDate(req.query.startDate as string | undefined, "start") ??
+      new Date(new Date().getFullYear(), 0, 1);
+    const endDate =
+      parseQueryDate(req.query.endDate as string | undefined, "end") ??
+      new Date();
 
     if (!companyId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -136,7 +136,7 @@ export const generateTrialBalance = async (
   try {
     const companyId = getCompanyId(req);
     const asOfDate = req.query.asOfDate
-      ? new Date(req.query.asOfDate as string)
+      ? parseQueryDate(req.query.asOfDate as string, "end")
       : undefined;
 
     if (!companyId) {
@@ -171,7 +171,7 @@ export const generateARAgingReport = async (
   try {
     const companyId = getCompanyId(req);
     const asOfDate = req.query.asOfDate
-      ? new Date(req.query.asOfDate as string)
+      ? parseQueryDate(req.query.asOfDate as string, "end")
       : new Date();
 
     if (!companyId) {
@@ -206,7 +206,7 @@ export const generateAPAgingReport = async (
   try {
     const companyId = getCompanyId(req);
     const asOfDate = req.query.asOfDate
-      ? new Date(req.query.asOfDate as string)
+      ? parseQueryDate(req.query.asOfDate as string, "end")
       : new Date();
 
     if (!companyId) {

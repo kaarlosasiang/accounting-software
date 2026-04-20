@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 
 import logger from "../../config/logger.js";
-import { getCompanyId } from "../../shared/helpers/utils.js";
+import { getCompanyId, parseQueryDate } from "../../shared/helpers/utils.js";
 
 import { ledgerService } from "./ledgerService.js";
 
@@ -70,8 +70,8 @@ export const ledgerController = {
 
       const generalLedger = await ledgerService.getGeneralLedger(
         companyId,
-        startDate ? new Date(startDate as string) : undefined,
-        endDate ? new Date(endDate as string) : undefined,
+        parseQueryDate(startDate as string | undefined, "start"),
+        parseQueryDate(endDate as string | undefined, "end"),
       );
 
       return res.status(200).json({
@@ -112,8 +112,8 @@ export const ledgerController = {
       const data = await ledgerService.getByAccount(
         companyId,
         accountId,
-        startDate ? new Date(startDate as string) : undefined,
-        endDate ? new Date(endDate as string) : undefined,
+        parseQueryDate(startDate as string | undefined, "start"),
+        parseQueryDate(endDate as string | undefined, "end"),
       );
 
       return res.status(200).json({
@@ -197,8 +197,8 @@ export const ledgerController = {
 
       const entries = await ledgerService.getByDateRange(
         companyId,
-        new Date(startDate as string),
-        new Date(endDate as string),
+        parseQueryDate(startDate as string, "start")!,
+        parseQueryDate(endDate as string, "end")!,
       );
 
       return res.status(200).json({
@@ -239,7 +239,7 @@ export const ledgerController = {
       const balance = await ledgerService.getAccountBalance(
         companyId,
         accountId,
-        asOfDate ? new Date(asOfDate as string) : undefined,
+        parseQueryDate(asOfDate as string | undefined, "end"),
       );
 
       return res.status(200).json({
@@ -277,7 +277,7 @@ export const ledgerController = {
 
       const trialBalance = await ledgerService.getTrialBalance(
         companyId,
-        asOfDate ? new Date(asOfDate as string) : undefined,
+        parseQueryDate(asOfDate as string | undefined, "end"),
       );
 
       return res.status(200).json({
