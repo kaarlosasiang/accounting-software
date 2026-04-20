@@ -222,7 +222,11 @@ export const ledgerService = {
         .sort({ accountId: 1 })
         .lean();
 
-      if (!entries.some((entry) => hasMalformedInvoiceDescription(entry.description))) {
+      if (
+        !entries.some((entry) =>
+          hasMalformedInvoiceDescription(entry.description),
+        )
+      ) {
         return entries;
       }
 
