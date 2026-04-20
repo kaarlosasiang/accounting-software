@@ -210,7 +210,9 @@ export default function PaymentsPage() {
     const matchesSearch =
       payment.paymentNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
       entityInfo.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      payment.referenceNumber.toLowerCase().includes(searchQuery.toLowerCase());
+      (payment.referenceNumber ?? "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
 
     const matchesType =
       typeFilter === "all" ||
@@ -471,9 +473,15 @@ export default function PaymentsPage() {
                               <TableCell>
                                 <Badge
                                   variant="outline"
-                                  className="bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                  className={
+                                    payment.status === "VOIDED"
+                                      ? "bg-gray-500/10 text-gray-500 border-gray-500/20"
+                                      : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                                  }
                                 >
-                                  Active
+                                  {payment.status === "VOIDED"
+                                    ? "Voided"
+                                    : "Active"}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -531,14 +539,20 @@ export default function PaymentsPage() {
                                       <Download className="mr-2 h-4 w-4" />
                                       Download Receipt
                                     </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem
-                                      onClick={() => handleVoidClick(payment)}
-                                      className="text-red-600 focus:text-red-600"
-                                    >
-                                      <XCircle className="mr-2 h-4 w-4" />
-                                      Void Payment
-                                    </DropdownMenuItem>
+                                    {payment.status !== "VOIDED" && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleVoidClick(payment)
+                                          }
+                                          className="text-red-600 focus:text-red-600"
+                                        >
+                                          <XCircle className="mr-2 h-4 w-4" />
+                                          Void Payment
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
                                   </DropdownMenuContent>
                                 </DropdownMenu>
                               </TableCell>

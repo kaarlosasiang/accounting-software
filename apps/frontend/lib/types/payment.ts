@@ -13,6 +13,7 @@ export interface Payment {
   paymentNumber: string;
   paymentDate: string;
   paymentType: "RECEIVED" | "MADE";
+  status?: "ACTIVE" | "VOIDED";
   paymentMethod: "CASH" | "BANK_TRANSFER" | "CHECK" | "CREDIT_CARD" | "ONLINE";
   referenceNumber: string;
   amount: number;
