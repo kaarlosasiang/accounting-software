@@ -449,8 +449,13 @@ export class JournalEntryService {
     for (const lineItem of bill.lineItems) {
       let account = await Account.findById(lineItem.accountId);
 
-      // If no specific account found, use default expense account
-      if (!account || account.accountType !== "Expense") {
+      // Bill lines can legitimately point to either expense accounts or
+      // inventory asset accounts depending on whether the purchase is a
+      // service/expense or an inventory restock.
+      if (
+        !account ||
+        (account.accountType !== "Expense" && account.accountType !== "Asset")
+      ) {
         account = expenseAccount;
       }
 

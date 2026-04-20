@@ -15,7 +15,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { BillForm } from "@/components/forms";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +57,6 @@ export default function BillsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [showBillForm, setShowBillForm] = useState(false);
 
   useEffect(() => {
     fetchBills();
@@ -188,7 +186,7 @@ export default function BillsPage() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button size="sm" onClick={() => setShowBillForm(true)}>
+          <Button size="sm" onClick={() => router.push("/bills/create")}>
             <Plus className="h-4 w-4 mr-2" />
             New Bill
           </Button>
@@ -285,7 +283,7 @@ export default function BillsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
                   <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Open">Open</SelectItem>
+                  <SelectItem value="Sent">Open</SelectItem>
                   <SelectItem value="Partial">Partial</SelectItem>
                   <SelectItem value="Paid">Paid</SelectItem>
                   <SelectItem value="Overdue">Overdue</SelectItem>
@@ -422,15 +420,6 @@ export default function BillsPage() {
           </div>
         </CardContent>
       </Card>
-
-      <BillForm
-        open={showBillForm}
-        onOpenChange={setShowBillForm}
-        onSuccess={() => {
-          fetchBills();
-          setShowBillForm(false);
-        }}
-      />
     </div>
   );
 }

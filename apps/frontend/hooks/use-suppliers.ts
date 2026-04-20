@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { authClient } from "@/lib/config/auth-client";
 import { supplierService } from "@/lib/services/supplier.service";
 import type { Supplier, SupplierForm } from "@/lib/types/supplier";
 
@@ -8,8 +9,17 @@ export function useSuppliers() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { data: activeOrganization } = authClient.useActiveOrganization();
+  const activeOrgId = activeOrganization?.id;
 
   const fetchSuppliers = useCallback(async () => {
+    if (!activeOrgId) {
+      setSuppliers([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -23,9 +33,16 @@ export function useSuppliers() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeOrgId]);
 
   const fetchActiveSuppliers = useCallback(async () => {
+    if (!activeOrgId) {
+      setSuppliers([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -39,23 +56,33 @@ export function useSuppliers() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeOrgId]);
 
-  const searchSuppliers = useCallback(async (query: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await supplierService.searchSuppliers(query);
-      setSuppliers(response.data);
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to search suppliers";
-      setError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const searchSuppliers = useCallback(
+    async (query: string) => {
+      if (!activeOrgId) {
+        setSuppliers([]);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await supplierService.searchSuppliers(query);
+        setSuppliers(response.data);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to search suppliers";
+        setError(errorMessage);
+        toast.error(errorMessage);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [activeOrgId],
+  );
 
   const createSupplier = useCallback(
     async (supplierData: SupplierForm) => {

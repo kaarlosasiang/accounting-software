@@ -5,8 +5,10 @@ export interface BillLineItem {
   description: string;
   quantity: number;
   unitPrice: number;
-  accountId: string;
-  inventoryItemId?: string;
+  accountId: string | { _id: string; accountCode: string; accountName: string };
+  inventoryItemId?:
+    | string
+    | { _id: string; sku: string; itemName: string; unit: string };
   amount: number;
 }
 
@@ -47,12 +49,19 @@ export interface Bill {
 }
 
 export interface BillFormData {
+  billDate: Date;
   supplierId: string;
   dueDate: Date;
   status?: string;
   lineItems: BillLineItem[];
   taxRate?: number;
+  discount?: number;
+  subtotal?: number;
+  totalAmount?: number;
+  balanceDue?: number;
+  amountPaid?: number;
   notes?: string;
+  terms?: string;
 }
 
 export interface BillResponse {
@@ -145,7 +154,7 @@ class BillService {
    * Get bills by status
    */
   async getBillsByStatus(
-    status: "Draft" | "Open" | "Partial" | "Paid" | "Overdue" | "Void",
+    status: "Draft" | "Open" | "Sent" | "Partial" | "Paid" | "Overdue" | "Void",
   ): Promise<BillListResponse> {
     return apiFetch<BillListResponse>(`/bills/status/${status}`);
   }
