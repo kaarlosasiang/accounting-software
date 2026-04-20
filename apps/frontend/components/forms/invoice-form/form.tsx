@@ -152,9 +152,7 @@ const getIdValue = (value?: string | { _id: string } | null) => {
   return typeof value === "string" ? value : value._id;
 };
 
-const getDefaultInvoiceValues = (
-  initialData?: Invoice,
-): InvoiceFormValues => {
+const getDefaultInvoiceValues = (initialData?: Invoice): InvoiceFormValues => {
   if (!initialData) {
     return {
       client: "",
@@ -375,10 +373,10 @@ export function InvoiceForm({
         status: "Draft",
       };
 
-      const response = isEditMode && invoiceId
-        ? await invoiceService.updateInvoice(invoiceId, invoiceData)
-        : await invoiceService.createInvoice(invoiceData);
-
+      const response =
+        isEditMode && invoiceId
+          ? await invoiceService.updateInvoice(invoiceId, invoiceData)
+  
       if (response.success) {
         if (!saveAsDraft && response.data?._id) {
           const companyName = company?.name || "Your Company";

@@ -5,9 +5,7 @@ export interface InvoiceLineItem {
   description: string;
   quantity: number;
   unitPrice: number;
-  accountId:
-    | string
-    | { _id: string; accountCode: string; accountName: string };
+  accountId: string | { _id: string; accountCode: string; accountName: string };
   inventoryItemId?:
     | string
     | { _id: string; sku: string; itemName: string; unit: string };

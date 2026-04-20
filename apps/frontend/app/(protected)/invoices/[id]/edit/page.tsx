@@ -14,10 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  type Invoice,
-  invoiceService,
-} from "@/lib/services/invoice.service";
+import { type Invoice, invoiceService } from "@/lib/services/invoice.service";
 
 export default function EditInvoicePage() {
   const params = useParams();
@@ -40,9 +37,7 @@ export default function EditInvoicePage() {
           setError(response.error || "Failed to load invoice");
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load invoice",
-        );
+        setError(err instanceof Error ? err.message : "Failed to load invoice");
       } finally {
         setIsLoading(false);
       }
@@ -85,7 +80,8 @@ export default function EditInvoicePage() {
           <CardHeader>
             <CardTitle>Invoice Not Found</CardTitle>
             <CardDescription>
-              {error || "The invoice you are trying to edit could not be found."}
+              {error ||
+                "The invoice you are trying to edit could not be found."}
             </CardDescription>
           </CardHeader>
           <CardContent>
