@@ -15,8 +15,6 @@ import {
   round2,
   sumMoney,
 } from "../../shared/helpers/money.js";
-import { BillStatus } from "../../shared/interface/IBill.js";
-import { InvoiceStatus } from "../../shared/interface/IInvoice.js";
 import { PaymentType } from "../../shared/interface/IPayment.js";
 
 /**
@@ -186,8 +184,8 @@ export const paymentService = {
         const bills = await Bill.find({
           companyId,
           supplierId,
-          status: { $in: [BillStatus.SENT, BillStatus.PARTIAL] },
-        }).sort({ billDate: 1 }); // Oldest first (FIFO)
+          status: { $in: OPEN_DOCUMENT_STATUSES },
+        }).sort({ dueDate: 1, billDate: 1 }); // Oldest first (FIFO)
 
         for (const bill of bills) {
           if (remainingAmount <= 0) break;
@@ -214,7 +212,7 @@ export const paymentService = {
         const invoices = await Invoice.find({
           companyId,
           customerId,
-          status: { $in: [InvoiceStatus.SENT, InvoiceStatus.PARTIAL] },
+          status: { $in: OPEN_DOCUMENT_STATUSES },
         }).sort({ invoiceDate: 1 }); // Oldest first (FIFO)
 
         for (const invoice of invoices) {
