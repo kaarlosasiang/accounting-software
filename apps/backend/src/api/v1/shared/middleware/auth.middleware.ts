@@ -1,5 +1,6 @@
 import { fromNodeHeaders } from "better-auth/node";
 import { NextFunction, Request, Response } from "express";
+import mongoose from "mongoose";
 
 import logger from "../../config/logger.js";
 import { authServer } from "../../modules/auth/betterAuth.js";
@@ -48,9 +49,20 @@ export const requireAuth = async (
 
 // ─── Global app-level admin guard ────────────────────────────────────────────
 
+const GLOBAL_ADMIN_ROLES = ["admin", "super_admin"];
+
 /**
- * Requires the authenticated user to have a global app-level admin role
+ * True when the user holds a global app-level admin role
  * (admin or super_admin on the BetterAuth `user.role` field).
+ */
+export const isGlobalAdmin = (req: Request): boolean => {
+  const role = (req.authUser as any)?.role as string | undefined;
+  const roles = role ? role.split(",").map((r: string) => r.trim()) : [];
+  return roles.some((r) => GLOBAL_ADMIN_ROLES.includes(r));
+};
+
+/**
+ * Requires the authenticated user to have a global app-level admin role.
  *
  * This is DIFFERENT from the per-company org role "admin".
  * Use `requirePermission` for resource-level access control.
@@ -60,14 +72,78 @@ export const requireAdmin = (
   _res: Response,
   next: NextFunction,
 ): void => {
-  const role = (req.authUser as any)?.role as string | undefined;
-  const roles = role ? role.split(",").map((r: string) => r.trim()) : [];
-
-  if (!roles.some((r) => ["admin", "super_admin"].includes(r))) {
+  if (!isGlobalAdmin(req)) {
     return next(new AuthorizationError("Admin access required"));
   }
 
   next();
+};
+
+// ─── Organization membership ─────────────────────────────────────────────────
+
+type OrgMembership = { role: string } | null;
+
+const idVariants = (value: string): unknown[] =>
+  mongoose.Types.ObjectId.isValid(value)
+    ? [value, new mongoose.Types.ObjectId(value)]
+    : [value];
+
+/**
+ * Load (and cache on the request) the user's better-auth membership in the
+ * active organization. Returns null when the user is not a member.
+ */
+export const getOrgMembership = async (
+  req: Request,
+): Promise<OrgMembership> => {
+  const cached = (req as any).orgMembership as OrgMembership | undefined;
+  if (cached !== undefined) return cached;
+
+  const userId = getUserId(req);
+  const organizationId = getCompanyId(req);
+  let membership: OrgMembership = null;
+
+  if (userId && organizationId && mongoose.connection.db) {
+    const member = await mongoose.connection.db.collection("member").findOne(
+      {
+        userId: { $in: idVariants(userId) },
+        organizationId: { $in: idVariants(organizationId) },
+      },
+      { projection: { role: 1 } },
+    );
+    membership = member ? { role: String(member.role ?? "") } : null;
+  }
+
+  (req as any).orgMembership = membership;
+  return membership;
+};
+
+/**
+ * Requires the user to be a member of the active organization.
+ * Global admins are allowed through.
+ */
+export const requireOrgMember = async (
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    if (isGlobalAdmin(req)) return next();
+
+    if (!getCompanyId(req)) {
+      return next(new AuthorizationError("No active organization selected"));
+    }
+
+    const membership = await getOrgMembership(req);
+    if (!membership) {
+      return next(
+        new AuthorizationError("You are not a member of this organization"),
+      );
+    }
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
 
 // ─── Per-resource permission guard ───────────────────────────────────────────
@@ -77,9 +153,11 @@ export const requireAdmin = (
  *
  * Resolution order:
  *   1. Global admins (admin / super_admin app role) always pass.
- *   2. Load the member's MemberPermission document for the active org.
- *   3. Resolve effective permissions (role base → +grants → −revocations).
- *   4. Check if the effective set includes the required action.
+ *   2. The user must be a member of the active org (better-auth `member`).
+ *   3. Load the member's MemberPermission document for the active org
+ *      (falling back to their actual membership role, never "owner").
+ *   4. Resolve effective permissions (role base → +grants → −revocations).
+ *   5. Check if the effective set includes the required action.
  *
  * @example
  *   router.post("/", requirePermission(Resource.invoice, Action.create), controller.create);
@@ -91,13 +169,7 @@ export const requirePermission = (resource: Resource, action: Action) => {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      // Global admins bypass org-level permission checks
-      const appRole = (req.authUser as any)?.role as string | undefined;
-      const appRoles = appRole
-        ? appRole.split(",").map((r: string) => r.trim())
-        : [];
-
-      if (appRoles.some((r) => ["admin", "super_admin"].includes(r))) {
+      if (isGlobalAdmin(req)) {
         return next();
       }
 
@@ -110,17 +182,20 @@ export const requirePermission = (resource: Resource, action: Action) => {
         );
       }
 
-      // Derive the org-level role from the session to pick the right fallback
-      // system role when the user has no MemberPermission record yet.
-      const sessionOrgRole = ((req.authSession as any)?.session
-        ?.activeOrganizationRole || (req.authSession as any)?.user?.orgRole) as
-        | string
-        | undefined;
+      const membership = await getOrgMembership(req);
+      if (!membership) {
+        return next(
+          new AuthorizationError("You are not a member of this organization"),
+        );
+      }
 
+      // Fallback role for members that predate RBAC records: use the role
+      // recorded on their better-auth membership. Unknown roles (e.g. the
+      // generic "member") get the least-privileged role.
       const validOrgRoles = Object.values(OrgRole) as string[];
-      const fallbackRole: OrgRole = validOrgRoles.includes(sessionOrgRole ?? "")
-        ? (sessionOrgRole as OrgRole)
-        : OrgRole.owner;
+      const fallbackRole: OrgRole = validOrgRoles.includes(membership.role)
+        ? (membership.role as OrgRole)
+        : OrgRole.viewer;
 
       const effective = await resolvePermissions(
         userId,

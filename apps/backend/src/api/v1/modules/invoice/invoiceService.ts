@@ -10,6 +10,7 @@ import { EmailService } from "../../services/email.service.js";
 // import { generateDocumentNumber } from "../../utils/documentNumberGenerator.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
 import { PDFService } from "../../services/pdf.service.js";
+import { escapeRegex } from "../../shared/helpers/escapeRegex.js";
 import {
   InventoryReferenceType,
   InventoryTransactionType,
@@ -380,13 +381,14 @@ export const invoiceService = {
    */
   async searchInvoices(companyId: string, searchTerm: string) {
     try {
+      const safeTerm = escapeRegex(searchTerm);
       // First, find matching customers
       const customers = await Customer.find({
         companyId,
         $or: [
-          { customerName: { $regex: searchTerm, $options: "i" } },
-          { displayName: { $regex: searchTerm, $options: "i" } },
-          { email: { $regex: searchTerm, $options: "i" } },
+          { customerName: { $regex: safeTerm, $options: "i" } },
+          { displayName: { $regex: safeTerm, $options: "i" } },
+          { email: { $regex: safeTerm, $options: "i" } },
         ],
       }).select("_id");
 
@@ -396,7 +398,7 @@ export const invoiceService = {
       const invoices = await Invoice.find({
         companyId,
         $or: [
-          { invoiceNumber: { $regex: searchTerm, $options: "i" } },
+          { invoiceNumber: { $regex: safeTerm, $options: "i" } },
           { customerId: { $in: customerIds } },
         ],
       })
@@ -522,7 +524,7 @@ export const invoiceService = {
   /**
    * Send invoice to customer via email
    */
-  async sendInvoice(companyId: string, invoiceId: string, companyName: string) {
+  async sendInvoice(companyId: string, invoiceId: string) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
@@ -585,6 +587,8 @@ export const invoiceService = {
       // Calculate due date (invoice.dueDate is now a Date after our fix)
       const dueDate = new Date(invoice.dueDate);
 
+      const companyName = await this.getCompanyName(companyId);
+
       // Fetch company settings to get currency
       const companySettings = await CompanySettings.findOne({ companyId });
       const currency = companySettings?.accounting?.baseCurrency || "PHP";
@@ -642,6 +646,26 @@ export const invoiceService = {
     } finally {
       session.endSession();
     }
+  },
+
+  /**
+   * Resolve the company's display name from the organization record.
+   */
+  async getCompanyName(companyId: string): Promise<string> {
+    const fallback = process.env.COMPANY_NAME || "Your supplier";
+    if (
+      !mongoose.Types.ObjectId.isValid(companyId) ||
+      !mongoose.connection.db
+    ) {
+      return fallback;
+    }
+    const company = await mongoose.connection.db
+      .collection("company")
+      .findOne(
+        { _id: new mongoose.Types.ObjectId(companyId) },
+        { projection: { name: 1 } },
+      );
+    return (company?.name as string | undefined) || fallback;
   },
 
   /**

@@ -14,8 +14,6 @@ export type SignupPayload = {
   lastName: string;
   email: string;
   phoneNumber: string;
-  companyId?: string;
-  role?: string;
   username: string;
   password: string;
   rememberMe?: boolean;

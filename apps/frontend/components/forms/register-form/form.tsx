@@ -25,10 +25,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { cn } from "@/lib/utils";
 
-type FormValues = z.infer<typeof userRegistrationSchema> & {
-  companyId?: string;
-  role?: string;
-};
+type FormValues = z.infer<typeof userRegistrationSchema>;
 const defaultValues: FormValues = {
   firstName: "",
   middleName: "",
@@ -70,11 +67,7 @@ export function SignupForm({
   }: FormValues): Promise<void> => {
     setIsSubmitting(true);
     try {
-      await signUp.email({
-        ...values,
-        companyId: values.companyId ?? "",
-        role: values.role ?? "user",
-      });
+      await signUp.email(values);
       toast.success("Account created! Please verify your email.");
       reset(defaultValues);
 

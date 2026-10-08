@@ -501,15 +501,6 @@ describe("Invoice Module", () => {
   // SEND INVOICE — POST /api/v1/invoices/:id/send
   // ═══════════════════════════════════════════════════════════════════
   describe("POST /api/v1/invoices/:id/send", () => {
-    it("should require companyName", async () => {
-      const response = await request(app)
-        .post(`/api/v1/invoices/${createdInvoiceId}/send`)
-        .send({});
-
-      expect(response.status).toBe(400);
-      expect(response.body.error).toBe("Company name is required");
-    });
-
     it("should send (transition from Draft to Sent)", async () => {
       const response = await request(app)
         .post(`/api/v1/invoices/${createdInvoiceId}/send`)

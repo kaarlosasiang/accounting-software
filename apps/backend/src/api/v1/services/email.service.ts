@@ -2,6 +2,34 @@ import { Resend } from "resend";
 
 import logger from "../config/logger.js";
 
+const HTML_ESCAPES: Record<string, string> = {
+  "&": "&amp;",
+  "<": "&lt;",
+  ">": "&gt;",
+  '"': "&quot;",
+  "'": "&#39;",
+};
+
+/** Escape a value for safe interpolation into email HTML. */
+const escapeHtml = (value: unknown): string =>
+  String(value ?? "").replace(/[&<>"']/g, (c) => HTML_ESCAPES[c]);
+
+/** Return a copy of `obj` with every string field HTML-escaped. */
+const escapeHtmlFields = <T extends Record<string, unknown>>(obj: T): T =>
+  Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [
+      k,
+      typeof v === "string" ? escapeHtml(v) : v,
+    ]),
+  ) as T;
+
+/** Strip characters that could break or inject into a mail header. */
+const headerSafe = (value: unknown): string =>
+  String(value ?? "")
+    .replace(/[\r\n<>"]/g, "")
+    .trim()
+    .slice(0, 200);
+
 interface SendOTPEmailParams {
   email: string;
   otp: string;
@@ -234,17 +262,17 @@ export class EmailService {
         process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
       logger.info(`[Email Service] Calling Resend API...`, {
-        from: `${companyName} <${fromEmail}>`,
+        from: `${headerSafe(companyName)} <${fromEmail}>`,
         to: customerEmail,
-        subject: `Invoice ${invoiceNumber} from ${companyName}`,
+        subject: headerSafe(`Invoice ${invoiceNumber} from ${companyName}`),
         hasAttachment: !!pdfAttachment,
       });
 
       // Prepare email options
       const emailOptions: any = {
-        from: `${companyName} <${fromEmail}>`,
+        from: `${headerSafe(companyName)} <${fromEmail}>`,
         to: customerEmail,
-        subject: `Invoice ${invoiceNumber} from ${companyName}`,
+        subject: headerSafe(`Invoice ${invoiceNumber} from ${companyName}`),
         html: htmlContent,
       };
 
@@ -351,7 +379,7 @@ export class EmailService {
       companyName,
       currency,
       invoiceUrl,
-    } = params;
+    } = escapeHtmlFields(params);
 
     // Currency symbols mapping
     const currencySymbols: Record<string, string> = {
@@ -636,7 +664,7 @@ export class EmailService {
       await resend.emails.send({
         from: `${senderName} <${fromEmail}>`,
         to: email,
-        subject: `Company Invitation - ${companyName}`,
+        subject: headerSafe(`Company Invitation - ${companyName}`),
         html: htmlContent,
       });
 
@@ -660,7 +688,8 @@ export class EmailService {
     companyName: string;
     inviteLink: string;
   }): string {
-    const { invitedByUsername, companyName, inviteLink } = params;
+    const { invitedByUsername, companyName, inviteLink } =
+      escapeHtmlFields(params);
 
     return `
 <!DOCTYPE html>
@@ -731,7 +760,7 @@ export class EmailService {
       companyName,
       currency = "PHP",
       daysUntilDue = 0,
-    } = params;
+    } = escapeHtmlFields(params);
 
     const resend = EmailService.getResendClient();
     const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
@@ -783,9 +812,11 @@ export class EmailService {
 
     try {
       await resend.emails.send({
-        from: `${companyName} <${fromEmail}>`,
-        to: customerEmail,
-        subject: `Payment Reminder: Invoice ${invoiceNumber} ${urgency} — ${companyName}`,
+        from: `${headerSafe(params.companyName)} <${fromEmail}>`,
+        to: params.customerEmail,
+        subject: headerSafe(
+          `Payment Reminder: Invoice ${params.invoiceNumber} ${urgency} — ${params.companyName}`,
+        ),
         html,
       });
       logger.info(`[Email Service] Payment reminder sent to ${customerEmail}`, {
@@ -825,7 +856,7 @@ export class EmailService {
       remainingBalance = 0,
       companyName,
       currency = "PHP",
-    } = params;
+    } = escapeHtmlFields(params);
 
     const resend = EmailService.getResendClient();
     const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
@@ -875,9 +906,11 @@ export class EmailService {
 
     try {
       await resend.emails.send({
-        from: `${companyName} <${fromEmail}>`,
-        to: customerEmail,
-        subject: `Payment Receipt: Invoice ${invoiceNumber} — ${companyName}`,
+        from: `${headerSafe(params.companyName)} <${fromEmail}>`,
+        to: params.customerEmail,
+        subject: headerSafe(
+          `Payment Receipt: Invoice ${params.invoiceNumber} — ${params.companyName}`,
+        ),
         html,
       });
       logger.info(`[Email Service] Payment receipt sent to ${customerEmail}`, {
@@ -915,7 +948,7 @@ export class EmailService {
       daysOverdue,
       companyName,
       currency = "PHP",
-    } = params;
+    } = escapeHtmlFields(params);
 
     const resend = EmailService.getResendClient();
     const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
@@ -964,9 +997,11 @@ export class EmailService {
 
     try {
       await resend.emails.send({
-        from: `${companyName} <${fromEmail}>`,
-        to: customerEmail,
-        subject: `OVERDUE: Invoice ${invoiceNumber} is ${daysOverdue} days past due — ${companyName}`,
+        from: `${headerSafe(params.companyName)} <${fromEmail}>`,
+        to: params.customerEmail,
+        subject: headerSafe(
+          `OVERDUE: Invoice ${params.invoiceNumber} is ${daysOverdue} days past due — ${params.companyName}`,
+        ),
         html,
       });
       logger.info(

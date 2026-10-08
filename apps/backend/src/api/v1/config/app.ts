@@ -5,7 +5,6 @@ import helmet from "helmet";
 import morgan from "morgan";
 
 import registerRoutes from "../routes/index.js";
-import apiKeyMiddleware from "../shared/middleware/apiKey.middleware.js";
 import {
   errorLogger,
   requestLogger,
@@ -121,13 +120,6 @@ export default (app: Application): Application => {
 
   // Register all routes (Better Auth handles its own body parsing)
   registerRoutes(app);
-
-  // API Key middleware (applied to non-auth routes only)
-  // Auth routes are already registered and handle their own authentication
-  app.use("/api/v1/users", apiKeyMiddleware);
-  // Add API key middleware to other protected routes as needed
-  // app.use("/api/v1/companies", apiKeyMiddleware);
-  // app.use("/api/v1/clients", apiKeyMiddleware);
 
   // Error logging middleware (before error handlers)
   app.use(errorLogger);

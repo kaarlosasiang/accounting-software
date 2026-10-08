@@ -106,11 +106,28 @@ describe("Cross-tenant data isolation", () => {
       },
     ]);
 
+    // Seed better-auth memberships (each user belongs to one org only)
+    await db.collection("member").insertMany([
+      {
+        userId: userAId.toHexString(),
+        organizationId: orgAId.toHexString(),
+        role: "owner",
+        createdAt: new Date(),
+      },
+      {
+        userId: userBId.toHexString(),
+        organizationId: orgBId.toHexString(),
+        role: "owner",
+        createdAt: new Date(),
+      },
+    ]);
+
     // Seed users
     await db.collection("users").insertMany([
       {
         _id: userAId,
         name: "User A",
+        username: `user-a-${userAId.toHexString()}`,
         email: `usera-${userAId.toHexString()}@example.com`,
         emailVerified: false,
         createdAt: new Date(),
@@ -119,6 +136,7 @@ describe("Cross-tenant data isolation", () => {
       {
         _id: userBId,
         name: "User B",
+        username: `user-b-${userBId.toHexString()}`,
         email: `userb-${userBId.toHexString()}@example.com`,
         emailVerified: false,
         createdAt: new Date(),
@@ -215,6 +233,12 @@ describe("Cross-tenant data isolation", () => {
       await db
         .collection("users")
         .deleteMany({ _id: { $in: [userAId, userBId] } });
+      await db.collection("member").deleteMany({
+        organizationId: { $in: [orgAId.toHexString(), orgBId.toHexString()] },
+      });
+      await db.collection("memberpermissions").deleteMany({
+        organizationId: { $in: [orgAId.toHexString(), orgBId.toHexString()] },
+      });
       await db
         .collection("customers")
         .deleteMany({ _id: { $in: [customerAId, customerBId] } });

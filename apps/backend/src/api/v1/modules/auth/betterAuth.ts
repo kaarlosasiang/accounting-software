@@ -61,10 +61,14 @@ export const authServer = betterAuth({
   },
   user: {
     additionalFields: {
-      companyId: { type: "string", required: false }, // Optional for social login
+      // SECURITY: privileged fields must never be client-settable. better-auth
+      // treats additionalFields as `input: true` by default, which let anyone
+      // sign up as `role: "super_admin"` or point `companyId` at another tenant.
+      companyId: { type: "string", required: false, input: false },
       role: {
         type: "string",
-        required: false, // Will be set after social login
+        required: false,
+        input: false,
       },
       first_name: { type: "string", required: false },
       middle_name: { type: "string", required: false },
@@ -76,13 +80,27 @@ export const authServer = betterAuth({
         type: "boolean",
         required: false,
         defaultValue: false,
+        input: false,
       },
-      subscriptionPlan: { type: "string", required: false },
-      subscriptionStatus: { type: "string", required: false },
+      subscriptionPlan: { type: "string", required: false, input: false },
+      subscriptionStatus: { type: "string", required: false, input: false },
       // Onboarding tracking fields
       profileSetupCompletedAt: { type: "string", required: false },
       teamInviteCompletedAt: { type: "string", required: false },
       onboardingCompletedAt: { type: "string", required: false },
+    },
+  },
+  // Throttle credential and OTP endpoints to slow brute-force attempts.
+  rateLimit: {
+    enabled: constants.nodeEnv !== "test",
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/*": { window: 60, max: 10 },
+      "/sign-up/*": { window: 60, max: 5 },
+      "/email-otp/*": { window: 60, max: 5 },
+      "/forget-password": { window: 300, max: 5 },
+      "/reset-password": { window: 300, max: 5 },
     },
   },
   session: {

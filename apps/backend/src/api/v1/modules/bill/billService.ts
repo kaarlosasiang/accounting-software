@@ -6,6 +6,7 @@ import { InventoryItem } from "../../models/InventoryItem.js";
 import { InventoryTransaction } from "../../models/InventoryTransaction.js";
 import { Supplier } from "../../models/Supplier.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
+import { escapeRegex } from "../../shared/helpers/escapeRegex.js";
 import { BillStatus, IBillDocument } from "../../shared/interface/IBill.js";
 import {
   InventoryReferenceType,
@@ -380,13 +381,14 @@ export const billService = {
    */
   async searchBills(companyId: string, searchTerm: string) {
     try {
+      const safeTerm = escapeRegex(searchTerm);
       // First, find matching suppliers
       const suppliers = await Supplier.find({
         companyId,
         $or: [
-          { supplierName: { $regex: searchTerm, $options: "i" } },
-          { displayName: { $regex: searchTerm, $options: "i" } },
-          { email: { $regex: searchTerm, $options: "i" } },
+          { supplierName: { $regex: safeTerm, $options: "i" } },
+          { displayName: { $regex: safeTerm, $options: "i" } },
+          { email: { $regex: safeTerm, $options: "i" } },
         ],
       }).select("_id");
 

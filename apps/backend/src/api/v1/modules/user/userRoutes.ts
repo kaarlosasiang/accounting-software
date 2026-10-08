@@ -2,6 +2,7 @@ import express from "express";
 
 import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
+  requireAdmin,
   requireAuth,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
@@ -13,7 +14,8 @@ userRoutes.use(requireAuth);
 
 userRoutes.post(
   "/update-role",
-  requirePermission(Resource.user, Action.update),
+  // Writes the global better-auth role — platform admins only.
+  requireAdmin,
   userController.updateUserRole,
 );
 

@@ -18,6 +18,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import configureApp from "../../../config/app.js";
 import { constants } from "../../../config/index.js";
 import { authServer } from "../../../modules/auth/betterAuth.js";
+import { seedRoles } from "../seed-roles.js";
 
 const mockedAuthServer = vi.mocked(authServer) as any;
 
@@ -114,6 +115,17 @@ describe("Route Permission Guards (requirePermission middleware)", () => {
     });
     testUserId = userResult.insertedId;
 
+    // System roles are needed for the membership-role fallback.
+    await seedRoles();
+
+    // better-auth membership in the org (required by requirePermission)
+    await db.collection("member").insertOne({
+      userId: testUserId.toString(),
+      organizationId: testCompanyId.toString(),
+      role: "member",
+      createdAt: new Date(),
+    });
+
     // NON-admin session — requirePermission will do a real DB lookup
     mockedAuthServer.api.getSession = vi.fn().mockResolvedValue({
       user: {
@@ -132,26 +144,67 @@ describe("Route Permission Guards (requirePermission middleware)", () => {
     await db.collection("memberpermissions").deleteMany({
       organizationId: testCompanyId.toString(),
     });
+    await db.collection("member").deleteMany({
+      organizationId: testCompanyId.toString(),
+    });
     await db.collection("roles").deleteMany({ name: "__test_guard_role__" });
     await db.collection("organizations").deleteMany({ _id: testCompanyId });
     await db.collection("users").deleteMany({ _id: testUserId });
     await mongoClient.close();
   });
 
-  // ── Auto-assign when no MemberPermission record exists ──────────────────
+  // ── Membership enforcement ───────────────────────────────────────────────
+
+  describe("Organization membership", () => {
+    it("returns 403 when the user is not a member of the active org", async () => {
+      const otherOrgId = new ObjectId().toString();
+      mockedAuthServer.api.getSession = vi.fn().mockResolvedValue({
+        user: {
+          id: testUserId.toString(),
+          email: "test-guard@example.com",
+          role: "user",
+          // A forged legacy companyId must not grant access either.
+          companyId: otherOrgId,
+        },
+        session: { activeOrganizationId: otherOrgId },
+      });
+
+      const res = await request(app).get("/api/v1/invoices");
+      expect(res.status).toBe(403);
+
+      const db = mongoClient.db();
+      const autoCreated = await db
+        .collection("memberpermissions")
+        .findOne({ userId: testUserId.toString(), organizationId: otherOrgId });
+      expect(autoCreated).toBeNull();
+
+      mockedAuthServer.api.getSession = vi.fn().mockResolvedValue({
+        user: {
+          id: testUserId.toString(),
+          email: "test-guard@example.com",
+          role: "user",
+        },
+        session: { activeOrganizationId: testCompanyId.toString() },
+      });
+    });
+  });
+
+  // ── Fallback when no MemberPermission record exists ──────────────────────
 
   describe("No permission record", () => {
-    it("auto-assigns owner role and allows GET /invoices when user has no permission record", async () => {
+    it("falls back to least privilege (viewer) for a generic member: read allowed", async () => {
       const res = await request(app).get("/api/v1/invoices");
-      // Auto-assign gives owner permissions — permission check passes (not 403)
       expect(res.status).not.toBe(403);
     });
 
-    it("auto-assigns owner role and allows POST /invoices when user has no permission record", async () => {
+    it("falls back to least privilege (viewer) for a generic member: create denied", async () => {
+      const db = mongoClient.db();
+      await db.collection("memberpermissions").deleteMany({
+        userId: testUserId.toString(),
+        organizationId: testCompanyId.toString(),
+      });
       const res = await request(app).post("/api/v1/invoices").send({});
-      // Auto-assign gives owner permissions — permission check passes (not 403)
-      // May be 400/422 due to business logic, but not a permission denial
-      expect(res.status).not.toBe(403);
+      expect(res.status).toBe(403);
     });
   });
 

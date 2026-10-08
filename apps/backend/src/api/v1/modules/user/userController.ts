@@ -10,7 +10,9 @@ import userService from "./userService.js";
 // Define user role update schema
 const userRoleUpdateSchema = z.object({
   userId: z.string().min(1, "User ID is required"),
-  role: z.string().min(1, "Role is required"),
+  role: z.enum(["user", "admin", "super_admin"], {
+    message: "Role must be one of: user, admin, super_admin",
+  }),
   companyId: z.string().min(1, "Company ID is required"),
 });
 

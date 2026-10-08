@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
+import { escapeRegex } from "../shared/helpers/escapeRegex.js";
 import { IAddress } from "../shared/interface/IAddress.js";
 import {
   ICustomer,
@@ -212,7 +213,7 @@ CustomerSchema.statics.searchCustomers = function (
   companyId: mongoose.Types.ObjectId,
   searchTerm: string,
 ) {
-  const regex = new RegExp(searchTerm, "i");
+  const regex = new RegExp(escapeRegex(searchTerm), "i");
   return this.find({
     companyId,
     $or: [

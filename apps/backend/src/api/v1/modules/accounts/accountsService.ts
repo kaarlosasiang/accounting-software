@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import logger from "../../config/logger.js";
 import Account from "../../models/Account.js";
 import { Ledger } from "../../models/Ledger.js";
+import { escapeRegex } from "../../shared/helpers/escapeRegex.js";
 
 /**
  * Accounts Service
@@ -386,7 +387,7 @@ const accountsService = {
     searchTerm: string,
   ) => {
     try {
-      const regex = new RegExp(searchTerm, "i");
+      const regex = new RegExp(escapeRegex(searchTerm), "i");
       const accounts = await Account.find({
         companyId,
         $or: [{ accountCode: regex }, { accountName: regex }],

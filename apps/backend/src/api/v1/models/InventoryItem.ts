@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
+import { escapeRegex } from "../shared/helpers/escapeRegex.js";
 import {
   IInventoryItem,
   IInventoryItemDocument,
@@ -285,7 +286,7 @@ InventoryItemSchema.statics.searchItems = function (
   companyId: mongoose.Types.ObjectId,
   searchTerm: string,
 ) {
-  const regex = new RegExp(searchTerm, "i");
+  const regex = new RegExp(escapeRegex(searchTerm), "i");
   return this.find({
     companyId,
     isActive: true,

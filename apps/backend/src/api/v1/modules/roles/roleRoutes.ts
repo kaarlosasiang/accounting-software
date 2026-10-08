@@ -3,6 +3,7 @@ import express from "express";
 import { Action, Resource } from "../../shared/auth/permissions.js";
 import {
   requireAuth,
+  requireOrgMember,
   requirePermission,
 } from "../../shared/middleware/auth.middleware.js";
 
@@ -11,6 +12,7 @@ import { roleController } from "./roleController.js";
 const roleRoutes = express.Router();
 
 roleRoutes.use(requireAuth);
+roleRoutes.use(requireOrgMember);
 
 // Get default permission map for all system roles (used by the UI permission matrix)
 roleRoutes.get("/defaults", roleController.getDefaults);

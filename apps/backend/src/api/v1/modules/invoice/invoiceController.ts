@@ -410,7 +410,6 @@ export const invoiceController = {
     try {
       const companyId = getCompanyId(req);
       const { id } = req.params;
-      const { companyName } = req.body;
 
       if (!companyId) {
         return res.status(401).json({
@@ -419,18 +418,9 @@ export const invoiceController = {
         });
       }
 
-      if (!companyName) {
-        return res.status(400).json({
-          success: false,
-          error: "Company name is required",
-        });
-      }
-
-      const invoice = await invoiceService.sendInvoice(
-        companyId,
-        id,
-        companyName,
-      );
+      // The sender name is always loaded from the company record; a
+      // client-supplied name would let users send spoofed emails.
+      const invoice = await invoiceService.sendInvoice(companyId, id);
 
       return res.status(200).json({
         success: true,
