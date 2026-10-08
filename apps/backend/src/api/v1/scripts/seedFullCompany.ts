@@ -2429,6 +2429,15 @@ async function seedFullCompany(companyId: string) {
     },
   ];
 
+  // Link each ledger row to its journal entry by entry number.
+  const journalEntryIdByNumber = new Map(
+    (
+      await JournalEntry.find({ companyId: cid })
+        .select("entryNumber")
+        .lean()
+    ).map((je) => [je.entryNumber, je._id]),
+  );
+
   // Build a running balance map per account
   const runningBalances: Record<string, number> = {};
 
@@ -2441,7 +2450,8 @@ async function seedFullCompany(companyId: string) {
       companyId: cid,
       accountId: a._id,
       accountName: a.accountName,
-      journalEntryId: new Types.ObjectId(), // placeholder — actual JE linking not required for display
+      journalEntryId:
+        journalEntryIdByNumber.get(e.jeNum) ?? new Types.ObjectId(),
       entryNumber: e.jeNum,
       transactionDate: e.date,
       description: e.desc,

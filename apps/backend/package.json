@@ -16,7 +16,8 @@
     "test:coverage": "vitest run --coverage",
     "seed:accounts": "tsx src/api/v1/scripts/seedAccounts.ts",
     "seed:suppliers": "tsx src/api/v1/scripts/seedSuppliers.ts",
-    "backfill:void-ledger": "tsx src/api/v1/scripts/backfillVoidLedger.ts"
+    "backfill:void-ledger": "tsx src/api/v1/scripts/backfillVoidLedger.ts",
+    "repair:accounting": "tsx src/api/v1/scripts/repairAccountingData.ts"
   },
   "keywords": [],
   "author": "",
