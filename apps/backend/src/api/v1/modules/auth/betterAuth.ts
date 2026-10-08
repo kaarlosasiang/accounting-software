@@ -44,6 +44,16 @@ export const authServer = betterAuth({
   ],
   emailAndPassword: {
     enabled: true,
+    // Password accounts must verify their email (6-digit OTP) before they
+    // can sign in. Google sign-ins are verified by the provider.
+    requireEmailVerification: true,
+  },
+  emailVerification: {
+    // An unverified password sign-in is rejected (403 "Email not verified")
+    // and a fresh OTP is sent so the user can verify straight away.
+    sendOnSignIn: true,
+    // Verifying the OTP creates the session (sign-up no longer does).
+    autoSignInAfterVerification: true,
   },
   socialProviders: {
     google: {
@@ -228,6 +238,8 @@ export const authServer = betterAuth({
           },
         );
       },
+      // Deliver email verification as an OTP instead of a link.
+      overrideDefaultEmailVerification: true,
       otpLength: 6, // 6-digit OTP
       expiresIn: 300, // 5 minutes
       sendVerificationOnSignUp: true, // Auto-send verification on signup

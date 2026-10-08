@@ -54,6 +54,12 @@ export function LoginForm({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Unable to sign in right now.";
+      if (/email not verified/i.test(message)) {
+        // The server has just emailed a fresh verification code.
+        toast.info("Please verify your email. We sent you a 6-digit code.");
+        router.push(`/verify-email?email=${encodeURIComponent(values.email)}`);
+        return;
+      }
       toast.error(message);
     } finally {
       setIsSubmitting(false);
