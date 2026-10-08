@@ -13,6 +13,7 @@ import {
   errorLogger,
   requestLogger,
 } from "../shared/middleware/logger.middleware.js";
+import { rateLimit } from "../shared/middleware/rateLimit.middleware.js";
 
 import dbConnection from "./db.js";
 import { constants } from "./index.js";
@@ -117,6 +118,18 @@ export default (app: Application): Application => {
       apiVersion: "1.0.0",
     });
   });
+
+  // Rate limiting (per client IP). better-auth adds stricter limits of its
+  // own on sign-in/OTP endpoints; email-sending endpoints get a tight cap.
+  app.use("/api/v1", rateLimit({ name: "api", windowMs: 60_000, max: 300 }));
+  const emailLimiter = rateLimit({
+    name: "email",
+    windowMs: 60_000,
+    max: 30,
+    message: "Too many emails sent. Please wait a minute and try again.",
+  });
+  app.post("/api/v1/invoices/:id/send", emailLimiter);
+  app.post("/api/v1/users", emailLimiter);
 
   // Body parsing middleware - needed for most routes except Better Auth
   app.use(express.json());
