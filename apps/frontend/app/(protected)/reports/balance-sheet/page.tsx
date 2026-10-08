@@ -45,6 +45,10 @@ interface BalanceSheetData {
   };
   equity: {
     accounts: AccountItem[];
+    /** Earnings of prior fiscal years not yet closed to retained earnings */
+    priorYearsUnclosedEarnings?: number;
+    /** Current fiscal year net income (not yet closed) */
+    currentYearNetIncome?: number;
     total: number;
   };
   balanced: boolean;
@@ -120,6 +124,18 @@ export default function BalanceSheetPage() {
     );
   }
 
+  // Earnings not yet closed to Retained Earnings are part of equity.
+  const equityEarningsLines = [
+    {
+      label: "Retained Earnings (unclosed prior years)",
+      amount: data.equity.priorYearsUnclosedEarnings ?? 0,
+    },
+    {
+      label: "Current Year Net Income",
+      amount: data.equity.currentYearNetIncome ?? 0,
+    },
+  ].filter((line) => line.amount !== 0);
+
   // Calculate key ratios
   const currentAssetTotal = data.assets.currentAssets.reduce(
     (sum, a) => sum + a.balance,
@@ -173,6 +189,11 @@ export default function BalanceSheetPage() {
         Section: "Equity",
         Account: a.accountName,
         Balance: a.balance,
+      })),
+      ...equityEarningsLines.map((line) => ({
+        Section: "Equity",
+        Account: line.label,
+        Balance: line.amount,
       })),
       { Section: "TOTAL", Account: "Total Equity", Balance: data.equity.total },
     ];
@@ -503,6 +524,18 @@ export default function BalanceSheetPage() {
                         </TableCell>
                         <TableCell className="text-right font-medium">
                           {formatCurrency(account.balance)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {equityEarningsLines.map((line) => (
+                      <TableRow key={line.label} className="hover:bg-muted/50">
+                        <TableCell className="pl-8">{line.label}</TableCell>
+                        <TableCell
+                          className={`text-right font-medium ${
+                            line.amount < 0 ? "text-red-600" : ""
+                          }`}
+                        >
+                          {formatCurrency(line.amount)}
                         </TableCell>
                       </TableRow>
                     ))}

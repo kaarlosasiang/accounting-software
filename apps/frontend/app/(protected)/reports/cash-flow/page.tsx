@@ -43,6 +43,7 @@ interface CashFlowStatementData {
   };
   operatingActivities: {
     netIncome: number;
+    depreciationAmortization?: number;
     adjustments: CashFlowItem[];
     total: number;
   };
@@ -174,10 +175,19 @@ export default function CashFlowPage() {
         Item: "Net Income",
         Amount: data.operatingActivities.netIncome,
       },
+      ...(data.operatingActivities.depreciationAmortization
+        ? [
+            {
+              Section: "Operating Activities",
+              Item: "Depreciation & Amortization",
+              Amount: data.operatingActivities.depreciationAmortization,
+            },
+          ]
+        : []),
       ...data.operatingActivities.adjustments.map((a) => ({
         Section: "Operating Activities",
         Item: a.accountName,
-        Amount: a.change ?? a.cashEffect ?? 0,
+        Amount: a.cashEffect ?? 0,
       })),
       {
         Section: "Operating Activities",
@@ -198,9 +208,10 @@ export default function CashFlowPage() {
         Section: "Financing Activities",
         Item: a.accountName,
         Amount:
-          a.increases !== undefined
+          a.netCashEffect ??
+          (a.increases !== undefined
             ? a.increases - (a.decreases ?? 0)
-            : (a.cashEffect ?? 0),
+            : (a.cashEffect ?? 0)),
       })),
       {
         Section: "Financing Activities",
@@ -359,6 +370,19 @@ export default function CashFlowPage() {
                         {formatCurrency(data.operatingActivities.netIncome)}
                       </TableCell>
                     </TableRow>
+
+                    {!!data.operatingActivities.depreciationAmortization && (
+                      <TableRow className="hover:bg-muted/50">
+                        <TableCell className="pl-8">
+                          Depreciation &amp; Amortization (non-cash)
+                        </TableCell>
+                        <TableCell className="text-right text-green-600">
+                          {formatCurrency(
+                            data.operatingActivities.depreciationAmortization,
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )}
 
                     {data.operatingActivities.adjustments.length > 0 && (
                       <>
