@@ -33,6 +33,7 @@ export interface IBill {
   companyId: Types.ObjectId;
   supplierId: Types.ObjectId;
   billNumber: string;
+  billDate?: Date;
   dueDate: Date;
   status: BillStatus;
   lineItems: IBillLineItem[];
@@ -56,5 +57,5 @@ export interface IBill {
  */
 export interface IBillDocument extends Omit<IBill, "_id">, Document {
   recordPayment(amount: number): Promise<IBillDocument>;
-  void(): Promise<IBillDocument>;
+  void(): IBillDocument;
 }

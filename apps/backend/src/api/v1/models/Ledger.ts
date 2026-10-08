@@ -48,19 +48,29 @@ const LedgerSchema = new Schema<ILedger>(
       trim: true,
     },
     debit: {
-      type: String,
+      type: Number,
       required: [true, "Debit is required"],
-      default: "0",
+      default: 0,
+      min: [0, "Debit cannot be negative"],
     },
     credit: {
-      type: String,
+      type: Number,
       required: [true, "Credit is required"],
-      default: "0",
+      default: 0,
+      min: [0, "Credit cannot be negative"],
     },
     runningBalance: {
       type: Number,
       required: [true, "Running balance is required"],
       default: 0,
+    },
+    entryType: {
+      type: Number,
+      default: null,
+    },
+    isClosingEntry: {
+      type: Boolean,
+      default: false,
     },
   },
   {

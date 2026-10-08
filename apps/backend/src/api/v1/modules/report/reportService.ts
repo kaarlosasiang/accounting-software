@@ -3,157 +3,187 @@ import mongoose from "mongoose";
 import logger from "../../config/logger.js";
 import Account from "../../models/Account.js";
 import { Bill } from "../../models/Bill.js";
+import { CompanySettings } from "../../models/CompanySettings.js";
 import { Invoice } from "../../models/Invoice.js";
-import { Ledger } from "../../models/Ledger.js";
-import { ledgerService } from "../ledger/ledgerService.js";
+import { OPEN_DOCUMENT_STATUSES } from "../../shared/helpers/documentTotals.js";
+import { round2, sumMoney } from "../../shared/helpers/money.js";
+import { ledgerService, normalBalance } from "../ledger/ledgerService.js";
+
+type LeanAccount = {
+  _id: mongoose.Types.ObjectId;
+  accountCode: string;
+  accountName: string;
+  accountType: string;
+  subType?: string;
+  normalBalance?: string;
+};
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+const CASH_SUBTYPES = ["Cash", "Bank"];
+const CASH_CODES = ["1000", "1010", "1020"];
+const EARNINGS_SUBTYPES = ["Retained Earnings", "Current Year Earnings"];
+
+const isCashAccount = (a: LeanAccount) =>
+  a.accountType === "Asset" &&
+  (CASH_CODES.includes(a.accountCode) ||
+    CASH_SUBTYPES.includes(a.subType ?? "") ||
+    /^(cash|petty cash|cash on hand|cash in bank)\b/i.test(a.accountName));
+
+/** Working-capital assets (current) vs. long-lived assets. */
+const isCurrentAsset = (a: LeanAccount) =>
+  a.accountType === "Asset" &&
+  (a.subType?.includes("Current") ||
+    /receivable|inventory|prepaid|input (tax|vat)|advances/i.test(
+      `${a.subType ?? ""} ${a.accountName}`,
+    ));
+
+const toLine = (a: LeanAccount, balance: number) => ({
+  accountCode: a.accountCode,
+  accountName: a.accountName,
+  balance,
+});
+
+/**
+ * Start of the fiscal year containing `date`, from the company's
+ * `fiscalYearEnd` setting ("MM-DD", default "12-31").
+ */
+async function getFiscalYearStart(
+  companyId: string,
+  date: Date,
+): Promise<Date> {
+  const settings = await CompanySettings.findOne({ companyId })
+    .select("accounting.fiscalYearEnd")
+    .lean();
+  const fyEnd = (settings as any)?.accounting?.fiscalYearEnd ?? "12-31";
+  const [month, day] = String(fyEnd)
+    .split("-")
+    .map((v: string) => parseInt(v, 10));
+
+  const endOfFiscalYear = (year: number) =>
+    new Date(year, (month || 12) - 1, day || 31, 23, 59, 59, 999);
+
+  const thisYearEnd = endOfFiscalYear(date.getFullYear());
+  const previousEnd =
+    date <= thisYearEnd ? endOfFiscalYear(date.getFullYear() - 1) : thisYearEnd;
+
+  return new Date(previousEnd.getTime() + 1);
+}
 
 /**
  * Report Service
- * Handles business logic for financial report generation
+ * Financial statements are derived from the ledger with a single grouped
+ * aggregate per query window. Balances use the account type's normal
+ * direction (Asset/Expense: debit−credit, others: credit−debit), so contra
+ * accounts (accumulated depreciation, sales discounts, drawings...) are
+ * negative and net against their section automatically.
  */
 export const reportService = {
   /**
-   * Generate Balance Sheet
-   * Shows: Assets = Liabilities + Equity at a specific date
-   * Formula verification: Assets = Liabilities + Equity
+   * Generate Balance Sheet as of a date.
+   *
+   * Equity = equity accounts + all earnings not yet closed to retained
+   * earnings (cumulative revenue − expense up to the date). Closing entries
+   * move amounts from revenue/expense into retained earnings, so the sum is
+   * correct whether or not periods have been closed, and the statement
+   * balances across fiscal years.
    */
   async generateBalanceSheet(companyId: string, asOfDate: Date = new Date()) {
     try {
-      // 1. Get all accounts for the company
-      const accounts = await Account.find({
+      const accounts = (await Account.find({
         companyId: new mongoose.Types.ObjectId(companyId),
-      }).lean();
+      })
+        .sort({ accountCode: 1 })
+        .lean()) as unknown as LeanAccount[];
 
-      // 2. For each account, get balance from Ledger
-      const accountsWithBalances = await Promise.all(
-        accounts.map(async (account) => {
-          const balanceData = await ledgerService.getAccountBalance(
-            companyId,
-            account._id.toString(),
-            asOfDate,
-          );
+      const fiscalYearStart = await getFiscalYearStart(companyId, asOfDate);
 
-          // runningBalance is stored as (total debit - total credit) for every account.
-          // Credit-normal accounts (Liability, Equity, Revenue) accumulate credits, so their
-          // runningBalance is negative. Negate it so it displays as a positive amount on the
-          // balance sheet. Contra accounts (e.g. Accumulated Depreciation under Asset type)
-          // also have normalBalance "Credit", so negating them makes them positive — the
-          // frontend then treats the positive value as a reduction against the parent group.
-          const signedBalance =
-            account.normalBalance === "Credit"
-              ? -balanceData.balance
-              : balanceData.balance;
-
-          return {
-            ...account,
-            balance: signedBalance,
-          };
+      const [balances, periodTotals] = await Promise.all([
+        ledgerService.getBalancesByAccount(companyId, accounts, {
+          to: asOfDate,
         }),
-      );
+        // Current fiscal year activity (incl. closing entries) to split
+        // unclosed earnings into prior years vs. current year.
+        ledgerService.getTotalsByAccount(companyId, {
+          from: fiscalYearStart,
+          to: asOfDate,
+        }),
+      ]);
 
-      // 3. Group by account type
-      const assets = accountsWithBalances.filter(
-        (a) => a.accountType === "Asset",
-      );
-      const liabilities = accountsWithBalances.filter(
-        (a) => a.accountType === "Liability",
-      );
-      const equity = accountsWithBalances.filter(
-        (a) => a.accountType === "Equity",
-      );
+      const balanceOf = (a: LeanAccount) => balances.get(a._id.toString()) ?? 0;
 
-      // 4. Further group assets by subtype
+      const assets = accounts.filter((a) => a.accountType === "Asset");
+      const liabilities = accounts.filter((a) => a.accountType === "Liability");
+      const equity = accounts.filter((a) => a.accountType === "Equity");
+      const revenue = accounts.filter((a) => a.accountType === "Revenue");
+      const expenses = accounts.filter((a) => a.accountType === "Expense");
+
+      const nonZero = (a: LeanAccount) => balanceOf(a) !== 0;
+
       const currentAssets = assets
         .filter((a) => a.subType?.includes("Current"))
-        .map((a) => ({
-          accountCode: a.accountCode,
-          accountName: a.accountName,
-          balance: a.balance,
-        }));
-
+        .map((a) => toLine(a, balanceOf(a)));
       const fixedAssets = assets
         .filter((a) => a.subType?.includes("Fixed"))
-        .map((a) => ({
-          accountCode: a.accountCode,
-          accountName: a.accountName,
-          balance: a.balance,
-        }));
-
+        .map((a) => toLine(a, balanceOf(a)));
       const otherAssets = assets
         .filter(
           (a) =>
             !a.subType?.includes("Current") && !a.subType?.includes("Fixed"),
         )
-        .map((a) => ({
-          accountCode: a.accountCode,
-          accountName: a.accountName,
-          balance: a.balance,
-        }));
+        .filter(nonZero)
+        .map((a) => toLine(a, balanceOf(a)));
 
-      // 5. Group liabilities by subtype
       const currentLiabilities = liabilities
         .filter((a) => a.subType?.includes("Current"))
-        .map((a) => ({
-          accountCode: a.accountCode,
-          accountName: a.accountName,
-          balance: a.balance,
-        }));
-
+        .map((a) => toLine(a, balanceOf(a)));
       const longTermLiabilities = liabilities
         .filter((a) => a.subType?.includes("Long-term"))
-        .map((a) => ({
-          accountCode: a.accountCode,
-          accountName: a.accountName,
-          balance: a.balance,
-        }));
-
+        .map((a) => toLine(a, balanceOf(a)));
       const otherLiabilities = liabilities
         .filter(
           (a) =>
             !a.subType?.includes("Current") &&
             !a.subType?.includes("Long-term"),
         )
-        .map((a) => ({
-          accountCode: a.accountCode,
-          accountName: a.accountName,
-          balance: a.balance,
-        }));
+        .filter(nonZero)
+        .map((a) => toLine(a, balanceOf(a)));
 
-      // 6. Group equity accounts
       const equityAccounts = equity.map((a) => ({
-        accountCode: a.accountCode,
-        accountName: a.accountName,
+        ...toLine(a, balanceOf(a)),
         subType: a.subType,
-        balance: a.balance,
       }));
 
-      // 7. Compute current-period net income (not yet closed to retained earnings).
-      //    This must be added to equity so the accounting equation holds during an
-      //    active period before closing journal entries are posted.
-      const startOfYear = new Date(asOfDate.getFullYear(), 0, 1);
-      const currentYearIncome = await this.generateIncomeStatement(
-        companyId,
-        startOfYear,
-        asOfDate,
+      // Unclosed earnings since inception, and the current-year portion.
+      const unclosedEarnings = round2(
+        sumMoney(revenue.map(balanceOf)) - sumMoney(expenses.map(balanceOf)),
       );
-      const currentYearNetIncome = currentYearIncome.summary.netIncome;
-
-      // 8. Calculate totals
-      const totalAssets = assets.reduce((sum, a) => sum + a.balance, 0);
-      const totalLiabilities = liabilities.reduce(
-        (sum, a) => sum + a.balance,
-        0,
+      const periodNet = (list: LeanAccount[]) =>
+        sumMoney(
+          list.map((a) => {
+            const t = periodTotals.get(a._id.toString());
+            return t ? normalBalance(a.accountType, t.debit, t.credit) : 0;
+          }),
+        );
+      // Closing entries inside the current year move earnings out of P&L
+      // accounts; netting them in keeps this the *unclosed* current-year part.
+      const currentYearNetIncome = round2(
+        periodNet(revenue) - periodNet(expenses),
       );
-      const postedEquity = equity.reduce((sum, a) => sum + a.balance, 0);
-      // Add unposted current-year net income so equity reflects the full period
-      const totalEquity = postedEquity + currentYearNetIncome;
+      const priorYearsUnclosedEarnings = round2(
+        unclosedEarnings - currentYearNetIncome,
+      );
 
-      // 9. Verify accounting equation
-      const balanced =
-        Math.abs(totalAssets - (totalLiabilities + totalEquity)) < 0.01;
+      const totalAssets = sumMoney(assets.map(balanceOf));
+      const totalLiabilities = sumMoney(liabilities.map(balanceOf));
+      const postedEquity = sumMoney(equity.map(balanceOf));
+      const totalEquity = round2(postedEquity + unclosedEarnings);
+
+      const difference = round2(totalAssets - (totalLiabilities + totalEquity));
 
       return {
         asOfDate,
+        fiscalYearStart,
         assets: {
           currentAssets,
           fixedAssets,
@@ -168,15 +198,16 @@ export const reportService = {
         },
         equity: {
           accounts: equityAccounts,
+          priorYearsUnclosedEarnings,
           currentYearNetIncome,
           total: totalEquity,
         },
-        balanced,
+        balanced: Math.abs(difference) < 0.01,
         equation: {
           assets: totalAssets,
           liabilities: totalLiabilities,
           equity: totalEquity,
-          difference: totalAssets - (totalLiabilities + totalEquity),
+          difference,
         },
       };
     } catch (error) {
@@ -189,8 +220,9 @@ export const reportService = {
   },
 
   /**
-   * Generate Income Statement (Profit & Loss)
-   * Shows: Revenue - Expenses = Net Income for a period
+   * Generate Income Statement (Profit & Loss) for a period.
+   * Closing entries are excluded, otherwise a closed period would show a
+   * net income of zero.
    */
   async generateIncomeStatement(
     companyId: string,
@@ -198,146 +230,94 @@ export const reportService = {
     endDate: Date,
   ) {
     try {
-      // 1. Get Revenue accounts
-      const revenueAccounts = await Account.find({
+      const accounts = (await Account.find({
         companyId: new mongoose.Types.ObjectId(companyId),
-        accountType: "Revenue",
-      }).lean();
+        accountType: { $in: ["Revenue", "Expense"] },
+      })
+        .sort({ accountCode: 1 })
+        .lean()) as unknown as LeanAccount[];
 
-      // 2. Get Expense accounts
-      const expenseAccounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountType: "Expense",
-      }).lean();
-
-      // 3. Calculate revenue total from ledger entries
-      const revenueWithAmounts = await Promise.all(
-        revenueAccounts.map(async (account) => {
-          const entries = await Ledger.find({
-            companyId: new mongoose.Types.ObjectId(companyId),
-            accountId: account._id,
-            transactionDate: { $gte: startDate, $lte: endDate },
-          }).lean();
-
-          // Revenue has credit normal balance
-          const total = entries.reduce((sum, entry) => {
-            return sum + (parseFloat(entry.credit) - parseFloat(entry.debit));
-          }, 0);
-
-          return {
-            accountCode: account.accountCode,
-            accountName: account.accountName,
-            subType: account.subType,
-            amount: total,
-          };
-        }),
+      const balances = await ledgerService.getBalancesByAccount(
+        companyId,
+        accounts,
+        { from: startDate, to: endDate, excludeClosing: true },
       );
 
-      // 4. Calculate expense total from ledger entries
-      const expenseWithAmounts = await Promise.all(
-        expenseAccounts.map(async (account) => {
-          const entries = await Ledger.find({
-            companyId: new mongoose.Types.ObjectId(companyId),
-            accountId: account._id,
-            transactionDate: { $gte: startDate, $lte: endDate },
-          }).lean();
+      const withAmounts = accounts.map((account) => ({
+        accountCode: account.accountCode,
+        accountName: account.accountName,
+        accountType: account.accountType,
+        subType: account.subType,
+        amount: balances.get(account._id.toString()) ?? 0,
+      }));
 
-          // Expense has debit normal balance
-          const total = entries.reduce((sum, entry) => {
-            return sum + (parseFloat(entry.debit) - parseFloat(entry.credit));
-          }, 0);
-
-          return {
-            accountCode: account.accountCode,
-            accountName: account.accountName,
-            subType: account.subType,
-            amount: total,
-          };
-        }),
+      const revenueWithAmounts = withAmounts.filter(
+        (a) => a.accountType === "Revenue",
+      );
+      const expenseWithAmounts = withAmounts.filter(
+        (a) => a.accountType === "Expense",
       );
 
-      // 5. Group revenue by subtype
-      const operatingRevenue = revenueWithAmounts.filter(
-        (r) =>
-          r.subType?.includes("Operating") || r.subType?.includes("Service"),
-      );
-      const otherIncome = revenueWithAmounts.filter(
-        (r) => r.subType?.includes("Other") || r.subType?.includes("Interest"),
-      );
-      // Contra Revenue (Sales Discounts, Returns & Allowances) are debit-normal so their
-      // computed amounts will be ≤ 0. Surface them separately for a clean P&L presentation.
+      // Contra revenue (Sales Discounts, Returns & Allowances) carries
+      // a negative amount and is presented separately.
       const contraRevenue = revenueWithAmounts.filter((r) =>
         r.subType?.includes("Contra Revenue"),
       );
+      const otherIncome = revenueWithAmounts.filter(
+        (r) =>
+          !r.subType?.includes("Contra Revenue") &&
+          (r.subType?.includes("Other") || r.subType?.includes("Interest")),
+      );
+      // Everything else is operating revenue (unclassified accounts included,
+      // so subtotals always add up to the total).
+      const operatingRevenue = revenueWithAmounts.filter(
+        (r) => !contraRevenue.includes(r) && !otherIncome.includes(r),
+      );
 
-      // 6. Group expenses by subtype
       const costOfSales = expenseWithAmounts.filter((e) =>
         e.subType?.includes("Cost of Sales"),
-      );
-      const operatingExpenses = expenseWithAmounts.filter((e) =>
-        e.subType?.includes("Operating"),
       );
       const nonOperatingExpenses = expenseWithAmounts.filter(
         (e) =>
           e.subType?.includes("Non-Operating") ||
           e.subType?.includes("Tax Expense"),
       );
+      const operatingExpenses = expenseWithAmounts.filter(
+        (e) => !costOfSales.includes(e) && !nonOperatingExpenses.includes(e),
+      );
 
-      // 7. Calculate totals
-      const totalRevenue = revenueWithAmounts.reduce(
-        (sum, a) => sum + a.amount,
-        0,
-      );
-      const totalExpenses = expenseWithAmounts.reduce(
-        (sum, a) => sum + a.amount,
-        0,
-      );
-      const netIncome = totalRevenue - totalExpenses;
+      const total = (list: { amount: number }[]) =>
+        sumMoney(list.map((x) => x.amount));
 
-      // 8. Calculate subtotals
-      const grossRevenue = operatingRevenue.reduce(
-        (sum, r) => sum + r.amount,
-        0,
-      );
-      // totalContraRevenue is ≤ 0; adding it to grossRevenue gives net revenue
-      const totalContraRevenue = contraRevenue.reduce(
-        (sum, r) => sum + r.amount,
-        0,
-      );
-      const netRevenue = grossRevenue + totalContraRevenue;
-      const totalCostOfSales = costOfSales.reduce(
-        (sum, e) => sum + e.amount,
-        0,
-      );
-      const grossProfit = netRevenue - totalCostOfSales;
+      const totalRevenue = total(revenueWithAmounts);
+      const totalExpenses = total(expenseWithAmounts);
+      const netIncome = round2(totalRevenue - totalExpenses);
 
-      const totalOperatingExpenses = operatingExpenses.reduce(
-        (sum, e) => sum + e.amount,
-        0,
-      );
-      const operatingIncome = grossProfit - totalOperatingExpenses;
+      const grossRevenue = total(operatingRevenue);
+      const totalContraRevenue = total(contraRevenue);
+      const netRevenue = round2(grossRevenue + totalContraRevenue);
+      const totalCostOfSales = total(costOfSales);
+      const grossProfit = round2(netRevenue - totalCostOfSales);
+      const totalOperatingExpenses = total(operatingExpenses);
+      const operatingIncome = round2(grossProfit - totalOperatingExpenses);
+      const totalOtherIncome = total(otherIncome);
+      const totalNonOperatingExpenses = total(nonOperatingExpenses);
 
-      const totalOtherIncome = otherIncome.reduce(
-        (sum, r) => sum + r.amount,
-        0,
-      );
-      const totalNonOperatingExpenses = nonOperatingExpenses.reduce(
-        (sum, e) => sum + e.amount,
-        0,
-      );
+      const strip = (list: typeof withAmounts) =>
+        list.map(({ accountType: _t, ...rest }) => rest);
 
       return {
         period: { startDate, endDate },
         revenue: {
-          operatingRevenue,
-          contraRevenue,
-          otherIncome,
+          operatingRevenue: strip(operatingRevenue),
+          contraRevenue: strip(contraRevenue),
+          otherIncome: strip(otherIncome),
           total: totalRevenue,
         },
         expenses: {
-          costOfSales,
-          operatingExpenses,
-          nonOperatingExpenses,
+          costOfSales: strip(costOfSales),
+          operatingExpenses: strip(operatingExpenses),
+          nonOperatingExpenses: strip(nonOperatingExpenses),
           total: totalExpenses,
         },
         summary: {
@@ -363,8 +343,15 @@ export const reportService = {
   },
 
   /**
-   * Generate Cash Flow Statement
-   * Shows: Operating, Investing, Financing activities
+   * Generate Cash Flow Statement (indirect method).
+   *
+   * Every non-cash balance sheet account is classified, so
+   * beginning cash + net cash flow = ending cash by construction:
+   *   operating  = net income + Δ(current liabilities) − Δ(non-cash current
+   *                assets) + non-cash expenses (depreciation via the change
+   *                in contra fixed-asset accounts)
+   *   investing  = −Δ(fixed / non-current assets)
+   *   financing  = Δ(long-term liabilities) + Δ(equity, excluding earnings)
    */
   async generateCashFlowStatement(
     companyId: string,
@@ -372,246 +359,150 @@ export const reportService = {
     endDate: Date,
   ) {
     try {
-      // 1. Get Net Income from Income Statement
-      const incomeStatement = await this.generateIncomeStatement(
-        companyId,
-        startDate,
-        endDate,
-      );
+      const accounts = (await Account.find({
+        companyId: new mongoose.Types.ObjectId(companyId),
+      })
+        .sort({ accountCode: 1 })
+        .lean()) as unknown as LeanAccount[];
+
+      const beginningCutoff = new Date(startDate.getTime() - 1);
+
+      const [incomeStatement, openingBalances, closingBalances] =
+        await Promise.all([
+          this.generateIncomeStatement(companyId, startDate, endDate),
+          ledgerService.getBalancesByAccount(companyId, accounts, {
+            to: beginningCutoff,
+          }),
+          ledgerService.getBalancesByAccount(companyId, accounts, {
+            to: endDate,
+          }),
+        ]);
       const netIncome = incomeStatement.summary.netIncome;
 
-      // 2. Operating Activities - Get changes in current assets and liabilities
-      const operatingAccountCodes = [
-        "1100", // Accounts Receivable
-        "1200", // Inventory
-        "1300", // Prepaid Expenses
-        "2000", // Accounts Payable
-        "2100", // Accrued Expenses
-      ];
+      const change = (a: LeanAccount) =>
+        round2(
+          (closingBalances.get(a._id.toString()) ?? 0) -
+            (openingBalances.get(a._id.toString()) ?? 0),
+        );
 
-      const operatingActivities = await Promise.all(
-        operatingAccountCodes.map(async (code) => {
-          const account = await Account.findOne({
-            companyId: new mongoose.Types.ObjectId(companyId),
-            accountCode: code,
-          }).lean();
+      const cashAccounts = accounts.filter(isCashAccount);
+      const nonCash = accounts.filter((a) => !isCashAccount(a));
 
-          if (!account) {
-            return null;
-          }
-
-          // Get balance at start of period
-          const startBalance = await ledgerService.getAccountBalance(
-            companyId,
-            account._id.toString(),
-            startDate,
-          );
-
-          // Get balance at end of period
-          const endBalance = await ledgerService.getAccountBalance(
-            companyId,
-            account._id.toString(),
-            endDate,
-          );
-
-          // runningBalance is stored as (debit − credit), so credit-normal accounts
-          // (liabilities) come back negative. Normalize before computing the change so
-          // an increase in A/P produces a positive cashEffect (source of cash).
-          const normalize = (bal: number) =>
-            account.normalBalance === "Credit" ? -bal : bal;
-          const signedEnd = normalize(endBalance.balance);
-          const signedStart = normalize(startBalance.balance);
-          const change = signedEnd - signedStart;
-
-          // For assets: increase = use of cash (negative), decrease = source of cash (positive)
-          // For liabilities: increase = source of cash (positive), decrease = use of cash (negative)
-          const isAsset = account.accountType === "Asset";
-          const cashEffect = isAsset ? -change : change;
-
+      // Operating: working capital (current assets/liabilities)
+      const workingCapital = nonCash.filter(
+        (a) =>
+          isCurrentAsset(a) ||
+          (a.accountType === "Liability" && !a.subType?.includes("Long-term")),
+      );
+      const adjustments = workingCapital
+        .map((a) => {
+          const delta = change(a);
+          // Asset increase uses cash; liability increase provides cash.
+          const cashEffect = a.accountType === "Asset" ? -delta : delta;
           return {
-            accountName: account.accountName,
-            accountCode: account.accountCode,
-            change,
+            accountName: a.accountName,
+            accountCode: a.accountCode,
+            change: delta,
             cashEffect,
           };
-        }),
+        })
+        .filter((a) => a.change !== 0);
+
+      // Non-current assets. Contra accounts (e.g. accumulated depreciation)
+      // have a credit normal balance; their increase is a non-cash expense
+      // added back under operating activities.
+      const nonCurrentAssets = nonCash.filter(
+        (a) => a.accountType === "Asset" && !isCurrentAsset(a),
+      );
+      const contraNonCurrent = nonCurrentAssets.filter(
+        (a) => a.normalBalance === "Credit",
+      );
+      const grossNonCurrent = nonCurrentAssets.filter(
+        (a) => a.normalBalance !== "Credit",
       );
 
-      const validOperatingActivities = operatingActivities.filter(
-        (a) => a !== null,
+      // Contra balances are negative in asset terms; a more negative balance
+      // (more accumulated depreciation) is an add-back.
+      const depreciationAmortization = round2(
+        -sumMoney(contraNonCurrent.map(change)),
       );
 
-      // 2b. Add back non-cash Depreciation & Amortization (indirect method requirement).
-      //     These reduce Net Income but involve no cash outflow, so they must be reversed.
-      const depreciationAccounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountType: "Expense",
-        accountName: { $regex: /depreciation|amortization/i },
-      }).lean();
-
-      let totalDepreciation = 0;
-      for (const depAccount of depreciationAccounts) {
-        const depEntries = await Ledger.find({
-          companyId: new mongoose.Types.ObjectId(companyId),
-          accountId: depAccount._id,
-          transactionDate: { $gte: startDate, $lte: endDate },
-        }).lean();
-        totalDepreciation += depEntries.reduce(
-          (sum, e) => sum + parseFloat(e.debit) - parseFloat(e.credit),
-          0,
-        );
-      }
-
-      // 3. Investing Activities - Get capital expenditures (purchases of fixed assets)
-      const investingAccounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountType: "Asset",
-        subType: { $regex: /Fixed/i },
-        normalBalance: "Debit", // Exclude contra fixed-asset accounts (e.g. Accumulated Depreciation)
-      }).lean();
-
-      const investingActivities = await Promise.all(
-        investingAccounts.map(async (account) => {
-          const entries = await Ledger.find({
-            companyId: new mongoose.Types.ObjectId(companyId),
-            accountId: account._id,
-            transactionDate: { $gte: startDate, $lte: endDate },
-          }).lean();
-
-          // Debit entries increase fixed assets (purchase = use of cash)
-          const purchases = entries.reduce((sum, entry) => {
-            return sum + parseFloat(entry.debit);
-          }, 0);
-
-          // Credit entries decrease fixed assets (sale = source of cash)
-          const sales = entries.reduce((sum, entry) => {
-            return sum + parseFloat(entry.credit);
-          }, 0);
-
-          const netPurchases = purchases - sales;
-
+      const investingItems = grossNonCurrent
+        .map((a) => {
+          const delta = change(a);
           return {
-            accountName: account.accountName,
-            accountCode: account.accountCode,
-            purchases,
-            sales,
-            netCashEffect: -netPurchases, // Negative because purchases use cash
+            accountName: a.accountName,
+            accountCode: a.accountCode,
+            change: delta,
+            netCashEffect: round2(-delta),
           };
-        }),
+        })
+        .filter((a) => a.change !== 0);
+
+      const financingAccounts = nonCash.filter(
+        (a) =>
+          (a.accountType === "Liability" && a.subType?.includes("Long-term")) ||
+          (a.accountType === "Equity" &&
+            !EARNINGS_SUBTYPES.includes(a.subType ?? "") &&
+            !/retained earnings|current year earnings/i.test(a.accountName)),
       );
-
-      // 4. Financing Activities - Get equity and long-term loan changes
-      const financingAccounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        $or: [
-          { accountType: "Equity" },
-          { accountType: "Liability", subType: { $regex: /Long-term/i } },
-        ],
-      }).lean();
-
-      const financingActivities = await Promise.all(
-        financingAccounts.map(async (account) => {
-          const entries = await Ledger.find({
-            companyId: new mongoose.Types.ObjectId(companyId),
-            accountId: account._id,
-            transactionDate: { $gte: startDate, $lte: endDate },
-          }).lean();
-
-          // For equity/liabilities: Credit = increase = source of cash
-          const increases = entries.reduce((sum, entry) => {
-            return sum + parseFloat(entry.credit);
-          }, 0);
-
-          // For equity/liabilities: Debit = decrease = use of cash
-          const decreases = entries.reduce((sum, entry) => {
-            return sum + parseFloat(entry.debit);
-          }, 0);
-
-          const netCashEffect = increases - decreases;
-
+      const financingItems = financingAccounts
+        .map((a) => {
+          const delta = change(a);
           return {
-            accountName: account.accountName,
-            accountCode: account.accountCode,
-            increases,
-            decreases,
-            netCashEffect,
+            accountName: a.accountName,
+            accountCode: a.accountCode,
+            change: delta,
+            netCashEffect: delta,
           };
-        }),
+        })
+        .filter((a) => a.change !== 0);
+
+      const operatingCashFlow = round2(
+        netIncome +
+          depreciationAmortization +
+          sumMoney(adjustments.map((a) => a.cashEffect)),
+      );
+      const investingCashFlow = sumMoney(
+        investingItems.map((a) => a.netCashEffect),
+      );
+      const financingCashFlow = sumMoney(
+        financingItems.map((a) => a.netCashEffect),
+      );
+      const netCashFlow = round2(
+        operatingCashFlow + investingCashFlow + financingCashFlow,
       );
 
-      // 5. Calculate net cash flow
-      const operatingAdjustments = validOperatingActivities.reduce(
-        (sum, a) => sum + a.cashEffect,
-        0,
+      const beginningCash = sumMoney(
+        cashAccounts.map((a) => openingBalances.get(a._id.toString()) ?? 0),
       );
-      const operatingCashFlow =
-        netIncome + totalDepreciation + operatingAdjustments;
-
-      const investingCashFlow = investingActivities.reduce(
-        (sum, a) => sum + a.netCashEffect,
-        0,
+      const endingCash = sumMoney(
+        cashAccounts.map((a) => closingBalances.get(a._id.toString()) ?? 0),
       );
-
-      const financingCashFlow = financingActivities.reduce(
-        (sum, a) => sum + a.netCashEffect,
-        0,
-      );
-
-      const netCashFlow =
-        operatingCashFlow + investingCashFlow + financingCashFlow;
-
-      // 6. Get beginning and ending cash balances
-      const cashAccounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountCode: { $in: ["1000", "1010", "1020"] }, // Cash on Hand, Cash in Bank, Petty Cash
-      }).lean();
-
-      let beginningCash = 0;
-      let endingCash = 0;
-
-      // Beginning cash must be the balance at close of the day *before* the period starts.
-      // Passing startDate directly includes same-day transactions in the opening balance,
-      // causing the beginning + netCashFlow ≠ ending reconciliation to break.
-      const beginningDate = new Date(startDate);
-      beginningDate.setDate(beginningDate.getDate() - 1);
-
-      for (const cashAccount of cashAccounts) {
-        const startBalance = await ledgerService.getAccountBalance(
-          companyId,
-          cashAccount._id.toString(),
-          beginningDate,
-        );
-        const endBalance = await ledgerService.getAccountBalance(
-          companyId,
-          cashAccount._id.toString(),
-          endDate,
-        );
-
-        beginningCash += startBalance.balance;
-        endingCash += endBalance.balance;
-      }
+      const calculatedEndingCash = round2(beginningCash + netCashFlow);
 
       return {
         period: { startDate, endDate },
         operatingActivities: {
           netIncome,
-          depreciationAmortization: totalDepreciation,
-          adjustments: validOperatingActivities,
+          depreciationAmortization,
+          adjustments,
           total: operatingCashFlow,
         },
         investingActivities: {
-          items: investingActivities,
+          items: investingItems,
           total: investingCashFlow,
         },
         financingActivities: {
-          items: financingActivities,
+          items: financingItems,
           total: financingCashFlow,
         },
         summary: {
           netCashFlow,
           beginningCash,
           endingCash,
-          calculatedEndingCash: beginningCash + netCashFlow,
+          calculatedEndingCash,
+          reconciled: Math.abs(calculatedEndingCash - endingCash) < 0.01,
         },
       };
     } catch (error) {
@@ -625,7 +516,6 @@ export const reportService = {
 
   /**
    * Generate Trial Balance
-   * Reuse existing ledgerService method
    */
   async generateTrialBalance(companyId: string, asOfDate?: Date) {
     try {
@@ -641,143 +531,58 @@ export const reportService = {
 
   /**
    * Generate Accounts Receivable Aging Report
-   * Shows outstanding invoices grouped by age (0-30, 31-60, 61-90, 90+ days)
+   * Open invoices (Sent, Partial, Overdue) bucketed by days past due.
    */
   async generateARAgingReport(companyId: string, asOfDate: Date = new Date()) {
     try {
-      // Get all unpaid/partially paid invoices
       const invoices = await Invoice.find({
         companyId: new mongoose.Types.ObjectId(companyId),
-        status: { $in: ["Sent", "Partial"] },
+        status: { $in: OPEN_DOCUMENT_STATUSES },
         balanceDue: { $gt: 0 },
+        $or: [
+          { invoiceDate: { $lte: asOfDate } },
+          { invoiceDate: null, createdAt: { $lte: asOfDate } },
+        ],
       })
         .populate("customerId", "customerName displayName email")
         .lean();
 
-      // Calculate age for each invoice
-      const today = asOfDate;
-      const invoicesWithAge = invoices.map((invoice) => {
-        const dueDate = invoice.dueDate;
-        const daysOverdue = Math.floor(
-          (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
-        );
-
-        // Determine age bucket
-        let ageBucket: "Current" | "1-30" | "31-60" | "61-90" | "90+" =
-          "Current";
-        if (daysOverdue <= 0) {
-          ageBucket = "Current";
-        } else if (daysOverdue <= 30) {
-          ageBucket = "1-30";
-        } else if (daysOverdue <= 60) {
-          ageBucket = "31-60";
-        } else if (daysOverdue <= 90) {
-          ageBucket = "61-90";
-        } else {
-          ageBucket = "90+";
-        }
-
+      const rows = invoices.map((invoice) => {
+        const customer = invoice.customerId as any;
         return {
-          invoiceNumber: invoice.invoiceNumber,
-          customerId: invoice.customerId,
-          customerName: (invoice.customerId as any)?.displayName || "Unknown",
-          issueDate: invoice.invoiceDate,
+          partyId: customer?._id?.toString() || "unknown",
+          partyName:
+            customer?.displayName || customer?.customerName || "Unknown",
+          item: {
+            invoiceNumber: invoice.invoiceNumber,
+            customerId: invoice.customerId,
+            customerName:
+              customer?.displayName || customer?.customerName || "Unknown",
+            issueDate: invoice.invoiceDate,
+            dueDate: invoice.dueDate,
+            totalAmount: invoice.totalAmount,
+            amountPaid: invoice.amountPaid || 0,
+            balanceDue: invoice.balanceDue,
+          },
           dueDate: invoice.dueDate,
-          totalAmount: invoice.totalAmount,
-          amountPaid: invoice.amountPaid || 0,
           balanceDue: invoice.balanceDue,
-          daysOverdue,
-          ageBucket,
         };
       });
 
-      // Group by customer
-      const customerMap = new Map<
-        string,
-        {
-          customerId: string;
-          customerName: string;
-          invoices: typeof invoicesWithAge;
-          totals: {
-            current: number;
-            days1to30: number;
-            days31to60: number;
-            days61to90: number;
-            days90plus: number;
-            total: number;
-          };
-        }
-      >();
-
-      for (const invoice of invoicesWithAge) {
-        const customerId =
-          (invoice.customerId as any)?._id?.toString() || "unknown";
-        if (!customerMap.has(customerId)) {
-          customerMap.set(customerId, {
-            customerId,
-            customerName: invoice.customerName,
-            invoices: [],
-            totals: {
-              current: 0,
-              days1to30: 0,
-              days31to60: 0,
-              days61to90: 0,
-              days90plus: 0,
-              total: 0,
-            },
-          });
-        }
-
-        const customer = customerMap.get(customerId)!;
-        customer.invoices.push(invoice);
-
-        // Add to bucket totals
-        switch (invoice.ageBucket) {
-          case "Current":
-            customer.totals.current += invoice.balanceDue;
-            break;
-          case "1-30":
-            customer.totals.days1to30 += invoice.balanceDue;
-            break;
-          case "31-60":
-            customer.totals.days31to60 += invoice.balanceDue;
-            break;
-          case "61-90":
-            customer.totals.days61to90 += invoice.balanceDue;
-            break;
-          case "90+":
-            customer.totals.days90plus += invoice.balanceDue;
-            break;
-        }
-        customer.totals.total += invoice.balanceDue;
-      }
-
-      // Calculate grand totals
-      const grandTotals = {
-        current: 0,
-        days1to30: 0,
-        days31to60: 0,
-        days61to90: 0,
-        days90plus: 0,
-        total: 0,
-      };
-
-      for (const customer of customerMap.values()) {
-        grandTotals.current += customer.totals.current;
-        grandTotals.days1to30 += customer.totals.days1to30;
-        grandTotals.days31to60 += customer.totals.days31to60;
-        grandTotals.days61to90 += customer.totals.days61to90;
-        grandTotals.days90plus += customer.totals.days90plus;
-        grandTotals.total += customer.totals.total;
-      }
+      const { groups, grandTotals, count } = bucketAging(rows, asOfDate);
 
       return {
         asOfDate,
-        customers: Array.from(customerMap.values()),
+        customers: groups.map((g) => ({
+          customerId: g.partyId,
+          customerName: g.partyName,
+          invoices: g.items,
+          totals: g.totals,
+        })),
         grandTotals,
         summary: {
-          totalInvoices: invoicesWithAge.length,
-          totalCustomers: customerMap.size,
+          totalInvoices: count,
+          totalCustomers: groups.length,
           totalOutstanding: grandTotals.total,
         },
       };
@@ -792,143 +597,60 @@ export const reportService = {
 
   /**
    * Generate Accounts Payable Aging Report
-   * Shows outstanding bills grouped by age (0-30, 31-60, 61-90, 90+ days)
+   * Open bills (Sent, Partial, Overdue) bucketed by days past due.
+   * (Previously filtered on a non-existent "Open" status, so unpaid bills
+   * that had no payments never appeared.)
    */
   async generateAPAgingReport(companyId: string, asOfDate: Date = new Date()) {
     try {
-      // Get all unpaid/partially paid bills
       const bills = await Bill.find({
         companyId: new mongoose.Types.ObjectId(companyId),
-        status: { $in: ["Open", "Partial"] },
+        status: { $in: OPEN_DOCUMENT_STATUSES },
         balanceDue: { $gt: 0 },
+        $or: [
+          { billDate: { $lte: asOfDate } },
+          { billDate: null, createdAt: { $lte: asOfDate } },
+        ],
       })
         .populate("supplierId", "supplierName displayName email")
         .lean();
 
-      // Calculate age for each bill
-      const today = asOfDate;
-      const billsWithAge = bills.map((bill) => {
-        const dueDate = bill.dueDate;
-        const daysOverdue = Math.floor(
-          (today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24),
-        );
-
-        // Determine age bucket
-        let ageBucket: "Current" | "1-30" | "31-60" | "61-90" | "90+" =
-          "Current";
-        if (daysOverdue <= 0) {
-          ageBucket = "Current";
-        } else if (daysOverdue <= 30) {
-          ageBucket = "1-30";
-        } else if (daysOverdue <= 60) {
-          ageBucket = "31-60";
-        } else if (daysOverdue <= 90) {
-          ageBucket = "61-90";
-        } else {
-          ageBucket = "90+";
-        }
-
+      const rows = bills.map((bill) => {
+        const supplier = bill.supplierId as any;
         return {
-          billNumber: bill.billNumber,
-          supplierId: bill.supplierId,
-          supplierName: (bill.supplierId as any)?.displayName || "Unknown",
-          billDate: bill.createdAt,
+          partyId: supplier?._id?.toString() || "unknown",
+          partyName:
+            supplier?.displayName || supplier?.supplierName || "Unknown",
+          item: {
+            billNumber: bill.billNumber,
+            supplierId: bill.supplierId,
+            supplierName:
+              supplier?.displayName || supplier?.supplierName || "Unknown",
+            billDate: (bill as any).billDate ?? bill.createdAt,
+            dueDate: bill.dueDate,
+            totalAmount: bill.totalAmount,
+            amountPaid: bill.amountPaid || 0,
+            balanceDue: bill.balanceDue,
+          },
           dueDate: bill.dueDate,
-          totalAmount: bill.totalAmount,
-          amountPaid: bill.amountPaid || 0,
           balanceDue: bill.balanceDue,
-          daysOverdue,
-          ageBucket,
         };
       });
 
-      // Group by supplier
-      const supplierMap = new Map<
-        string,
-        {
-          supplierId: string;
-          supplierName: string;
-          bills: typeof billsWithAge;
-          totals: {
-            current: number;
-            days1to30: number;
-            days31to60: number;
-            days61to90: number;
-            days90plus: number;
-            total: number;
-          };
-        }
-      >();
-
-      for (const bill of billsWithAge) {
-        const supplierId =
-          (bill.supplierId as any)?._id?.toString() || "unknown";
-        if (!supplierMap.has(supplierId)) {
-          supplierMap.set(supplierId, {
-            supplierId,
-            supplierName: bill.supplierName,
-            bills: [],
-            totals: {
-              current: 0,
-              days1to30: 0,
-              days31to60: 0,
-              days61to90: 0,
-              days90plus: 0,
-              total: 0,
-            },
-          });
-        }
-
-        const supplier = supplierMap.get(supplierId)!;
-        supplier.bills.push(bill);
-
-        // Add to bucket totals
-        switch (bill.ageBucket) {
-          case "Current":
-            supplier.totals.current += bill.balanceDue;
-            break;
-          case "1-30":
-            supplier.totals.days1to30 += bill.balanceDue;
-            break;
-          case "31-60":
-            supplier.totals.days31to60 += bill.balanceDue;
-            break;
-          case "61-90":
-            supplier.totals.days61to90 += bill.balanceDue;
-            break;
-          case "90+":
-            supplier.totals.days90plus += bill.balanceDue;
-            break;
-        }
-        supplier.totals.total += bill.balanceDue;
-      }
-
-      // Calculate grand totals
-      const grandTotals = {
-        current: 0,
-        days1to30: 0,
-        days31to60: 0,
-        days61to90: 0,
-        days90plus: 0,
-        total: 0,
-      };
-
-      for (const supplier of supplierMap.values()) {
-        grandTotals.current += supplier.totals.current;
-        grandTotals.days1to30 += supplier.totals.days1to30;
-        grandTotals.days31to60 += supplier.totals.days31to60;
-        grandTotals.days61to90 += supplier.totals.days61to90;
-        grandTotals.days90plus += supplier.totals.days90plus;
-        grandTotals.total += supplier.totals.total;
-      }
+      const { groups, grandTotals, count } = bucketAging(rows, asOfDate);
 
       return {
         asOfDate,
-        suppliers: Array.from(supplierMap.values()),
+        suppliers: groups.map((g) => ({
+          supplierId: g.partyId,
+          supplierName: g.partyName,
+          bills: g.items,
+          totals: g.totals,
+        })),
         grandTotals,
         summary: {
-          totalBills: billsWithAge.length,
-          totalSuppliers: supplierMap.size,
+          totalBills: count,
+          totalSuppliers: groups.length,
           totalOutstanding: grandTotals.total,
         },
       };
@@ -941,3 +663,95 @@ export const reportService = {
     }
   },
 };
+
+type AgeBucket = "Current" | "1-30" | "31-60" | "61-90" | "90+";
+
+interface AgingTotals {
+  current: number;
+  days1to30: number;
+  days31to60: number;
+  days61to90: number;
+  days90plus: number;
+  total: number;
+}
+
+const emptyTotals = (): AgingTotals => ({
+  current: 0,
+  days1to30: 0,
+  days31to60: 0,
+  days61to90: 0,
+  days90plus: 0,
+  total: 0,
+});
+
+const BUCKET_FIELD: Record<AgeBucket, keyof AgingTotals> = {
+  Current: "current",
+  "1-30": "days1to30",
+  "31-60": "days31to60",
+  "61-90": "days61to90",
+  "90+": "days90plus",
+};
+
+/**
+ * Shared AR/AP aging: bucket rows by days past due and group by party.
+ */
+function bucketAging<T extends Record<string, unknown>>(
+  rows: Array<{
+    partyId: string;
+    partyName: string;
+    item: T;
+    dueDate: Date;
+    balanceDue: number;
+  }>,
+  asOfDate: Date,
+) {
+  const groups = new Map<
+    string,
+    {
+      partyId: string;
+      partyName: string;
+      items: Array<T & { daysOverdue: number; ageBucket: AgeBucket }>;
+      totals: AgingTotals;
+    }
+  >();
+  const grandTotals = emptyTotals();
+
+  for (const row of rows) {
+    const daysOverdue = Math.floor(
+      (asOfDate.getTime() - new Date(row.dueDate).getTime()) / DAY_MS,
+    );
+    const ageBucket: AgeBucket =
+      daysOverdue <= 0
+        ? "Current"
+        : daysOverdue <= 30
+          ? "1-30"
+          : daysOverdue <= 60
+            ? "31-60"
+            : daysOverdue <= 90
+              ? "61-90"
+              : "90+";
+
+    if (!groups.has(row.partyId)) {
+      groups.set(row.partyId, {
+        partyId: row.partyId,
+        partyName: row.partyName,
+        items: [],
+        totals: emptyTotals(),
+      });
+    }
+    const group = groups.get(row.partyId)!;
+    group.items.push({ ...row.item, daysOverdue, ageBucket });
+
+    const field = BUCKET_FIELD[ageBucket];
+    group.totals[field] = round2(group.totals[field] + row.balanceDue);
+    group.totals.total = round2(group.totals.total + row.balanceDue);
+    grandTotals[field] = round2(grandTotals[field] + row.balanceDue);
+    grandTotals.total = round2(grandTotals.total + row.balanceDue);
+  }
+
+  return {
+    groups: Array.from(groups.values()),
+    grandTotals,
+    count: rows.length,
+  };
+}

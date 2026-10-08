@@ -1,5 +1,6 @@
 import mongoose, { Schema } from "mongoose";
 
+import { moneyEquals, round2, sumMoney } from "../shared/helpers/money.js";
 import {
   IJournalEntry,
   IJournalEntryDocument,
@@ -7,6 +8,8 @@ import {
   JournalEntryStatus,
   JournalEntryType,
 } from "../shared/interface/IJournalEntry.js";
+
+import { nextDocumentNumber } from "./Counter.js";
 
 /**
  * Journal Entry Line Item Schema
@@ -124,6 +127,25 @@ const JournalEntrySchema = new Schema<IJournalEntry>(
       default: false,
       index: true,
     },
+    reversalOfEntryId: {
+      type: Schema.Types.ObjectId,
+      ref: "JournalEntry",
+      default: null,
+    },
+    reversedByEntryId: {
+      type: Schema.Types.ObjectId,
+      ref: "JournalEntry",
+      default: null,
+    },
+    sourceType: {
+      type: String,
+      enum: ["Invoice", "Bill", "Payment", "Period", null],
+      default: null,
+    },
+    sourceId: {
+      type: Schema.Types.ObjectId,
+      default: null,
+    },
     postedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -157,20 +179,27 @@ JournalEntrySchema.index({ companyId: 1, entryDate: -1 });
 JournalEntrySchema.index({ companyId: 1, status: 1 });
 JournalEntrySchema.index({ companyId: 1, entryType: 1 });
 JournalEntrySchema.index({ companyId: 1, entryNumber: 1 }, { unique: true });
+JournalEntrySchema.index({ companyId: 1, sourceType: 1, sourceId: 1 });
 
 /**
  * Pre-validate: Calculate totals and ensure debits equal credits
  */
 JournalEntrySchema.pre("validate", function () {
-  // Calculate totals from lines
-  this.totalDebit = this.lines.reduce((sum, line) => sum + line.debit, 0);
-  this.totalCredit = this.lines.reduce((sum, line) => sum + line.credit, 0);
+  // Round every line to cents and recompute totals from the lines.
+  for (const line of this.lines) {
+    line.debit = round2(line.debit || 0);
+    line.credit = round2(line.credit || 0);
+  }
+  this.totalDebit = sumMoney(this.lines.map((line) => line.debit));
+  this.totalCredit = sumMoney(this.lines.map((line) => line.credit));
 
-  // Validate balanced entry
-  const tolerance = 0.01; // Allow small rounding differences
-  if (Math.abs(this.totalDebit - this.totalCredit) > tolerance) {
+  if (this.lines.length < 2) {
+    throw new Error("Journal entry must have at least two lines");
+  }
+
+  if (!moneyEquals(this.totalDebit, this.totalCredit)) {
     throw new Error(
-      `Journal entry must be balanced. Total Debit: ${this.totalDebit}, Total Credit: ${this.totalCredit}`,
+      `Journal entry is not balanced. Debits: ${this.totalDebit}, Credits: ${this.totalCredit}`,
     );
   }
 
@@ -190,31 +219,19 @@ JournalEntrySchema.pre("validate", function () {
 });
 
 /**
- * Pre-validate hook: Generate entry number if not provided
+ * Pre-validate hook: Generate entry number if not provided.
+ * Uses an atomic per-company counter keyed by the entry's year.
  */
 JournalEntrySchema.pre("validate", async function () {
   if (this.isNew && !this.entryNumber) {
-    const year = new Date().getFullYear();
-    const prefix = `JE-${year}-`;
-
-    // Find the last entry number for this year
-    const lastEntry = await mongoose
-      .model<IJournalEntryDocument>("JournalEntry")
-      .findOne({
-        companyId: this.companyId,
-        entryNumber: new RegExp(`^${prefix}`),
-      })
-      .sort({ entryNumber: -1 })
-      .select("entryNumber");
-
-    let nextNumber = 1;
-    if (lastEntry && lastEntry.entryNumber) {
-      const lastNumberStr = lastEntry.entryNumber.replace(prefix, "");
-      const lastNumber = parseInt(lastNumberStr, 10);
-      nextNumber = lastNumber + 1;
-    }
-
-    this.entryNumber = `${prefix}${nextNumber.toString().padStart(3, "0")}`;
+    const year = (this.entryDate ?? new Date()).getFullYear();
+    this.entryNumber = await nextDocumentNumber({
+      model: mongoose.model<IJournalEntryDocument>("JournalEntry"),
+      field: "entryNumber",
+      companyId: this.companyId,
+      prefix: `JE-${year}-`,
+      pad: 3,
+    });
   }
 });
 

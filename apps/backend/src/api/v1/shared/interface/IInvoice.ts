@@ -57,5 +57,5 @@ export interface IInvoice {
  */
 export interface IInvoiceDocument extends Omit<IInvoice, "_id">, Document {
   recordPayment(amount: number): Promise<IInvoiceDocument>;
-  void(): Promise<IInvoiceDocument>;
+  void(): IInvoiceDocument;
 }

@@ -8,6 +8,8 @@ import {
   PaymentType,
 } from "../shared/interface/IPayment.js";
 
+import { nextDocumentNumber } from "./Counter.js";
+
 /**
  * Payment Allocation Schema
  * Tracks how much of a payment is allocated to each invoice/bill
@@ -55,8 +57,6 @@ const PaymentSchema = new Schema<IPayment>(
       type: String,
       required: [true, "Payment number is required"],
       trim: true,
-      unique: true,
-      index: true,
     },
     paymentDate: {
       type: Date,
@@ -185,7 +185,8 @@ PaymentSchema.index({ companyId: 1, paymentType: 1 });
 PaymentSchema.index({ companyId: 1, customerId: 1 });
 PaymentSchema.index({ companyId: 1, supplierId: 1 });
 PaymentSchema.index({ companyId: 1, paymentDate: -1 });
-PaymentSchema.index({ companyId: 1, paymentNumber: 1 });
+// Payment numbers are unique per company (not globally).
+PaymentSchema.index({ companyId: 1, paymentNumber: 1 }, { unique: true });
 
 /**
  * Pre-save validation: Ensure correct type-specific fields
@@ -227,34 +228,20 @@ PaymentSchema.pre("save", function () {
 });
 
 /**
- * Pre-save hook: Generate payment number if not provided
+ * Pre-validate hook: Generate payment number (atomic per-company counter).
  */
-PaymentSchema.pre("save", async function () {
+PaymentSchema.pre("validate", async function () {
   if (this.isNew && !this.paymentNumber) {
-    const year = new Date().getFullYear();
+    const year = (this.paymentDate ?? new Date()).getFullYear();
     const typePrefix =
       this.paymentType === PaymentType.RECEIVED ? "PMT-RCV" : "PMT-MADE";
-    const prefix = `${typePrefix}-${year}-`;
-
-    // Find the last payment number for this year and type
-    const lastPayment = await mongoose
-      .model<IPaymentDocument>("Payment")
-      .findOne({
-        companyId: this.companyId,
-        paymentType: this.paymentType,
-        paymentNumber: new RegExp(`^${prefix}`),
-      })
-      .sort({ paymentNumber: -1 })
-      .select("paymentNumber");
-
-    let nextNumber = 1;
-    if (lastPayment && lastPayment.paymentNumber) {
-      const lastNumberStr = lastPayment.paymentNumber.replace(prefix, "");
-      const lastNumber = parseInt(lastNumberStr, 10);
-      nextNumber = lastNumber + 1;
-    }
-
-    this.paymentNumber = `${prefix}${nextNumber.toString().padStart(4, "0")}`;
+    this.paymentNumber = await nextDocumentNumber({
+      model: mongoose.model<IPaymentDocument>("Payment"),
+      field: "paymentNumber",
+      companyId: this.companyId,
+      prefix: `${typePrefix}-${year}-`,
+      pad: 4,
+    });
   }
 });
 

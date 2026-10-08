@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { accountSchema } from "@sas/validators";
 
 import logger from "../../config/logger.js";
-import { getCompanyId } from "../../shared/helpers/utils.js";
+import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
 import accountsService from "./accountsService.js";
 
@@ -156,6 +156,7 @@ const accountsController = {
       const account = await accountsService.createAccount(
         companyId,
         validationResult.data,
+        getUserId(req),
       );
 
       return res.status(201).json({

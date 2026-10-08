@@ -1,11 +1,18 @@
 import mongoose, { Schema } from "mongoose";
 
 import {
+  applyDocumentStatus,
+  applyDocumentTotals,
+  OPEN_DOCUMENT_STATUSES,
+} from "../shared/helpers/documentTotals.js";
+import {
   IInvoice,
   IInvoiceDocument,
   IInvoiceLineItem,
   InvoiceStatus,
 } from "../shared/interface/IInvoice.js";
+
+import { nextDocumentNumber } from "./Counter.js";
 
 /**
  * Invoice Line Item Schema
@@ -178,40 +185,28 @@ InvoiceSchema.index({ companyId: 1, invoiceDate: -1 });
 InvoiceSchema.index({ companyId: 1, dueDate: 1 });
 
 /**
- * Pre-save: Calculate amounts from line items
+ * Pre-validate: generate the invoice number (atomic per-company counter).
  */
-InvoiceSchema.pre("save", function () {
-  // Calculate subtotal from line items
-  this.subtotal = this.lineItems.reduce((sum, item) => {
-    item.amount = item.quantity * item.unitPrice;
-    return sum + item.amount;
-  }, 0);
-
-  // Calculate tax amount
-  this.taxAmount = (this.subtotal * this.taxRate) / 100;
-
-  // Calculate total amount
-  this.totalAmount = this.subtotal + this.taxAmount - this.discount;
-
-  // Calculate balance due
-  this.balanceDue = this.totalAmount - this.amountPaid;
+InvoiceSchema.pre("validate", async function () {
+  if (this.isNew && !this.invoiceNumber) {
+    const year = (this.invoiceDate ?? new Date()).getFullYear();
+    this.invoiceNumber = await nextDocumentNumber({
+      model: mongoose.model<IInvoiceDocument>("Invoice"),
+      field: "invoiceNumber",
+      companyId: this.companyId,
+      prefix: `INV-${year}-`,
+      pad: 4,
+    });
+  }
 });
 
 /**
- * Pre-save: Auto-update status based on payment
+ * Pre-validate: recompute amounts from line items and derive the status.
+ * Runs before schema validation so min/required checks see final values.
  */
-InvoiceSchema.pre("save", function () {
-  if (this.status === InvoiceStatus.VOID) return;
-
-  const tolerance = 0.01;
-
-  if (Math.abs(this.balanceDue) < tolerance) {
-    this.status = InvoiceStatus.PAID;
-  } else if (this.amountPaid > 0 && this.amountPaid < this.totalAmount) {
-    this.status = InvoiceStatus.PARTIAL;
-  } else if (this.dueDate < new Date() && this.balanceDue > 0) {
-    this.status = InvoiceStatus.OVERDUE;
-  }
+InvoiceSchema.pre("validate", function () {
+  applyDocumentTotals(this);
+  applyDocumentStatus(this);
 });
 
 /**
@@ -232,14 +227,18 @@ InvoiceSchema.methods.recordPayment = function (amount: number) {
  * Instance method: Void invoice
  */
 InvoiceSchema.methods.void = function () {
+  if (this.status === InvoiceStatus.VOID) {
+    throw new Error("Invoice is already void");
+  }
   if (this.status === InvoiceStatus.PAID) {
     throw new Error("Cannot void a paid invoice");
   }
   if (this.amountPaid > 0) {
     throw new Error("Cannot void an invoice with payments");
   }
+  // The caller saves (inside its transaction).
   this.status = InvoiceStatus.VOID;
-  return this.save();
+  return this;
 };
 
 /**
@@ -269,7 +268,7 @@ InvoiceSchema.statics.findOverdue = function (
 ) {
   return this.find({
     companyId,
-    status: { $in: [InvoiceStatus.SENT, InvoiceStatus.PARTIAL] },
+    status: { $in: OPEN_DOCUMENT_STATUSES },
     dueDate: { $lt: Date.now() },
   }).sort({ dueDate: 1 });
 };

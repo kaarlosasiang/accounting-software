@@ -222,7 +222,7 @@ describe("Period Module", () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty("isClosed");
+      expect(response.body.data).toHaveProperty("isInClosedPeriod");
     });
   });
 

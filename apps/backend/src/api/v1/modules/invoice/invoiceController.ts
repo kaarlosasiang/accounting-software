@@ -154,6 +154,7 @@ export const invoiceController = {
         companyId,
         id,
         req.body,
+        getUserId(req),
       );
 
       // fire-and-forget audit log
@@ -245,7 +246,11 @@ export const invoiceController = {
         });
       }
 
-      const invoice = await invoiceService.voidInvoice(companyId, id);
+      const invoice = await invoiceService.voidInvoice(
+        companyId,
+        id,
+        getUserId(req),
+      );
 
       return res.status(200).json({
         success: true,
@@ -420,7 +425,11 @@ export const invoiceController = {
 
       // The sender name is always loaded from the company record; a
       // client-supplied name would let users send spoofed emails.
-      const invoice = await invoiceService.sendInvoice(companyId, id);
+      const invoice = await invoiceService.sendInvoice(
+        companyId,
+        id,
+        getUserId(req),
+      );
 
       return res.status(200).json({
         success: true,
@@ -454,11 +463,26 @@ export const invoiceController = {
         });
       }
 
-      const paymentData = {
-        ...req.body,
-        invoiceId: id,
-        companyId,
-      };
+      // This endpoint pays a single document: default the allocation to it
+      // and reject allocations that target any other document.
+      const allocations =
+        Array.isArray(req.body?.allocations) && req.body.allocations.length > 0
+          ? req.body.allocations
+          : [
+              {
+                documentId: id,
+                allocatedAmount: req.body?.amount,
+                documentType: "INVOICE",
+              },
+            ];
+      if (allocations.some((a: any) => String(a?.documentId) !== id)) {
+        return res.status(400).json({
+          success: false,
+          error: "Allocations must target this document only",
+        });
+      }
+
+      const paymentData = { ...req.body, allocations };
 
       const result = await paymentService.recordPaymentReceived(
         companyId,

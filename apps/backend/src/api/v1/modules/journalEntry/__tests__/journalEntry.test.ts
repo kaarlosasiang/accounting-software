@@ -605,8 +605,8 @@ describe("Journal Entry Module", () => {
         (e) => e.accountId.toString() === testCashAccountId.toString(),
       );
       expect(debitEntry).toBeDefined();
-      expect(debitEntry!.debit).toBe("750"); // String
-      expect(debitEntry!.credit).toBe("0");
+      expect(debitEntry!.debit).toBe(750);
+      expect(debitEntry!.credit).toBe(0);
       expect(debitEntry!.runningBalance).toBe(750);
 
       // Verify credit ledger entry (Revenue)
@@ -614,8 +614,8 @@ describe("Journal Entry Module", () => {
         (e) => e.accountId.toString() === testRevenueAccountId.toString(),
       );
       expect(creditEntry).toBeDefined();
-      expect(creditEntry!.debit).toBe("0");
-      expect(creditEntry!.credit).toBe("750");
+      expect(creditEntry!.debit).toBe(0);
+      expect(creditEntry!.credit).toBe(750);
       expect(creditEntry!.runningBalance).toBe(750);
     });
 
@@ -658,13 +658,22 @@ describe("Journal Entry Module", () => {
       expect(response.body.data.voidedAt).toBeDefined();
       expect(response.body.data.voidedBy).toBeDefined();
 
-      // Verify reversal ledger entries were created
+      // Voiding posts a separate reversing journal entry linked both ways
       const db = mongoClient.db();
+      const original = await db
+        .collection("journalEntries")
+        .findOne({ _id: new ObjectId(createdEntryId) });
+      expect(original?.reversedByEntryId).toBeTruthy();
+
+      const reversal = await db
+        .collection("journalEntries")
+        .findOne({ _id: original!.reversedByEntryId });
+      expect(reversal?.status).toBe("Posted");
+      expect(reversal?.reversalOfEntryId?.toString()).toBe(createdEntryId);
+
       const voidEntries = await db
         .collection("ledgers")
-        .find({
-          entryNumber: { $regex: /VOID$/ },
-        })
+        .find({ journalEntryId: original!.reversedByEntryId })
         .toArray();
 
       expect(voidEntries).toHaveLength(2);
@@ -674,8 +683,8 @@ describe("Journal Entry Module", () => {
         (e) => e.accountId.toString() === testCashAccountId.toString(),
       );
       expect(voidDebit).toBeDefined();
-      expect(voidDebit!.debit).toBe("0"); // Original was 750 debit → voided as 0
-      expect(voidDebit!.credit).toBe("750"); // Swapped
+      expect(voidDebit!.debit).toBe(0); // Original was 750 debit → voided as 0
+      expect(voidDebit!.credit).toBe(750); // Swapped
     });
 
     it("should reject voiding an already voided entry", async () => {
@@ -685,9 +694,7 @@ describe("Journal Entry Module", () => {
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
-      expect(response.body.error).toContain(
-        "Only posted entries can be voided",
-      );
+      expect(response.body.error).toContain("already voided");
     });
   });
 
@@ -903,7 +910,7 @@ describe("Journal Entry Module", () => {
         .toArray();
 
       expect(cashLedger).toHaveLength(1);
-      expect(cashLedger[0].debit).toBe("300");
+      expect(cashLedger[0].debit).toBe(300);
       expect(typeof cashLedger[0].runningBalance).toBe("number");
     });
   });

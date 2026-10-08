@@ -1,53 +1,93 @@
-import mongoose from "mongoose";
+import mongoose, { ClientSession } from "mongoose";
 
 import logger from "../config/logger.js";
 import Account from "../models/Account.js";
 import { AccountingPeriod } from "../models/AccountingPeriod.js";
 import { Customer } from "../models/Customer.js";
+import { InventoryItem } from "../models/InventoryItem.js";
 import { JournalEntry } from "../models/JournalEntry.js";
 import { Ledger } from "../models/Ledger.js";
+import { round2 } from "../shared/helpers/money.js";
 import { PeriodStatus } from "../shared/interface/IAccountingPeriod.js";
 import { IBill } from "../shared/interface/IBill.js";
 import { IInvoice } from "../shared/interface/IInvoice.js";
 import {
+  IJournalEntryDocument,
+  IJournalEntryLine,
   JournalEntryStatus,
   JournalEntryType,
 } from "../shared/interface/IJournalEntry.js";
 
-interface JournalEntryLineInput {
-  accountId: mongoose.Types.ObjectId;
-  accountCode: string;
-  accountName: string;
-  debit: number;
-  credit: number;
+import {
+  findSystemAccount,
+  requireSystemAccount,
+  ResolvedAccount,
+  SystemAccount,
+} from "./accountResolver.js";
+
+type ObjectIdLike = mongoose.Types.ObjectId | string;
+
+const toObjectId = (id: ObjectIdLike) =>
+  new mongoose.Types.ObjectId(String(id));
+
+/** A line as supplied by callers: account + amounts (description optional). */
+export interface PostingLineInput {
+  accountId: ObjectIdLike;
+  debit?: number;
+  credit?: number;
   description?: string;
 }
 
+export interface PostEntryParams {
+  companyId: ObjectIdLike;
+  userId: ObjectIdLike;
+  entryDate: Date;
+  entryType: JournalEntryType;
+  lines: PostingLineInput[];
+  description?: string;
+  referenceNumber?: string;
+  isClosingEntry?: boolean;
+  sourceType?: "Invoice" | "Bill" | "Payment" | "Period";
+  sourceId?: ObjectIdLike;
+  reversalOfEntryId?: ObjectIdLike;
+  /** Allow posting to archived accounts (used when reversing old entries). */
+  allowInactiveAccounts?: boolean;
+  session?: ClientSession | null;
+}
+
+const isDebitNormal = (accountType: string) =>
+  accountType === "Asset" || accountType === "Expense";
+
 /**
- * Journal Entry Service
- * Handles automatic creation of journal entries for invoices and bills
+ * Journal Entry Service — the single posting engine.
+ *
+ * Every automatic or manual posting goes through `postEntry` /
+ * `postDraftEntry`, which validate the entry and write the journal entry and
+ * its ledger rows inside the caller's MongoDB session, so a failed business
+ * operation can never leave orphaned GL postings behind. Voids go through
+ * `reverseEntry`, which posts a reversing entry and marks the original void.
  */
 export class JournalEntryService {
+  // ─── Validation helpers ────────────────────────────────────────────────────
+
   /**
-   * Check if transaction date is in a closed/locked period
-   * @throws Error if date is in a closed/locked period
+   * Throw if the date falls in a closed or locked accounting period.
+   * Closing entries are exempt (they post into the period being closed).
    */
   static async validatePeriodNotClosed(
-    companyId: mongoose.Types.ObjectId,
+    companyId: ObjectIdLike,
     transactionDate: Date,
     isClosingEntry: boolean = false,
+    session?: ClientSession | null,
   ): Promise<void> {
-    // Skip validation for closing entries (they need to post to the period being closed)
-    if (isClosingEntry) {
-      return;
-    }
+    if (isClosingEntry) return;
 
     const period = await AccountingPeriod.findOne({
-      companyId,
+      companyId: toObjectId(companyId),
       startDate: { $lte: transactionDate },
       endDate: { $gte: transactionDate },
       status: { $in: [PeriodStatus.CLOSED, PeriodStatus.LOCKED] },
-    });
+    }).session(session ?? null);
 
     if (period) {
       throw new Error(
@@ -59,8 +99,331 @@ export class JournalEntryService {
   }
 
   /**
-   * Create a manual journal entry or closing entry
-   * Used for manual adjustments, accruals, and period closing
+   * Resolve and validate posting lines: every account must exist in the
+   * company (and be active unless `allowInactive`), amounts are rounded to
+   * cents and must be non-negative, and lines with zero amounts are dropped.
+   */
+  static async buildLines(
+    companyId: ObjectIdLike,
+    inputs: PostingLineInput[],
+    options: { allowInactive?: boolean; session?: ClientSession | null } = {},
+  ): Promise<IJournalEntryLine[]> {
+    const accountIds = [
+      ...new Set(inputs.map((line) => String(line.accountId))),
+    ];
+    for (const id of accountIds) {
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new Error(`Invalid account id: ${id}`);
+      }
+    }
+
+    const accounts = await Account.find({
+      _id: { $in: accountIds.map(toObjectId) },
+      companyId: toObjectId(companyId),
+    })
+      .session(options.session ?? null)
+      .lean();
+    const byId = new Map(accounts.map((a) => [a._id.toString(), a]));
+
+    const lines: IJournalEntryLine[] = [];
+    for (const input of inputs) {
+      const account = byId.get(String(input.accountId));
+      if (!account) {
+        throw new Error(`Account not found: ${input.accountId}`);
+      }
+      if (account.isActive === false && !options.allowInactive) {
+        throw new Error(
+          `Account ${account.accountCode} - ${account.accountName} is archived`,
+        );
+      }
+
+      const debit = round2(Number(input.debit) || 0);
+      const credit = round2(Number(input.credit) || 0);
+      if (debit < 0 || credit < 0) {
+        throw new Error("Debit and credit amounts cannot be negative");
+      }
+      if (debit === 0 && credit === 0) continue;
+
+      lines.push({
+        accountId: account._id,
+        accountCode: account.accountCode,
+        accountName: account.accountName,
+        debit,
+        credit,
+        description: input.description ?? "",
+      });
+    }
+
+    return lines;
+  }
+
+  // ─── Posting ───────────────────────────────────────────────────────────────
+
+  /**
+   * Create a POSTED journal entry and its ledger rows atomically (within the
+   * supplied session).
+   */
+  static async postEntry(
+    params: PostEntryParams,
+  ): Promise<IJournalEntryDocument> {
+    const session = params.session ?? null;
+
+    await this.validatePeriodNotClosed(
+      params.companyId,
+      params.entryDate,
+      params.isClosingEntry ?? false,
+      session,
+    );
+
+    const lines = await this.buildLines(params.companyId, params.lines, {
+      allowInactive: params.allowInactiveAccounts,
+      session,
+    });
+
+    const entry = new JournalEntry({
+      companyId: toObjectId(params.companyId),
+      entryDate: params.entryDate,
+      referenceNumber: params.referenceNumber,
+      description: params.description,
+      entryType: params.entryType,
+      status: JournalEntryStatus.POSTED,
+      lines,
+      isClosingEntry: params.isClosingEntry ?? false,
+      sourceType: params.sourceType ?? null,
+      sourceId: params.sourceId ? toObjectId(params.sourceId) : null,
+      reversalOfEntryId: params.reversalOfEntryId
+        ? toObjectId(params.reversalOfEntryId)
+        : null,
+      postedBy: toObjectId(params.userId),
+      createdBy: toObjectId(params.userId),
+    });
+
+    await entry.save({ session: session ?? undefined });
+    await this.writeLedgerRows(entry, session);
+
+    return entry;
+  }
+
+  /**
+   * Post an existing DRAFT journal entry (manual entries are created as
+   * drafts and posted later).
+   */
+  static async postDraftEntry(
+    entry: IJournalEntryDocument,
+    userId: ObjectIdLike,
+    session?: ClientSession | null,
+  ): Promise<IJournalEntryDocument> {
+    if (entry.status !== JournalEntryStatus.DRAFT) {
+      throw new Error("Only draft entries can be posted");
+    }
+
+    await this.validatePeriodNotClosed(
+      entry.companyId,
+      entry.entryDate,
+      entry.isClosingEntry ?? false,
+      session,
+    );
+
+    // Re-validate accounts at posting time (they may have been archived or
+    // deleted since the draft was saved).
+    entry.lines = await this.buildLines(
+      entry.companyId,
+      entry.lines.map((line) => ({
+        accountId: line.accountId,
+        debit: line.debit,
+        credit: line.credit,
+        description: line.description,
+      })),
+      { session },
+    );
+
+    entry.status = JournalEntryStatus.POSTED;
+    entry.postedBy = toObjectId(userId);
+    await entry.save({ session: session ?? undefined });
+    await this.writeLedgerRows(entry, session);
+
+    return entry;
+  }
+
+  /**
+   * Write one ledger row per journal entry line.
+   *
+   * `runningBalance` is informational (balance after this row at insertion
+   * time); all balance computations aggregate debit/credit instead because a
+   * stored running balance goes stale as soon as an entry is back-dated.
+   */
+  static async writeLedgerRows(
+    entry: IJournalEntryDocument,
+    session?: ClientSession | null,
+  ): Promise<void> {
+    const accountIds = [
+      ...new Set(entry.lines.map((l) => l.accountId.toString())),
+    ].map(toObjectId);
+
+    const [accounts, priorTotals] = await Promise.all([
+      Account.find({ _id: { $in: accountIds } })
+        .select("accountType")
+        .session(session ?? null)
+        .lean(),
+      Ledger.aggregate([
+        {
+          $match: {
+            companyId: entry.companyId,
+            accountId: { $in: accountIds },
+            transactionDate: { $lte: entry.entryDate },
+          },
+        },
+        {
+          $group: {
+            _id: "$accountId",
+            debit: { $sum: { $toDouble: "$debit" } },
+            credit: { $sum: { $toDouble: "$credit" } },
+          },
+        },
+      ]).session(session ?? null),
+    ]);
+
+    const typeById = new Map(
+      accounts.map((a) => [a._id.toString(), a.accountType as string]),
+    );
+    const balanceById = new Map<string, number>();
+    for (const row of priorTotals) {
+      const type = typeById.get(row._id.toString()) ?? "Asset";
+      balanceById.set(
+        row._id.toString(),
+        round2(
+          isDebitNormal(type) ? row.debit - row.credit : row.credit - row.debit,
+        ),
+      );
+    }
+
+    const rows = entry.lines.map((line) => {
+      const key = line.accountId.toString();
+      const type = typeById.get(key) ?? "Asset";
+      const change = isDebitNormal(type)
+        ? line.debit - line.credit
+        : line.credit - line.debit;
+      const runningBalance = round2((balanceById.get(key) ?? 0) + change);
+      balanceById.set(key, runningBalance);
+
+      return {
+        companyId: entry.companyId,
+        accountId: line.accountId,
+        accountName: line.accountName,
+        journalEntryId: entry._id,
+        entryNumber: entry.entryNumber,
+        transactionDate: entry.entryDate,
+        description:
+          line.description ||
+          entry.description ||
+          entry.referenceNumber ||
+          `Journal entry ${entry.entryNumber}`,
+        debit: line.debit,
+        credit: line.credit,
+        runningBalance,
+        entryType: entry.entryType,
+        isClosingEntry: entry.isClosingEntry ?? false,
+      };
+    });
+
+    await Ledger.insertMany(rows, { session: session ?? undefined });
+  }
+
+  // ─── Reversal / void ───────────────────────────────────────────────────────
+
+  /**
+   * Void a posted journal entry by posting a reversing entry (debits and
+   * credits swapped) and marking the original VOID.
+   *
+   * @param date  Date of the reversing entry (defaults to now). It must fall
+   *              in an open period.
+   */
+  static async reverseEntry(params: {
+    companyId: ObjectIdLike;
+    journalEntryId: ObjectIdLike;
+    userId: ObjectIdLike;
+    date?: Date;
+    reason?: string;
+    session?: ClientSession | null;
+  }): Promise<{
+    originalEntry: IJournalEntryDocument;
+    reversingEntry: IJournalEntryDocument;
+  }> {
+    const session = params.session ?? null;
+
+    const originalEntry = await JournalEntry.findOne({
+      _id: toObjectId(params.journalEntryId),
+      companyId: toObjectId(params.companyId),
+    }).session(session);
+
+    if (!originalEntry) {
+      throw new Error("Journal entry not found");
+    }
+    if (originalEntry.status === JournalEntryStatus.VOID) {
+      throw new Error("Journal entry is already voided");
+    }
+    if (originalEntry.status !== JournalEntryStatus.POSTED) {
+      throw new Error("Only posted entries can be voided");
+    }
+
+    const reversalDate = params.date ?? new Date();
+    const reversingEntry = await this.postEntry({
+      companyId: originalEntry.companyId,
+      userId: params.userId,
+      entryDate: reversalDate,
+      entryType: originalEntry.entryType,
+      referenceNumber: `REV-${originalEntry.entryNumber}`,
+      description:
+        `Reversal of ${originalEntry.entryNumber}` +
+        (params.reason ? ` (${params.reason})` : "") +
+        (originalEntry.description ? `: ${originalEntry.description}` : ""),
+      lines: originalEntry.lines.map((line) => ({
+        accountId: line.accountId,
+        debit: line.credit,
+        credit: line.debit,
+        description: `Reversal: ${line.description ?? ""}`.trim(),
+      })),
+      // A reversal of a closing entry is itself a closing-type entry so it is
+      // excluded from the income statement just like the original.
+      isClosingEntry: originalEntry.isClosingEntry ?? false,
+      sourceType: originalEntry.sourceType ?? undefined,
+      sourceId: originalEntry.sourceId ?? undefined,
+      reversalOfEntryId: originalEntry._id,
+      allowInactiveAccounts: true,
+      session,
+    });
+
+    originalEntry.status = JournalEntryStatus.VOID;
+    originalEntry.voidedAt = new Date();
+    originalEntry.voidedBy = toObjectId(params.userId);
+    originalEntry.reversedByEntryId = reversingEntry._id as any;
+    await originalEntry.save({ session: session ?? undefined });
+
+    logger.info("Journal entry reversed", {
+      originalEntryId: originalEntry._id,
+      reversingEntryId: reversingEntry._id,
+      companyId: String(params.companyId),
+    });
+
+    return { originalEntry, reversingEntry };
+  }
+
+  /**
+   * Backwards-compatible wrapper: void with a reversal dated today.
+   */
+  static async voidJournalEntry(
+    companyId: string,
+    journalEntryId: string,
+    userId: string,
+    session?: ClientSession,
+  ) {
+    return this.reverseEntry({ companyId, journalEntryId, userId, session });
+  }
+
+  /**
+   * Create and post a journal entry from string amounts (used by period
+   * closing). Now posts to the ledger as well — previously closing entries
+   * were saved as POSTED but never reached the ledger.
    */
   static async createJournalEntry(
     companyId: string,
@@ -71,672 +434,558 @@ export class JournalEntryService {
       referenceNumber?: string;
       entries: Array<{
         accountId: string;
-        debit: string;
-        credit: string;
+        debit: string | number;
+        credit: string | number;
         description?: string;
       }>;
       notes?: string;
       isClosingEntry?: boolean;
+      sourceType?: "Period";
+      sourceId?: ObjectIdLike;
     },
-    session?: mongoose.ClientSession,
+    session?: ClientSession,
   ) {
-    const companyObjectId = new mongoose.Types.ObjectId(companyId);
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-
-    // Validate period is not closed (unless this is a closing entry)
-    await this.validatePeriodNotClosed(
-      companyObjectId,
-      entryData.transactionDate,
-      entryData.isClosingEntry || false,
-    );
-
-    // Fetch account details and build lines
-    const lines: JournalEntryLineInput[] = [];
-    let totalDebit = 0;
-    let totalCredit = 0;
-
-    for (const entry of entryData.entries) {
-      const account = await Account.findOne({
-        _id: entry.accountId,
-        companyId: companyObjectId,
-      }).session(session || null);
-
-      if (!account) {
-        throw new Error(`Account not found: ${entry.accountId}`);
-      }
-
-      const debit = parseFloat(entry.debit) || 0;
-      const credit = parseFloat(entry.credit) || 0;
-
-      lines.push({
-        accountId: account._id,
-        accountCode: account.accountCode,
-        accountName: account.accountName,
-        debit,
-        credit,
-        description: entry.description || entryData.description || "",
-      });
-
-      totalDebit += debit;
-      totalCredit += credit;
-    }
-
-    // Create journal entry
-    const journalEntry = new JournalEntry({
-      companyId: companyObjectId,
+    return this.postEntry({
+      companyId,
+      userId,
       entryDate: entryData.transactionDate,
-      referenceNumber: entryData.referenceNumber,
-      description: entryData.description,
       entryType: JournalEntryType.MANUAL,
-      status: JournalEntryStatus.POSTED,
-      lines,
-      totalDebit,
-      totalCredit,
-      isClosingEntry: entryData.isClosingEntry || false,
-      postedBy: userObjectId,
-      createdBy: userObjectId,
+      description: entryData.description,
+      referenceNumber: entryData.referenceNumber,
+      isClosingEntry: entryData.isClosingEntry ?? false,
+      sourceType: entryData.sourceType,
+      sourceId: entryData.sourceId,
+      lines: entryData.entries.map((e) => ({
+        accountId: e.accountId,
+        debit: parseFloat(String(e.debit)) || 0,
+        credit: parseFloat(String(e.credit)) || 0,
+        description: e.description || entryData.description || "",
+      })),
+      session,
     });
-
-    const savedEntry = await journalEntry.save({ session });
-
-    logger.info("Journal entry created", {
-      journalEntryId: savedEntry._id,
-      entryNumber: savedEntry.entryNumber,
-      isClosingEntry: entryData.isClosingEntry,
-      companyId,
-    });
-
-    return savedEntry;
   }
 
-  /**
-   * Void a journal entry
-   * Creates a reversing entry that cancels out the original
-   */
-  static async voidJournalEntry(
-    companyId: string,
-    journalEntryId: string,
-    userId: string,
-    session?: mongoose.ClientSession,
-  ) {
-    const companyObjectId = new mongoose.Types.ObjectId(companyId);
-    const userObjectId = new mongoose.Types.ObjectId(userId);
-
-    // Find the original journal entry
-    const originalEntry = await JournalEntry.findOne({
-      _id: journalEntryId,
-      companyId: companyObjectId,
-    }).session(session || null);
-
-    if (!originalEntry) {
-      throw new Error("Journal entry not found");
-    }
-
-    if (originalEntry.status === JournalEntryStatus.VOID) {
-      throw new Error("Journal entry is already voided");
-    }
-
-    // Check if entry date is in a closed period (voiding entries should follow the same rules)
-    await this.validatePeriodNotClosed(
-      companyObjectId,
-      new Date(), // Use current date for the reversing entry
-      false,
-    );
-
-    // Create reversing entry with debits and credits swapped
-    const reversingLines: JournalEntryLineInput[] = originalEntry.lines.map(
-      (line) => ({
-        accountId: line.accountId,
-        accountCode: line.accountCode,
-        accountName: line.accountName,
-        debit: line.credit, // Swap debit and credit
-        credit: line.debit,
-        description: `Reversal: ${line.description}`,
-      }),
-    );
-
-    const reversingEntry = new JournalEntry({
-      companyId: companyObjectId,
-      entryDate: new Date(), // Use current date for reversal
-      referenceNumber: `REV-${originalEntry.entryNumber}`,
-      description: `Reversal of ${originalEntry.entryNumber}: ${originalEntry.description}`,
-      entryType: originalEntry.entryType,
-      status: JournalEntryStatus.POSTED,
-      lines: reversingLines,
-      totalDebit: originalEntry.totalCredit, // Swapped
-      totalCredit: originalEntry.totalDebit, // Swapped
-      postedBy: userObjectId,
-      createdBy: userObjectId,
-    });
-
-    await reversingEntry.save({ session });
-
-    // Post the reversing entry lines to the ledger so the General Ledger is updated
-    await JournalEntryService.postLinesToLedger(reversingEntry);
-
-    // Mark original entry as voided
-    originalEntry.status = JournalEntryStatus.VOID;
-    originalEntry.voidedAt = new Date();
-    originalEntry.voidedBy = userObjectId;
-    await originalEntry.save({ session });
-
-    logger.info("Journal entry voided", {
-      originalEntryId: originalEntry._id,
-      reversingEntryId: reversingEntry._id,
-      companyId,
-    });
-
-    return {
-      originalEntry,
-      reversingEntry,
-    };
-  }
+  // ─── Document postings ─────────────────────────────────────────────────────
 
   /**
-   * Create journal entry for an invoice (double-entry bookkeeping)
-   * Debit: Accounts Receivable (asset account)
-   * Credit: Revenue accounts (from line items)
-   * Credit: Sales Tax Liability (if applicable)
+   * Post an invoice.
+   *
+   *   Dr Accounts Receivable          total
+   *   Dr Sales Discounts              discount   (if a discount account exists)
+   *      Cr Revenue (per line account)   line amounts (net of discount if no
+   *                                      discount account)
+   *      Cr Sales Tax / Output VAT       tax
+   *   Dr COGS / Cr Inventory          cost of product lines (at unit cost)
    */
   static async createInvoiceJournalEntry(
     invoice: IInvoice,
-    userId: mongoose.Types.ObjectId,
+    userId: ObjectIdLike,
+    session?: ClientSession | null,
   ): Promise<mongoose.Types.ObjectId> {
     const companyId = invoice.companyId;
+    const entryDate = invoice.invoiceDate ?? new Date();
 
-    // Validate period is not closed
-    await this.validatePeriodNotClosed(
+    const arAccount = await requireSystemAccount(
       companyId,
-      invoice.invoiceDate || new Date(),
-      false,
+      SystemAccount.ACCOUNTS_RECEIVABLE,
+      session,
     );
 
-    // Get default Accounts Receivable account
-    const arAccount = await Account.findOne({
-      companyId,
-      accountType: "Asset",
-      $or: [
-        { accountName: /Accounts Receivable/i },
-        { accountName: /Trade Debtors/i },
-        { subType: "Accounts Receivable" },
-      ],
-    });
+    const customerName = await this.resolveCustomerName(invoice, session);
+    const ref = `Invoice ${invoice.invoiceNumber}`;
 
-    if (!arAccount) {
-      throw new Error(
-        "Accounts Receivable account not found. Please set up your chart of accounts.",
-      );
-    }
-
-    // Get default Sales account
-    const salesAccount = await Account.findOne({
+    // Revenue: credit each line's own revenue account, falling back to the
+    // default sales account when the line's account is not a revenue account
+    // of this company.
+    const lineAccountIds = invoice.lineItems
+      .map((item) => item.accountId)
+      .filter(Boolean)
+      .map((id) => toObjectId(id as any));
+    const revenueAccounts = await Account.find({
+      _id: { $in: lineAccountIds },
       companyId,
       accountType: "Revenue",
-      $or: [
-        { accountName: /Sales/i },
-        { accountName: /Revenue/i },
-        { accountName: /Service Income/i },
-      ],
-    });
+      isActive: { $ne: false },
+    })
+      .session(session ?? null)
+      .lean();
+    const revenueIds = new Set(revenueAccounts.map((a) => a._id.toString()));
 
-    if (!salesAccount) {
-      throw new Error(
-        "Sales/Revenue account not found. Please set up your chart of accounts.",
+    let defaultSales: ResolvedAccount | null = null;
+    const revenueByAccount = new Map<string, number>();
+    for (const item of invoice.lineItems) {
+      let accountId = item.accountId ? String(item.accountId) : "";
+      if (!revenueIds.has(accountId)) {
+        defaultSales ??= await requireSystemAccount(
+          companyId,
+          SystemAccount.SALES,
+          session,
+        );
+        accountId = defaultSales._id.toString();
+      }
+      revenueByAccount.set(
+        accountId,
+        round2((revenueByAccount.get(accountId) ?? 0) + (item.amount || 0)),
       );
     }
 
-    // Get Sales Tax account
-    const taxAccount = await Account.findOne({
-      companyId,
-      accountType: "Liability",
-      $or: [
-        { accountName: /Sales Tax/i },
-        { accountName: /VAT/i },
-        { accountName: /GST/i },
-        { subType: "Sales Tax" },
-      ],
-    });
-
-    const lines: JournalEntryLineInput[] = [];
-
-    // Resolve customer name whether customerId is populated or a raw ObjectId.
-    const customerRef = invoice.customerId as any;
-    let customerName = customerRef?.customerName || customerRef?.displayName;
-
-    if (!customerName) {
-      const customerId = customerRef?._id || customerRef;
-      const customer = await Customer.findOne({
-        _id: customerId,
-        companyId,
-      })
-        .select("customerName displayName")
-        .lean();
-
-      customerName = customer?.customerName || customer?.displayName;
-    }
-
-    // Debit Accounts Receivable for the total amount
-    lines.push({
-      accountId: arAccount._id,
-      accountCode: arAccount.accountCode,
-      accountName: arAccount.accountName,
-      debit: invoice.totalAmount,
-      credit: 0,
-      description: `Invoice ${invoice.invoiceNumber} - ${customerName || "Customer"}`,
-    });
-
-    // Credit Sales for the subtotal (excluding tax)
-    if (invoice.subtotal > 0) {
-      lines.push({
-        accountId: salesAccount._id,
-        accountCode: salesAccount.accountCode,
-        accountName: salesAccount.accountName,
-        debit: 0,
-        credit: invoice.subtotal,
-        description: `Invoice ${invoice.invoiceNumber} - Sales revenue`,
-      });
-    }
-
-    // Credit Sales Tax Liability for tax amount
-    if (invoice.taxAmount > 0 && taxAccount) {
-      lines.push({
-        accountId: taxAccount._id,
-        accountCode: taxAccount.accountCode,
-        accountName: taxAccount.accountName,
-        debit: 0,
-        credit: invoice.taxAmount,
-        description: `Invoice ${invoice.invoiceNumber} - Sales tax`,
-      });
-    } else if (invoice.taxAmount > 0 && !taxAccount) {
-      // If no tax account found, credit sales instead
-      lines[lines.length - 1].credit += invoice.taxAmount;
-    }
-
-    const journalEntry = new JournalEntry({
-      companyId,
-      entryDate: new Date(),
-      referenceNumber: invoice.invoiceNumber,
-      description: `Automatic entry for Invoice ${invoice.invoiceNumber}`,
-      entryType: JournalEntryType.AUTO_INVOICE,
-      status: JournalEntryStatus.POSTED,
-      lines,
-      totalDebit: invoice.totalAmount,
-      totalCredit: invoice.totalAmount,
-      postedBy: userId,
-      createdBy: userId,
-    });
-
-    const savedEntry = await journalEntry.save();
-    await JournalEntryService.postLinesToLedger(savedEntry);
-    return savedEntry._id;
-  }
-
-  /**
-   * Create journal entry for a bill (double-entry bookkeeping)
-   * Debit: Expense accounts (from line items)
-   * Credit: Accounts Payable (liability account)
-   * Credit: Input Tax Credit (if applicable)
-   */
-  static async createBillJournalEntry(
-    bill: IBill,
-    userId: mongoose.Types.ObjectId,
-  ): Promise<mongoose.Types.ObjectId> {
-    const companyId = bill.companyId;
-
-    // Validate period is not closed
-    await this.validatePeriodNotClosed(
-      companyId,
-      bill.createdAt || new Date(),
-      false,
-    );
-
-    // Get default Accounts Payable account
-    const apAccount = await Account.findOne({
-      companyId,
-      accountType: "Liability",
-      $or: [
-        { accountName: /Accounts Payable/i },
-        { accountName: /Trade Creditors/i },
-        { subType: "Accounts Payable" },
-      ],
-    });
-
-    if (!apAccount) {
-      throw new Error(
-        "Accounts Payable account not found. Please set up your chart of accounts.",
-      );
-    }
-
-    // Get default Expense account
-    const expenseAccount = await Account.findOne({
-      companyId,
-      accountType: "Expense",
-      $or: [
-        { accountName: /General Expenses/i },
-        { accountName: /Operating Expenses/i },
-        { accountName: /Cost of Goods Sold/i },
-      ],
-    });
-
-    if (!expenseAccount) {
-      throw new Error(
-        "Expense account not found. Please set up your chart of accounts.",
-      );
-    }
-
-    // Get Input Tax Credit account
-    const itcAccount = await Account.findOne({
-      companyId,
-      accountType: "Asset",
-      $or: [
-        { accountName: /Input Tax Credit/i },
-        { accountName: /VAT Input/i },
-        { accountName: /GST Input/i },
-      ],
-    });
-
-    const lines: JournalEntryLineInput[] = [];
-
-    // Group line items by account
-    const accountGroups = new Map<
-      string,
+    const lines: PostingLineInput[] = [
       {
-        accountId: mongoose.Types.ObjectId;
-        accountCode: string;
-        accountName: string;
-        totalAmount: number;
-      }
-    >();
+        accountId: arAccount._id,
+        debit: invoice.totalAmount,
+        description: `${ref} - ${customerName || "Customer"}`,
+      },
+    ];
 
-    // Process line items
-    for (const lineItem of bill.lineItems) {
-      let account = await Account.findById(lineItem.accountId);
-
-      // Bill lines can legitimately point to either expense accounts or
-      // inventory asset accounts depending on whether the purchase is a
-      // service/expense or an inventory restock.
-      if (
-        !account ||
-        (account.accountType !== "Expense" && account.accountType !== "Asset")
-      ) {
-        account = expenseAccount;
-      }
-
-      const key = account._id.toString();
-      if (accountGroups.has(key)) {
-        accountGroups.get(key)!.totalAmount += lineItem.amount;
+    // Discount: book to the Sales Discounts contra account when available,
+    // otherwise net it against revenue.
+    const discount = round2(invoice.discount || 0);
+    if (discount > 0) {
+      const discountAccount = await findSystemAccount(
+        companyId,
+        SystemAccount.SALES_DISCOUNT,
+        session,
+      );
+      if (discountAccount) {
+        lines.push({
+          accountId: discountAccount._id,
+          debit: discount,
+          description: `${ref} - Discount`,
+        });
       } else {
-        accountGroups.set(key, {
-          accountId: account._id,
-          accountCode: account.accountCode,
-          accountName: account.accountName,
-          totalAmount: lineItem.amount,
+        this.reduceLargest(revenueByAccount, discount);
+      }
+    }
+
+    for (const [accountId, amount] of revenueByAccount) {
+      if (amount > 0) {
+        lines.push({
+          accountId,
+          credit: amount,
+          description: `${ref} - Sales revenue`,
+        });
+      } else if (amount < 0) {
+        lines.push({
+          accountId,
+          debit: -amount,
+          description: `${ref} - Sales revenue`,
         });
       }
     }
 
-    // Create debit lines for expense accounts
-    for (const [_, accountInfo] of accountGroups) {
-      lines.push({
-        accountId: accountInfo.accountId,
-        accountCode: accountInfo.accountCode,
-        accountName: accountInfo.accountName,
-        debit: accountInfo.totalAmount,
-        credit: 0,
-        description: `Bill ${bill.billNumber} - ${accountInfo.accountName}`,
-      });
+    // Tax: credit Output VAT / Sales Tax; fold into revenue only when the
+    // company has no tax liability account at all.
+    const taxAmount = round2(invoice.taxAmount || 0);
+    if (taxAmount > 0) {
+      const taxAccount = await findSystemAccount(
+        companyId,
+        SystemAccount.SALES_TAX,
+        session,
+      );
+      if (taxAccount) {
+        lines.push({
+          accountId: taxAccount._id,
+          credit: taxAmount,
+          description: `${ref} - Sales tax`,
+        });
+      } else {
+        logger.warn(
+          "No sales tax liability account found; tax credited to revenue",
+          {
+            companyId: String(companyId),
+            invoiceNumber: invoice.invoiceNumber,
+          },
+        );
+        const salesId = (
+          defaultSales ??
+          (await requireSystemAccount(companyId, SystemAccount.SALES, session))
+        )._id;
+        lines.push({
+          accountId: salesId,
+          credit: taxAmount,
+          description: `${ref} - Sales tax`,
+        });
+      }
     }
 
-    // Credit Accounts Payable for the total amount
+    lines.push(...(await this.buildCogsLines(invoice, ref, session)));
+
+    const entry = await this.postEntry({
+      companyId,
+      userId,
+      entryDate,
+      entryType: JournalEntryType.AUTO_INVOICE,
+      referenceNumber: invoice.invoiceNumber,
+      description: `Automatic entry for ${ref}`,
+      lines,
+      sourceType: "Invoice",
+      sourceId: (invoice as any)._id,
+      session,
+    });
+    return entry._id as mongoose.Types.ObjectId;
+  }
+
+  /**
+   * Cost-of-goods-sold lines for product line items: Dr COGS / Cr Inventory
+   * at the item's unit cost.
+   */
+  private static async buildCogsLines(
+    invoice: IInvoice,
+    ref: string,
+    session?: ClientSession | null,
+  ): Promise<PostingLineInput[]> {
+    const productLines = invoice.lineItems.filter(
+      (item) => item.inventoryItemId,
+    );
+    if (productLines.length === 0) return [];
+
+    type CostedItem = {
+      _id: mongoose.Types.ObjectId;
+      unitCost?: number;
+      cogsAccountId?: mongoose.Types.ObjectId;
+      inventoryAccountId?: mongoose.Types.ObjectId;
+    };
+    const items = (await InventoryItem.find({
+      _id: {
+        $in: productLines.map((l) => toObjectId(l.inventoryItemId as any)),
+      },
+      companyId: invoice.companyId,
+      itemType: "Product",
+    })
+      .session(session ?? null)
+      .lean()) as unknown as CostedItem[];
+    const itemById = new Map(items.map((i) => [i._id.toString(), i]));
+
+    const cogsByAccount = new Map<string, number>();
+    const inventoryByAccount = new Map<string, number>();
+    let defaultCogs: ResolvedAccount | null | undefined;
+    let defaultInventory: ResolvedAccount | null | undefined;
+
+    for (const line of productLines) {
+      const item = itemById.get(String(line.inventoryItemId));
+      if (!item) continue;
+      const cost = round2((item.unitCost || 0) * (line.quantity || 0));
+      if (cost <= 0) continue;
+
+      let cogsId = item.cogsAccountId ? String(item.cogsAccountId) : "";
+      if (!cogsId) {
+        if (defaultCogs === undefined) {
+          defaultCogs = await findSystemAccount(
+            invoice.companyId,
+            SystemAccount.COGS,
+            session,
+          );
+        }
+        cogsId = defaultCogs?._id.toString() ?? "";
+      }
+      let inventoryId = item.inventoryAccountId
+        ? String(item.inventoryAccountId)
+        : "";
+      if (!inventoryId) {
+        if (defaultInventory === undefined) {
+          defaultInventory = await findSystemAccount(
+            invoice.companyId,
+            SystemAccount.INVENTORY,
+            session,
+          );
+        }
+        inventoryId = defaultInventory?._id.toString() ?? "";
+      }
+
+      if (!cogsId || !inventoryId) {
+        logger.warn("COGS not posted: missing COGS or Inventory account", {
+          companyId: String(invoice.companyId),
+          inventoryItemId: String(line.inventoryItemId),
+        });
+        continue;
+      }
+
+      cogsByAccount.set(
+        cogsId,
+        round2((cogsByAccount.get(cogsId) ?? 0) + cost),
+      );
+      inventoryByAccount.set(
+        inventoryId,
+        round2((inventoryByAccount.get(inventoryId) ?? 0) + cost),
+      );
+    }
+
+    const lines: PostingLineInput[] = [];
+    for (const [accountId, amount] of cogsByAccount) {
+      lines.push({
+        accountId,
+        debit: amount,
+        description: `${ref} - Cost of goods sold`,
+      });
+    }
+    for (const [accountId, amount] of inventoryByAccount) {
+      lines.push({
+        accountId,
+        credit: amount,
+        description: `${ref} - Inventory relieved`,
+      });
+    }
+    return lines;
+  }
+
+  /**
+   * Post a bill.
+   *
+   *   Dr Expense / Inventory (per line account)   line amounts
+   *   Dr Input VAT                                tax (folded into the
+   *                                               expense lines if no input
+   *                                               tax account exists)
+   *      Cr Purchase Discounts                    discount (or net against
+   *                                               the expense lines)
+   *      Cr Accounts Payable                      total
+   */
+  static async createBillJournalEntry(
+    bill: IBill,
+    userId: ObjectIdLike,
+    session?: ClientSession | null,
+  ): Promise<mongoose.Types.ObjectId> {
+    const companyId = bill.companyId;
+    const entryDate = bill.billDate ?? bill.createdAt ?? new Date();
+    const ref = `Bill ${bill.billNumber}`;
+
+    const apAccount = await requireSystemAccount(
+      companyId,
+      SystemAccount.ACCOUNTS_PAYABLE,
+      session,
+    );
+
+    // Bill lines may point at expense accounts or inventory/asset accounts.
+    const lineAccountIds = bill.lineItems
+      .map((item) => item.accountId)
+      .filter(Boolean)
+      .map((id) => toObjectId(id as any));
+    const validAccounts = await Account.find({
+      _id: { $in: lineAccountIds },
+      companyId,
+      accountType: { $in: ["Expense", "Asset"] },
+      isActive: { $ne: false },
+    })
+      .session(session ?? null)
+      .lean();
+    const validIds = new Set(validAccounts.map((a) => a._id.toString()));
+
+    let defaultExpense: ResolvedAccount | null = null;
+    const debitByAccount = new Map<string, number>();
+    for (const item of bill.lineItems) {
+      let accountId = item.accountId ? String(item.accountId) : "";
+      if (!validIds.has(accountId)) {
+        defaultExpense ??= await requireSystemAccount(
+          companyId,
+          SystemAccount.DEFAULT_EXPENSE,
+          session,
+        );
+        accountId = defaultExpense._id.toString();
+      }
+      debitByAccount.set(
+        accountId,
+        round2((debitByAccount.get(accountId) ?? 0) + (item.amount || 0)),
+      );
+    }
+
+    const lines: PostingLineInput[] = [];
+
+    const taxAmount = round2(bill.taxAmount || 0);
+    if (taxAmount > 0) {
+      const inputTax = await findSystemAccount(
+        companyId,
+        SystemAccount.INPUT_TAX,
+        session,
+      );
+      if (inputTax) {
+        lines.push({
+          accountId: inputTax._id,
+          debit: taxAmount,
+          description: `${ref} - Input tax`,
+        });
+      } else {
+        // Non-recoverable tax becomes part of the cost.
+        this.reduceLargest(debitByAccount, -taxAmount);
+      }
+    }
+
+    const discount = round2(bill.discount || 0);
+    if (discount > 0) {
+      const purchaseDiscount = await findSystemAccount(
+        companyId,
+        SystemAccount.PURCHASE_DISCOUNT,
+        session,
+      );
+      if (purchaseDiscount) {
+        lines.push({
+          accountId: purchaseDiscount._id,
+          credit: discount,
+          description: `${ref} - Discount`,
+        });
+      } else {
+        this.reduceLargest(debitByAccount, discount);
+      }
+    }
+
+    for (const [accountId, amount] of debitByAccount) {
+      if (amount > 0) {
+        lines.push({ accountId, debit: amount, description: `${ref}` });
+      } else if (amount < 0) {
+        lines.push({ accountId, credit: -amount, description: `${ref}` });
+      }
+    }
+
     lines.push({
       accountId: apAccount._id,
-      accountCode: apAccount.accountCode,
-      accountName: apAccount.accountName,
-      debit: 0,
       credit: bill.totalAmount,
-      description: `Bill ${bill.billNumber} - ${bill.supplierId?.toString() || "Supplier"}`,
+      description: `${ref} - Accounts payable`,
     });
 
-    const journalEntry = new JournalEntry({
+    const entry = await this.postEntry({
       companyId,
-      entryDate: new Date(),
-      referenceNumber: bill.billNumber,
-      description: `Automatic entry for Bill ${bill.billNumber}`,
+      userId,
+      entryDate,
       entryType: JournalEntryType.AUTO_BILL,
-      status: JournalEntryStatus.POSTED,
+      referenceNumber: bill.billNumber,
+      description: `Automatic entry for ${ref}`,
       lines,
-      totalDebit: bill.totalAmount,
-      totalCredit: bill.totalAmount,
-      postedBy: userId,
-      createdBy: userId,
+      sourceType: "Bill",
+      sourceId: (bill as any)._id,
+      session,
     });
-
-    const savedEntry = await journalEntry.save();
-    await JournalEntryService.postLinesToLedger(savedEntry);
-    return savedEntry._id;
+    return entry._id as mongoose.Types.ObjectId;
   }
 
   /**
-   * Create journal entry for a payment (double-entry bookkeeping)
-   * For Invoice Payment:
-   * Debit: Cash/Bank account
-   * Credit: Accounts Receivable
-   *
-   * For Bill Payment:
-   * Debit: Accounts Payable
-   * Credit: Cash/Bank account
+   * Post a payment.
+   *   Received: Dr Cash/Bank, Cr Accounts Receivable
+   *   Made:     Dr Accounts Payable, Cr Cash/Bank
    */
-  static async createPaymentJournalEntry(
-    paymentAmount: number,
-    referenceNumber: string,
-    description: string,
-    cashAccountId: mongoose.Types.ObjectId,
-    receivablePayableAccountId: mongoose.Types.ObjectId,
-    companyId: mongoose.Types.ObjectId,
-    userId: mongoose.Types.ObjectId,
-    isInvoicePayment: boolean = true,
-  ): Promise<mongoose.Types.ObjectId> {
-    // Validate period is not closed
-    await this.validatePeriodNotClosed(companyId, new Date(), false);
+  static async createPaymentJournalEntry(params: {
+    amount: number;
+    paymentDate: Date;
+    referenceNumber: string;
+    description: string;
+    cashAccountId: ObjectIdLike;
+    receivablePayableAccountId: ObjectIdLike;
+    companyId: ObjectIdLike;
+    userId: ObjectIdLike;
+    isInvoicePayment: boolean;
+    paymentId?: ObjectIdLike;
+    session?: ClientSession | null;
+  }): Promise<mongoose.Types.ObjectId> {
+    const amount = round2(params.amount);
+    const verb = params.isInvoicePayment ? "received" : "made";
+    const lineDescription = `Payment ${verb} - ${params.referenceNumber}`;
 
-    const cashAccount = await Account.findById(cashAccountId);
-    const arApAccount = await Account.findById(receivablePayableAccountId);
+    const lines: PostingLineInput[] = params.isInvoicePayment
+      ? [
+          {
+            accountId: params.cashAccountId,
+            debit: amount,
+            description: lineDescription,
+          },
+          {
+            accountId: params.receivablePayableAccountId,
+            credit: amount,
+            description: lineDescription,
+          },
+        ]
+      : [
+          {
+            accountId: params.receivablePayableAccountId,
+            debit: amount,
+            description: lineDescription,
+          },
+          {
+            accountId: params.cashAccountId,
+            credit: amount,
+            description: lineDescription,
+          },
+        ];
 
-    if (!cashAccount || !arApAccount) {
-      throw new Error("Required accounts not found for payment journal entry.");
-    }
-
-    const lines: JournalEntryLineInput[] = [];
-
-    if (isInvoicePayment) {
-      // Invoice payment: Debit Cash, Credit Accounts Receivable
-      lines.push({
-        accountId: cashAccount._id,
-        accountCode: cashAccount.accountCode,
-        accountName: cashAccount.accountName,
-        debit: paymentAmount,
-        credit: 0,
-        description: `Payment received - ${referenceNumber}`,
-      });
-
-      lines.push({
-        accountId: arApAccount._id,
-        accountCode: arApAccount.accountCode,
-        accountName: arApAccount.accountName,
-        debit: 0,
-        credit: paymentAmount,
-        description: `Payment received - ${referenceNumber}`,
-      });
-    } else {
-      // Bill payment: Debit Accounts Payable, Credit Cash
-      lines.push({
-        accountId: arApAccount._id,
-        accountCode: arApAccount.accountCode,
-        accountName: arApAccount.accountName,
-        debit: paymentAmount,
-        credit: 0,
-        description: `Payment made - ${referenceNumber}`,
-      });
-
-      lines.push({
-        accountId: cashAccount._id,
-        accountCode: cashAccount.accountCode,
-        accountName: cashAccount.accountName,
-        debit: 0,
-        credit: paymentAmount,
-        description: `Payment made - ${referenceNumber}`,
-      });
-    }
-
-    const journalEntry = new JournalEntry({
-      companyId,
-      entryDate: new Date(),
-      referenceNumber,
-      description:
-        description || `Automatic entry for payment ${referenceNumber}`,
+    const entry = await this.postEntry({
+      companyId: params.companyId,
+      userId: params.userId,
+      entryDate: params.paymentDate,
       entryType: JournalEntryType.AUTO_PAYMENT,
-      status: JournalEntryStatus.POSTED,
+      referenceNumber: params.referenceNumber,
+      description:
+        params.description ||
+        `Automatic entry for payment ${params.referenceNumber}`,
       lines,
-      totalDebit: paymentAmount,
-      totalCredit: paymentAmount,
-      postedBy: userId,
-      createdBy: userId,
+      sourceType: "Payment",
+      sourceId: params.paymentId,
+      session: params.session,
     });
-
-    const savedEntry = await journalEntry.save();
-    await JournalEntryService.postLinesToLedger(savedEntry);
-    return savedEntry._id;
+    return entry._id as mongoose.Types.ObjectId;
   }
 
+  // ─── Helpers ───────────────────────────────────────────────────────────────
+
   /**
-   * Post journal entry lines to the ledger with correct running balances.
-   * Called after every auto-generated entry (invoice, bill, payment) is saved
-   * so the General Ledger stays in sync immediately.
+   * Subtract `amount` from the largest value in the map (a negative amount
+   * adds to it). Used to net discounts/tax into line amounts.
    */
-  private static async postLinesToLedger(
-    savedEntry: mongoose.Document & {
-      _id: mongoose.Types.ObjectId;
-      entryNumber?: string;
-      companyId: mongoose.Types.ObjectId;
-      entryDate: Date;
-      lines: JournalEntryLineInput[];
-    },
-  ): Promise<void> {
-    // Process lines sequentially so each line sees the running balance
-    // updated by the previous line (important when the same account appears
-    // more than once in a single entry or on the same date).
-    for (const line of savedEntry.lines) {
-      const account = await Account.findById(line.accountId).lean();
-      if (!account) continue;
-
-      const latestEntry = await Ledger.findOne({
-        companyId: savedEntry.companyId,
-        accountId: line.accountId,
-        transactionDate: { $lte: savedEntry.entryDate },
-      })
-        .sort({ transactionDate: -1, createdAt: -1 })
-        .lean();
-
-      const previousBalance = latestEntry
-        ? parseFloat(latestEntry.runningBalance.toString())
-        : 0;
-
-      const isDebitNormal =
-        account.accountType === "Asset" || account.accountType === "Expense";
-      const change = isDebitNormal
-        ? line.debit - line.credit
-        : line.credit - line.debit;
-      const runningBalance = previousBalance + change;
-
-      await Ledger.create({
-        companyId: savedEntry.companyId,
-        accountId: line.accountId,
-        accountName: line.accountName,
-        journalEntryId: savedEntry._id,
-        entryNumber: savedEntry.entryNumber ?? "",
-        transactionDate: savedEntry.entryDate,
-        description: line.description ?? "",
-        debit: line.debit.toString(),
-        credit: line.credit.toString(),
-        runningBalance,
-      });
+  private static reduceLargest(map: Map<string, number>, amount: number) {
+    let largestKey: string | null = null;
+    for (const [key, value] of map) {
+      if (largestKey === null || value > (map.get(largestKey) ?? 0)) {
+        largestKey = key;
+      }
+    }
+    if (largestKey !== null) {
+      map.set(largestKey, round2((map.get(largestKey) ?? 0) - amount));
     }
   }
 
-  /**
-   * Get default cash/bank account for a company
-   */
+  private static async resolveCustomerName(
+    invoice: IInvoice,
+    session?: ClientSession | null,
+  ): Promise<string | undefined> {
+    const customerRef = invoice.customerId as any;
+    const populatedName = customerRef?.customerName || customerRef?.displayName;
+    if (populatedName) return populatedName;
+
+    const customer = await Customer.findOne({
+      _id: customerRef?._id || customerRef,
+      companyId: invoice.companyId,
+    })
+      .select("customerName displayName")
+      .session(session ?? null)
+      .lean();
+    return customer?.customerName || customer?.displayName;
+  }
+
+  /** @deprecated use requireSystemAccount(companyId, SystemAccount.CASH) */
   static async getDefaultCashAccount(
     companyId: mongoose.Types.ObjectId,
   ): Promise<mongoose.Types.ObjectId> {
-    const cashAccount = await Account.findOne({
-      companyId,
-      accountType: "Asset",
-      $or: [
-        { accountName: /Cash/i },
-        { accountName: /Bank/i },
-        { accountName: /Checking/i },
-        { subType: "Cash" },
-        { subType: "Bank" },
-      ],
-    });
-
-    if (!cashAccount) {
-      throw new Error(
-        "Cash/Bank account not found. Please set up your chart of accounts.",
-      );
-    }
-
-    return cashAccount._id;
+    return (await requireSystemAccount(companyId, SystemAccount.CASH))._id;
   }
 
-  /**
-   * Get default accounts receivable account for a company
-   */
   static async getAccountsReceivableAccount(
-    companyId: mongoose.Types.ObjectId,
+    companyId: ObjectIdLike,
+    session?: ClientSession | null,
   ): Promise<mongoose.Types.ObjectId> {
-    const arAccount = await Account.findOne({
-      companyId,
-      accountType: "Asset",
-      $or: [
-        { accountName: /Accounts Receivable/i },
-        { accountName: /Trade Debtors/i },
-        { subType: "Accounts Receivable" },
-      ],
-    });
-
-    if (!arAccount) {
-      throw new Error(
-        "Accounts Receivable account not found. Please set up your chart of accounts.",
-      );
-    }
-
-    return arAccount._id;
+    return (
+      await requireSystemAccount(
+        companyId,
+        SystemAccount.ACCOUNTS_RECEIVABLE,
+        session,
+      )
+    )._id;
   }
 
-  /**
-   * Get default accounts payable account for a company
-   */
   static async getAccountsPayableAccount(
-    companyId: mongoose.Types.ObjectId,
+    companyId: ObjectIdLike,
+    session?: ClientSession | null,
   ): Promise<mongoose.Types.ObjectId> {
-    const apAccount = await Account.findOne({
-      companyId,
-      accountType: "Liability",
-      $or: [
-        { accountName: /Accounts Payable/i },
-        { accountName: /Trade Creditors/i },
-        { subType: "Accounts Payable" },
-      ],
-    });
-
-    if (!apAccount) {
-      throw new Error(
-        "Accounts Payable account not found. Please set up your chart of accounts.",
-      );
-    }
-
-    return apAccount._id;
+    return (
+      await requireSystemAccount(
+        companyId,
+        SystemAccount.ACCOUNTS_PAYABLE,
+        session,
+      )
+    )._id;
   }
 }

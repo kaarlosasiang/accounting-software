@@ -4,6 +4,7 @@ import logger from "../../config/logger.js";
 import Account from "../../models/Account.js";
 import { Invoice } from "../../models/Invoice.js";
 import { Ledger } from "../../models/Ledger.js";
+import { round2, toMoney } from "../../shared/helpers/money.js";
 
 const hasMalformedInvoiceDescription = (description?: string | null) =>
   typeof description === "string" &&
@@ -39,11 +40,96 @@ const getInvoiceCustomerDescription = async (
   return `Invoice ${invoice.invoiceNumber} - ${customerName}`;
 };
 
+type AccountLike = { _id: mongoose.Types.ObjectId; accountType: string };
+
+const isDebitNormal = (accountType: string) =>
+  accountType === "Asset" || accountType === "Expense";
+
+/**
+ * Signed balance of an account in its normal direction:
+ * Asset/Expense = debit − credit; Liability/Equity/Revenue = credit − debit.
+ * Contra accounts therefore come out negative and net correctly in totals.
+ */
+export const normalBalance = (
+  accountType: string,
+  debit: number,
+  credit: number,
+) => round2(isDebitNormal(accountType) ? debit - credit : credit - debit);
+
+export interface AccountTotals {
+  debit: number;
+  credit: number;
+}
+
 /**
  * Ledger Service
  * Handles business logic for ledger/general ledger operations
  */
 export const ledgerService = {
+  /**
+   * Debit/credit totals per account in ONE aggregate (replaces the previous
+   * one-query-per-account loops).
+   *
+   * @param from            inclusive lower bound on transactionDate
+   * @param to              inclusive upper bound on transactionDate
+   * @param excludeClosing  drop period-closing entries (for the P&L)
+   */
+  async getTotalsByAccount(
+    companyId: string,
+    options: { from?: Date; to?: Date; excludeClosing?: boolean } = {},
+  ): Promise<Map<string, AccountTotals>> {
+    const match: Record<string, unknown> = {
+      companyId: new mongoose.Types.ObjectId(companyId),
+    };
+    if (options.from || options.to) {
+      match.transactionDate = {
+        ...(options.from ? { $gte: options.from } : {}),
+        ...(options.to ? { $lte: options.to } : {}),
+      };
+    }
+    if (options.excludeClosing) {
+      match.isClosingEntry = { $ne: true };
+    }
+
+    const rows = await Ledger.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: "$accountId",
+          debit: { $sum: { $toDouble: "$debit" } },
+          credit: { $sum: { $toDouble: "$credit" } },
+        },
+      },
+    ]);
+
+    return new Map(
+      rows.map((row) => [
+        row._id.toString(),
+        { debit: round2(row.debit), credit: round2(row.credit) },
+      ]),
+    );
+  },
+
+  /**
+   * Normal-direction balance per account (see `normalBalance`).
+   */
+  async getBalancesByAccount(
+    companyId: string,
+    accounts: AccountLike[],
+    options: { from?: Date; to?: Date; excludeClosing?: boolean } = {},
+  ): Promise<Map<string, number>> {
+    const totals = await this.getTotalsByAccount(companyId, options);
+    return new Map(
+      accounts.map((account) => {
+        const t = totals.get(account._id.toString());
+        return [
+          account._id.toString(),
+          t ? normalBalance(account.accountType, t.debit, t.credit) : 0,
+        ];
+      }),
+    );
+  },
+
   /**
    * Get all ledger entries for a company
    */
@@ -74,60 +160,82 @@ export const ledgerService = {
   },
 
   /**
-   * Get general ledger (grouped by account)
+   * Get general ledger (grouped by account).
+   * Running balances are recomputed on read, starting from the account's
+   * balance before `startDate`, so they stay correct for back-dated entries.
    */
   async getGeneralLedger(companyId: string, startDate?: Date, endDate?: Date) {
     try {
-      const query: any = { companyId: new mongoose.Types.ObjectId(companyId) };
-
-      if (startDate && endDate) {
-        query.transactionDate = { $gte: startDate, $lte: endDate };
+      const companyObjectId = new mongoose.Types.ObjectId(companyId);
+      const query: any = { companyId: companyObjectId };
+      if (startDate || endDate) {
+        query.transactionDate = {
+          ...(startDate ? { $gte: startDate } : {}),
+          ...(endDate ? { $lte: endDate } : {}),
+        };
       }
 
-      // Get all accounts for the company
-      const accounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-      })
-        .sort({ accountCode: 1 })
-        .lean();
+      const [accounts, entries, openingTotals] = await Promise.all([
+        Account.find({ companyId: companyObjectId })
+          .sort({ accountCode: 1 })
+          .lean(),
+        Ledger.find(query)
+          .sort({ transactionDate: 1, createdAt: 1, _id: 1 })
+          .lean(),
+        startDate
+          ? this.getTotalsByAccount(companyId, {
+              to: new Date(startDate.getTime() - 1),
+            })
+          : Promise.resolve(new Map<string, AccountTotals>()),
+      ]);
 
-      // Get ledger entries grouped by account
+      const entriesByAccount = new Map<string, typeof entries>();
+      for (const entry of entries) {
+        const key = entry.accountId.toString();
+        if (!entriesByAccount.has(key)) entriesByAccount.set(key, []);
+        entriesByAccount.get(key)!.push(entry);
+      }
+
       const generalLedger = [];
-
       for (const account of accounts) {
-        const entries = await Ledger.find({
-          ...query,
-          accountId: account._id,
-        })
-          .sort({ transactionDate: 1, createdAt: 1 })
-          .lean();
+        const accountEntries = entriesByAccount.get(account._id.toString());
+        if (!accountEntries?.length) continue;
 
-        if (entries.length > 0) {
-          const totalDebit = entries.reduce(
-            (sum, entry) => sum + parseFloat(entry.debit),
-            0,
-          );
-          const totalCredit = entries.reduce(
-            (sum, entry) => sum + parseFloat(entry.credit),
-            0,
-          );
+        const opening = openingTotals.get(account._id.toString());
+        let running = opening
+          ? normalBalance(account.accountType, opening.debit, opening.credit)
+          : 0;
+        const openingBalance = running;
 
-          generalLedger.push({
-            account: {
-              _id: account._id,
-              accountCode: account.accountCode,
-              accountName: account.accountName,
-              accountType: account.accountType,
-            },
-            entries,
-            summary: {
-              totalDebit,
-              totalCredit,
-              balance: entries[entries.length - 1]?.runningBalance || 0,
-              entryCount: entries.length,
-            },
-          });
-        }
+        let totalDebit = 0;
+        let totalCredit = 0;
+        const withBalances = accountEntries.map((entry) => {
+          const debit = toMoney(entry.debit);
+          const credit = toMoney(entry.credit);
+          totalDebit += debit;
+          totalCredit += credit;
+          running = round2(
+            running + normalBalance(account.accountType, debit, credit),
+          );
+          return { ...entry, debit, credit, runningBalance: running };
+        });
+
+        generalLedger.push({
+          account: {
+            _id: account._id,
+            accountCode: account.accountCode,
+            accountName: account.accountName,
+            accountType: account.accountType,
+          },
+          entries: withBalances,
+          summary: {
+            openingBalance,
+            totalDebit: round2(totalDebit),
+            totalCredit: round2(totalCredit),
+            balance: running,
+            entryCount: withBalances.length,
+          },
+        });
       }
 
       return generalLedger;
@@ -141,7 +249,7 @@ export const ledgerService = {
   },
 
   /**
-   * Get ledger entries by account
+   * Get ledger entries by account, with running balances computed on read.
    */
   async getByAccount(
     companyId: string,
@@ -150,37 +258,55 @@ export const ledgerService = {
     endDate?: Date,
   ) {
     try {
-      const query: any = {
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountId: new mongoose.Types.ObjectId(accountId),
-      };
+      const companyObjectId = new mongoose.Types.ObjectId(companyId);
+      const accountObjectId = new mongoose.Types.ObjectId(accountId);
 
-      if (startDate && endDate) {
-        query.transactionDate = { $gte: startDate, $lte: endDate };
-      }
-
-      const entries = await Ledger.find(query)
-        .sort({ transactionDate: 1, createdAt: 1 })
-        .lean();
-
-      // Get account details
       const account = await Account.findOne({
-        _id: new mongoose.Types.ObjectId(accountId),
-        companyId: new mongoose.Types.ObjectId(companyId),
+        _id: accountObjectId,
+        companyId: companyObjectId,
       }).lean();
 
       if (!account) {
         throw new Error("Account not found");
       }
 
-      const totalDebit = entries.reduce(
-        (sum, entry) => sum + parseFloat(entry.debit),
-        0,
-      );
-      const totalCredit = entries.reduce(
-        (sum, entry) => sum + parseFloat(entry.credit),
-        0,
-      );
+      const query: any = {
+        companyId: companyObjectId,
+        accountId: accountObjectId,
+      };
+      if (startDate || endDate) {
+        query.transactionDate = {
+          ...(startDate ? { $gte: startDate } : {}),
+          ...(endDate ? { $lte: endDate } : {}),
+        };
+      }
+
+      const [entries, opening] = await Promise.all([
+        Ledger.find(query)
+          .sort({ transactionDate: 1, createdAt: 1, _id: 1 })
+          .lean(),
+        startDate
+          ? this.getAccountBalance(
+              companyId,
+              accountId,
+              new Date(startDate.getTime() - 1),
+            )
+          : Promise.resolve({ balance: 0 }),
+      ]);
+
+      let running = opening.balance;
+      let totalDebit = 0;
+      let totalCredit = 0;
+      const withBalances = entries.map((entry) => {
+        const debit = toMoney(entry.debit);
+        const credit = toMoney(entry.credit);
+        totalDebit += debit;
+        totalCredit += credit;
+        running = round2(
+          running + normalBalance(account.accountType, debit, credit),
+        );
+        return { ...entry, debit, credit, runningBalance: running };
+      });
 
       return {
         account: {
@@ -190,12 +316,13 @@ export const ledgerService = {
           accountType: account.accountType,
           subType: account.subType,
         },
-        entries,
+        entries: withBalances,
         summary: {
-          totalDebit,
-          totalCredit,
-          currentBalance: entries[entries.length - 1]?.runningBalance || 0,
-          entryCount: entries.length,
+          openingBalance: opening.balance,
+          totalDebit: round2(totalDebit),
+          totalCredit: round2(totalCredit),
+          currentBalance: running,
+          entryCount: withBalances.length,
         },
       };
     } catch (error) {
@@ -315,14 +442,9 @@ export const ledgerService = {
       ]);
 
       let balance = 0;
-      if (result.length > 0) {
+      if (result.length > 0 && account) {
         const { totalDebit, totalCredit } = result[0];
-        const isDebitNormal =
-          account?.accountType === "Asset" ||
-          account?.accountType === "Expense";
-        balance = isDebitNormal
-          ? totalDebit - totalCredit
-          : totalCredit - totalDebit;
+        balance = normalBalance(account.accountType, totalDebit, totalCredit);
       }
 
       return {
@@ -343,83 +465,49 @@ export const ledgerService = {
   },
 
   /**
-   * Get trial balance (all accounts with their balances)
+   * Get trial balance (all accounts with their balances) in one aggregate.
+   * Each account appears in the column of its actual balance: a contra or
+   * overdrawn account shows on the opposite side of its normal balance.
    */
   async getTrialBalance(companyId: string, asOfDate?: Date) {
     try {
       const companyObjectId = new mongoose.Types.ObjectId(companyId);
 
-      // Get all accounts
-      const accounts = await Account.find({
-        companyId: companyObjectId,
-      })
-        .sort({ accountCode: 1 })
-        .lean();
+      const [accounts, totals] = await Promise.all([
+        Account.find({ companyId: companyObjectId })
+          .sort({ accountCode: 1 })
+          .lean(),
+        this.getTotalsByAccount(companyId, { to: asOfDate }),
+      ]);
 
       const trialBalance = [];
       let totalDebits = 0;
       let totalCredits = 0;
 
       for (const account of accounts) {
-        const matchStage: any = {
-          companyId: companyObjectId,
-          accountId: account._id,
-        };
+        const t = totals.get(account._id.toString());
+        if (!t) continue;
 
-        if (asOfDate) {
-          matchStage.transactionDate = { $lte: asOfDate };
-        }
+        const net = round2(t.debit - t.credit); // positive = debit balance
+        if (net === 0) continue;
 
-        const result = await Ledger.aggregate([
-          { $match: matchStage },
-          {
-            $group: {
-              _id: null,
-              totalDebit: { $sum: { $toDouble: "$debit" } },
-              totalCredit: { $sum: { $toDouble: "$credit" } },
-            },
-          },
-        ]);
+        const debit = net > 0 ? net : 0;
+        const credit = net < 0 ? -net : 0;
+        totalDebits += debit;
+        totalCredits += credit;
 
-        const { totalDebit, totalCredit } = result[0] ?? {
-          totalDebit: 0,
-          totalCredit: 0,
-        };
-        const isDebitNormal = ["Asset", "Expense"].includes(account.accountType);
-        const balance = isDebitNormal
-          ? totalDebit - totalCredit
-          : totalCredit - totalDebit;
-
-        // Determine if account has debit or credit balance
-        const isDebitBalance = isDebitNormal;
-
-        // Handle negative balances (contra accounts)
-        const finalDebit =
-          balance >= 0 && isDebitBalance
-            ? balance
-            : balance < 0 && !isDebitBalance
-              ? Math.abs(balance)
-              : 0;
-        const finalCredit =
-          balance >= 0 && !isDebitBalance
-            ? balance
-            : balance < 0 && isDebitBalance
-              ? Math.abs(balance)
-              : 0;
-
-        totalDebits += finalDebit;
-        totalCredits += finalCredit;
-
-        if (balance !== 0) {
-          trialBalance.push({
-            accountCode: account.accountCode,
-            accountName: account.accountName,
-            accountType: account.accountType,
-            debit: finalDebit,
-            credit: finalCredit,
-          });
-        }
+        trialBalance.push({
+          accountCode: account.accountCode,
+          accountName: account.accountName,
+          accountType: account.accountType,
+          debit,
+          credit,
+        });
       }
+
+      totalDebits = round2(totalDebits);
+      totalCredits = round2(totalCredits);
+      const difference = round2(Math.abs(totalDebits - totalCredits));
 
       return {
         asOfDate: asOfDate || new Date(),
@@ -427,8 +515,8 @@ export const ledgerService = {
         totals: {
           debits: totalDebits,
           credits: totalCredits,
-          difference: Math.abs(totalDebits - totalCredits),
-          balanced: Math.abs(totalDebits - totalCredits) < 0.01,
+          difference,
+          balanced: difference < 0.01,
         },
       };
     } catch (error) {

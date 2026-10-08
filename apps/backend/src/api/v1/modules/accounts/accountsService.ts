@@ -3,12 +3,97 @@ import { Types } from "mongoose";
 import logger from "../../config/logger.js";
 import Account from "../../models/Account.js";
 import { Ledger } from "../../models/Ledger.js";
+import { JournalEntryService } from "../../services/journalEntryService.js";
 import { escapeRegex } from "../../shared/helpers/escapeRegex.js";
+import { round2 } from "../../shared/helpers/money.js";
+import { JournalEntryType } from "../../shared/interface/IJournalEntry.js";
+import { ledgerService } from "../ledger/ledgerService.js";
 
 /**
  * Accounts Service
  * Handles all account-related business logic
  */
+/**
+ * Ensure a parent account exists in the same company.
+ */
+async function assertParentInCompany(
+  companyId: string | Types.ObjectId,
+  parentAccount: string | Types.ObjectId,
+) {
+  const parent = await Account.exists({ _id: parentAccount, companyId });
+  if (!parent) {
+    throw new Error("Parent account not found in this company");
+  }
+}
+
+/**
+ * Post an account's starting balance against Opening Balance Equity
+ * (created on demand).
+ */
+async function postOpeningBalance(
+  companyId: string | Types.ObjectId,
+  account: { _id: Types.ObjectId; accountType: string; accountName: string },
+  amount: number,
+  userId: string,
+) {
+  let equity = await Account.findOne({
+    companyId,
+    accountType: "Equity",
+    accountName: /^opening balance equity$/i,
+  });
+  if (!equity) {
+    const code = ["3900", "3950", "3999"];
+    for (const accountCode of code) {
+      if (await Account.exists({ companyId, accountCode })) continue;
+      equity = await Account.create({
+        companyId,
+        accountCode,
+        accountName: "Opening Balance Equity",
+        accountType: "Equity",
+        subType: "Owner's Equity",
+        normalBalance: "Credit",
+        balance: 0,
+        isActive: true,
+      });
+      break;
+    }
+  }
+  if (!equity) {
+    throw new Error(
+      "Could not create an Opening Balance Equity account. Please create one and post the opening balance as a journal entry.",
+    );
+  }
+
+  const value = round2(Math.abs(amount));
+  const debitNormal =
+    account.accountType === "Asset" || account.accountType === "Expense";
+  // A positive amount increases the account in its normal direction.
+  const debitAccount = debitNormal ? amount > 0 : amount < 0;
+
+  await JournalEntryService.postEntry({
+    companyId,
+    userId,
+    entryDate: new Date(),
+    entryType: JournalEntryType.MANUAL,
+    description: `Opening balance - ${account.accountName}`,
+    referenceNumber: "OPENING-BALANCE",
+    lines: [
+      {
+        accountId: account._id,
+        debit: debitAccount ? value : 0,
+        credit: debitAccount ? 0 : value,
+        description: "Opening balance",
+      },
+      {
+        accountId: equity._id,
+        debit: debitAccount ? 0 : value,
+        credit: debitAccount ? value : 0,
+        description: `Opening balance - ${account.accountName}`,
+      },
+    ],
+  });
+}
+
 const accountsService = {
   /**
    * Get all accounts for a company
@@ -19,50 +104,17 @@ const accountsService = {
         accountCode: 1,
       });
 
-      // Enrich each account with its live balance from the Ledger so the
-      // chart of accounts always reflects the current state without needing
-      // a manual reconciliation step. Use an aggregate sum (not runningBalance)
-      // to avoid stale values from out-of-order insertions.
-      const accountsWithBalances = await Promise.all(
-        accounts.map(async (account) => {
-          const result = await Ledger.aggregate([
-            {
-              $match: {
-                companyId: account.companyId,
-                accountId: account._id,
-              },
-            },
-            {
-              $group: {
-                _id: null,
-                totalDebit: { $sum: { $toDouble: "$debit" } },
-                totalCredit: { $sum: { $toDouble: "$credit" } },
-              },
-            },
-          ]);
-
-          let liveBalance = 0;
-          if (result.length > 0) {
-            const { totalDebit, totalCredit } = result[0];
-            const isDebitNormal =
-              account.accountType === "Asset" ||
-              account.accountType === "Expense";
-            liveBalance = isDebitNormal
-              ? totalDebit - totalCredit
-              : totalCredit - totalDebit;
-          }
-
-          // Silently sync the stored balance if it has drifted.
-          if (Math.abs(liveBalance - account.balance) > 0.01) {
-            account.balance = liveBalance;
-            await account.save();
-          }
-
-          return account;
-        }),
+      // Live balances from the ledger in ONE aggregate. The response carries
+      // the live value; nothing is written on a read.
+      const balances = await ledgerService.getBalancesByAccount(
+        companyId.toString(),
+        accounts,
       );
+      for (const account of accounts) {
+        account.balance = balances.get(account._id.toString()) ?? 0;
+      }
 
-      return accountsWithBalances;
+      return accounts;
     } catch (error) {
       logger.logError(error as Error, {
         operation: "get-all-accounts",
@@ -136,6 +188,7 @@ const accountsService = {
       balance?: number;
       parentAccount?: string | Types.ObjectId;
     },
+    userId?: string,
   ) => {
     try {
       // Check if account code already exists for this company
@@ -150,10 +203,15 @@ const accountsService = {
         );
       }
 
+      if (accountData.parentAccount) {
+        await assertParentInCompany(companyId, accountData.parentAccount);
+      }
+
+      const { balance: openingBalance, ...fields } = accountData;
       const account = new Account({
-        ...accountData,
+        ...fields,
         companyId,
-        balance: accountData.balance ?? 0,
+        balance: 0,
       });
 
       await account.save();
@@ -162,6 +220,16 @@ const accountsService = {
         accountCode: account.accountCode,
         companyId: companyId.toString(),
       });
+
+      // A starting balance must go through the ledger, otherwise it is not
+      // part of any report and the books no longer balance.
+      if (openingBalance && round2(openingBalance) !== 0) {
+        if (!userId) {
+          throw new Error("A user is required to post an opening balance");
+        }
+        await postOpeningBalance(companyId, account, openingBalance, userId);
+        account.balance = round2(openingBalance);
+      }
 
       return account;
     } catch (error) {
@@ -189,9 +257,53 @@ const accountsService = {
     }>,
   ) => {
     try {
+      const allowed = [
+        "accountName",
+        "accountType",
+        "normalBalance",
+        "subType",
+        "description",
+        "parentAccount",
+      ] as const;
+      const changes: Record<string, unknown> = {};
+      for (const key of allowed) {
+        if ((updateData as any)[key] !== undefined) {
+          changes[key] = (updateData as any)[key];
+        }
+      }
+
+      const current = await Account.findOne({ _id: accountId, companyId });
+      if (!current) {
+        throw new Error("Account not found");
+      }
+
+      const typeChanging =
+        (changes.accountType !== undefined &&
+          changes.accountType !== current.accountType) ||
+        (changes.normalBalance !== undefined &&
+          changes.normalBalance !== current.normalBalance);
+      if (typeChanging) {
+        const hasActivity = await Ledger.exists({
+          companyId: current.companyId,
+          accountId: current._id,
+        });
+        if (hasActivity) {
+          throw new Error(
+            "Cannot change the type or normal balance of an account that has transactions. Create a new account and reclassify with a journal entry instead.",
+          );
+        }
+      }
+
+      if (changes.parentAccount) {
+        if (String(changes.parentAccount) === String(current._id)) {
+          throw new Error("An account cannot be its own parent");
+        }
+        await assertParentInCompany(companyId, changes.parentAccount as any);
+      }
+
       const account = await Account.findOneAndUpdate(
         { _id: accountId, companyId },
-        { $set: updateData },
+        { $set: changes },
         { new: true, runValidators: true },
       );
 
@@ -362,11 +474,16 @@ const accountsService = {
         throw new Error("Account not found");
       }
 
+      const { balance } = await ledgerService.getAccountBalance(
+        companyId.toString(),
+        account._id.toString(),
+      );
+
       return {
         accountId: account._id,
         accountCode: account.accountCode,
         accountName: account.accountName,
-        balance: account.balance,
+        balance,
         normalBalance: account.normalBalance,
       };
     } catch (error) {
@@ -448,15 +565,10 @@ const accountsService = {
         throw new Error("Account not found");
       }
 
-      // Get latest ledger entry for this account to get running balance
-      const latestEntry = await Ledger.findOne({
-        accountId,
-        companyId,
-      })
-        .sort({ transactionDate: -1, createdAt: -1 })
-        .lean();
-
-      const actualBalance = latestEntry?.runningBalance || 0;
+      const { balance: actualBalance } = await ledgerService.getAccountBalance(
+        companyId.toString(),
+        account._id.toString(),
+      );
       const storedBalance = account.balance;
 
       // Update if balances don't match
@@ -565,18 +677,11 @@ const accountsService = {
         throw new Error("Account not found");
       }
 
-      const query: any = {
-        accountId,
-        companyId,
-      };
-
-      if (asOfDate) {
-        query.transactionDate = { $lte: asOfDate };
-      }
-
-      const latestEntry = await Ledger.findOne(query)
-        .sort({ transactionDate: -1, createdAt: -1 })
-        .lean();
+      const { balance } = await ledgerService.getAccountBalance(
+        companyId.toString(),
+        account._id.toString(),
+        asOfDate,
+      );
 
       return {
         accountId: account._id,
@@ -584,7 +689,7 @@ const accountsService = {
         accountName: account.accountName,
         accountType: account.accountType,
         normalBalance: account.normalBalance,
-        balance: latestEntry?.runningBalance || 0,
+        balance,
         asOfDate: asOfDate || new Date(),
         source: "ledger",
       };

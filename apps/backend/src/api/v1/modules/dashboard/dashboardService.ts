@@ -4,84 +4,225 @@ import Account from "../../models/Account.js";
 import { Bill } from "../../models/Bill.js";
 import { Invoice } from "../../models/Invoice.js";
 import { Ledger } from "../../models/Ledger.js";
+import { OPEN_DOCUMENT_STATUSES } from "../../shared/helpers/documentTotals.js";
+import { round2 } from "../../shared/helpers/money.js";
+
+const MONTH_NAMES = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+/**
+ * Revenue and expense per calendar month from the ledger (accrual basis,
+ * same source as the income statement; closing entries excluded).
+ */
+async function monthlyRevenueExpenses(
+  companyId: mongoose.Types.ObjectId,
+  start: Date,
+  end: Date,
+) {
+  const rows = await Ledger.aggregate([
+    {
+      $match: {
+        companyId,
+        transactionDate: { $gte: start, $lte: end },
+        isClosingEntry: { $ne: true },
+      },
+    },
+    {
+      $lookup: {
+        from: "accounts",
+        localField: "accountId",
+        foreignField: "_id",
+        as: "account",
+        pipeline: [{ $project: { accountType: 1 } }],
+      },
+    },
+    { $unwind: "$account" },
+    { $match: { "account.accountType": { $in: ["Revenue", "Expense"] } } },
+    {
+      $group: {
+        _id: {
+          month: { $month: "$transactionDate" },
+          type: "$account.accountType",
+        },
+        debit: { $sum: { $toDouble: "$debit" } },
+        credit: { $sum: { $toDouble: "$credit" } },
+      },
+    },
+  ]);
+
+  const revenue: Record<number, number> = {};
+  const expenses: Record<number, number> = {};
+  for (const row of rows) {
+    if (row._id.type === "Revenue") {
+      revenue[row._id.month] = round2(row.credit - row.debit);
+    } else {
+      expenses[row._id.month] = round2(row.debit - row.credit);
+    }
+  }
+
+  return MONTH_NAMES.map((month, idx) => {
+    const r = revenue[idx + 1] ?? 0;
+    const e = expenses[idx + 1] ?? 0;
+    return { month, revenue: r, expenses: e, profit: round2(r - e) };
+  });
+}
+
+/** Open (posted, unpaid) documents summary. */
+async function outstandingSummary(
+  model: typeof Invoice | typeof Bill,
+  companyId: mongoose.Types.ObjectId,
+) {
+  const [agg] = await (model as any).aggregate([
+    {
+      $match: {
+        companyId,
+        status: { $in: OPEN_DOCUMENT_STATUSES },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        count: { $sum: 1 },
+        totalBalance: { $sum: "$balanceDue" },
+        overdueCount: {
+          $sum: {
+            $cond: [{ $lt: ["$dueDate", new Date()] }, 1, 0],
+          },
+        },
+      },
+    },
+  ]);
+
+  return {
+    count: agg?.count ?? 0,
+    totalBalance: round2(agg?.totalBalance ?? 0),
+    overdueCount: agg?.overdueCount ?? 0,
+  };
+}
+
+/**
+ * Top revenue/expense accounts by net amount for a period.
+ */
+async function categoryBreakdown(
+  companyId: mongoose.Types.ObjectId,
+  start: Date,
+  end: Date,
+  accountType: "Revenue" | "Expense",
+) {
+  const rows = await Ledger.aggregate([
+    {
+      $match: {
+        companyId,
+        transactionDate: { $gte: start, $lte: end },
+        isClosingEntry: { $ne: true },
+      },
+    },
+    {
+      $lookup: {
+        from: "accounts",
+        localField: "accountId",
+        foreignField: "_id",
+        as: "account",
+        pipeline: [{ $project: { accountType: 1, accountName: 1 } }],
+      },
+    },
+    { $unwind: "$account" },
+    { $match: { "account.accountType": accountType } },
+    {
+      $group: {
+        _id: "$account.accountName",
+        debit: { $sum: { $toDouble: "$debit" } },
+        credit: { $sum: { $toDouble: "$credit" } },
+      },
+    },
+  ]);
+
+  return rows
+    .map((row) => ({
+      category: row._id as string,
+      amount: round2(
+        accountType === "Revenue"
+          ? row.credit - row.debit
+          : row.debit - row.credit,
+      ),
+    }))
+    .filter((row) => row.amount !== 0)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 10);
+}
 
 /**
  * Dashboard Service
- * Aggregates key business metrics for the dashboard overview.
+ * Aggregates KPI data for the overview dashboard.
  */
 export const dashboardService = {
   /**
-   * Get dashboard overview data for a company.
+   * Get overview data for a company dashboard.
    * Returns KPIs, recent ledger transactions, and 12-month trend.
    */
   async getOverview(companyId: string) {
     const cId = new mongoose.Types.ObjectId(companyId);
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
+    const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
 
-    // ── 1. Revenue (from paid/partial invoices) ──────────────────────────────
-    const revenueAgg = await Invoice.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          status: { $in: ["Paid", "Partial"] },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          ytdRevenue: { $sum: "$amountPaid" },
-          monthRevenue: {
-            $sum: {
-              $cond: [{ $gte: ["$updatedAt", startOfMonth] }, "$amountPaid", 0],
-            },
-          },
-        },
-      },
+    const [
+      monthlyTrend,
+      capitalAccounts,
+      outstandingInvoices,
+      outstandingBills,
+      recentLedgerEntries,
+    ] = await Promise.all([
+      monthlyRevenueExpenses(cId, startOfYear, endOfYear),
+      // Contribution-style equity accounts only (excludes retained earnings,
+      // current-year earnings and drawings).
+      Account.find({
+        companyId: cId,
+        accountType: "Equity",
+        normalBalance: "Credit",
+        subType: { $in: ["Owner's Equity", "Share Capital"] },
+      })
+        .select("_id")
+        .lean(),
+      outstandingSummary(Invoice, cId),
+      outstandingSummary(Bill, cId),
+      Ledger.find({ companyId: cId })
+        .sort({ transactionDate: -1, createdAt: -1 })
+        .limit(10)
+        .populate<{
+          accountId: { accountName: string; accountCode: string };
+        }>("accountId", "accountName accountCode")
+        .lean(),
     ]);
 
-    const ytdRevenue = revenueAgg[0]?.ytdRevenue ?? 0;
-    const monthRevenue = revenueAgg[0]?.monthRevenue ?? 0;
+    // ── Revenue / expenses (accrual, from the ledger) ───────────────────────
+    const thisMonth = monthlyTrend[now.getMonth()];
+    const ytdRevenue = round2(
+      monthlyTrend.reduce((sum, m) => sum + m.revenue, 0),
+    );
+    const ytdExpenses = round2(
+      monthlyTrend.reduce((sum, m) => sum + m.expenses, 0),
+    );
+    const monthRevenue = thisMonth.revenue;
+    const monthExpenses = thisMonth.expenses;
+    const ytdProfit = round2(ytdRevenue - ytdExpenses);
+    const monthProfit = round2(monthRevenue - monthExpenses);
 
-    // ── 2. Expenses (from paid/partial bills) ─────────────────────────────────
-    const expenseAgg = await Bill.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          status: { $in: ["Paid", "Partial"] },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          ytdExpenses: { $sum: "$amountPaid" },
-          monthExpenses: {
-            $sum: {
-              $cond: [{ $gte: ["$updatedAt", startOfMonth] }, "$amountPaid", 0],
-            },
-          },
-        },
-      },
-    ]);
-
-    const ytdExpenses = expenseAgg[0]?.ytdExpenses ?? 0;
-    const monthExpenses = expenseAgg[0]?.monthExpenses ?? 0;
-
-    // ── 2b. Owner capital contributions for ROI denominator ──────────────────
-    // First-pass ROI uses only contribution-style equity accounts and excludes
-    // retained earnings / current-year earnings / drawings.
-    const capitalAccounts = await Account.find({
-      companyId: cId,
-      accountType: "Equity",
-      normalBalance: "Credit",
-      subType: { $in: ["Owner's Equity", "Share Capital"] },
-    })
-      .select("_id")
-      .lean();
-
+    // ── Owner capital contributions (ROI denominator) ───────────────────────
     const capitalAccountIds = capitalAccounts.map((account) => account._id);
-    const capitalContributionAgg =
+    const [capital] =
       capitalAccountIds.length > 0
         ? await Ledger.aggregate([
             {
@@ -100,152 +241,26 @@ export const dashboardService = {
           ])
         : [];
 
-    const totalOwnerCapitalContributions =
-      (capitalContributionAgg[0]?.totalCredit ?? 0) -
-      (capitalContributionAgg[0]?.totalDebit ?? 0);
-    const ytdProfit = ytdRevenue - ytdExpenses;
-    const monthProfit = monthRevenue - monthExpenses;
+    const totalOwnerCapitalContributions = round2(
+      (capital?.totalCredit ?? 0) - (capital?.totalDebit ?? 0),
+    );
     const ytdRoi =
       totalOwnerCapitalContributions > 0
-        ? (ytdProfit / totalOwnerCapitalContributions) * 100
+        ? round2((ytdProfit / totalOwnerCapitalContributions) * 100)
         : null;
 
-    // ── 3. Outstanding invoices ───────────────────────────────────────────────
-    const outstandingInvoicesAgg = await Invoice.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          status: { $in: ["Sent", "Partial", "Overdue", "Draft"] },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          count: { $sum: 1 },
-          totalBalance: { $sum: "$balanceDue" },
-          overdueCount: {
-            $sum: { $cond: [{ $eq: ["$status", "Overdue"] }, 1, 0] },
-          },
-        },
-      },
-    ]);
-
-    const outstandingInvoices = {
-      count: outstandingInvoicesAgg[0]?.count ?? 0,
-      totalBalance: outstandingInvoicesAgg[0]?.totalBalance ?? 0,
-      overdueCount: outstandingInvoicesAgg[0]?.overdueCount ?? 0,
-    };
-
-    // ── 4. Outstanding bills ──────────────────────────────────────────────────
-    const outstandingBillsAgg = await Bill.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          status: { $in: ["Approved", "Partial", "Overdue", "Draft"] },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          count: { $sum: 1 },
-          totalBalance: { $sum: "$balanceDue" },
-          overdueCount: {
-            $sum: { $cond: [{ $eq: ["$status", "Overdue"] }, 1, 0] },
-          },
-        },
-      },
-    ]);
-
-    const outstandingBills = {
-      count: outstandingBillsAgg[0]?.count ?? 0,
-      totalBalance: outstandingBillsAgg[0]?.totalBalance ?? 0,
-      overdueCount: outstandingBillsAgg[0]?.overdueCount ?? 0,
-    };
-
-    // ── 5. Recent transactions (last 10 ledger entries) ───────────────────────
-    const recentLedgerEntries = await Ledger.find({ companyId: cId })
-      .sort({ transactionDate: -1, createdAt: -1 })
-      .limit(10)
-      .populate<{
-        accountId: { accountName: string; accountCode: string };
-      }>("accountId", "accountName accountCode")
-      .lean();
-
-    const recentTransactions = recentLedgerEntries.map((entry) => ({
-      _id: entry._id,
-      date: entry.transactionDate,
-      description: entry.description,
-      accountName: (entry.accountId as any)?.accountName ?? "Unknown Account",
-      accountCode: (entry.accountId as any)?.accountCode ?? "",
-      debit: entry.debit,
-      credit: entry.credit,
-      type: Number(entry.debit) > 0 ? "Debit" : "Credit",
-    }));
-
-    // ── 6. Monthly trend for current year (12 months) ────────────────────────
-    const monthlyInvoices = await Invoice.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          status: { $in: ["Paid", "Partial"] },
-          updatedAt: { $gte: startOfYear },
-        },
-      },
-      {
-        $group: {
-          _id: { $month: "$updatedAt" },
-          revenue: { $sum: "$amountPaid" },
-        },
-      },
-    ]);
-
-    const monthlyBills = await Bill.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          status: { $in: ["Paid", "Partial"] },
-          updatedAt: { $gte: startOfYear },
-        },
-      },
-      {
-        $group: {
-          _id: { $month: "$updatedAt" },
-          expenses: { $sum: "$amountPaid" },
-        },
-      },
-    ]);
-
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
-    // Build a map for fast lookup
-    const revenueByMonth: Record<number, number> = {};
-    for (const r of monthlyInvoices) revenueByMonth[r._id] = r.revenue;
-
-    const expensesByMonth: Record<number, number> = {};
-    for (const e of monthlyBills) expensesByMonth[e._id] = e.expenses;
-
-    const monthlyTrend = monthNames.map((month, idx) => {
-      const monthNum = idx + 1;
-      const revenue = revenueByMonth[monthNum] ?? 0;
-      const expenses = expensesByMonth[monthNum] ?? 0;
+    const recentTransactions = recentLedgerEntries.map((entry) => {
+      const debit = Number(entry.debit) || 0;
+      const credit = Number(entry.credit) || 0;
       return {
-        month,
-        revenue,
-        expenses,
-        profit: revenue - expenses,
+        _id: entry._id,
+        date: entry.transactionDate,
+        description: entry.description,
+        accountName: (entry.accountId as any)?.accountName ?? "Unknown Account",
+        accountCode: (entry.accountId as any)?.accountCode ?? "",
+        debit,
+        credit,
+        type: debit > 0 ? "Debit" : "Credit",
       };
     });
 
@@ -269,7 +284,8 @@ export const dashboardService = {
 
   /**
    * Get analytics data for a company, optionally filtered by year.
-   * Returns monthly revenue/expense trend plus per-account breakdowns from the ledger.
+   * Returns monthly revenue/expense trend plus per-account breakdowns from
+   * the ledger.
    */
   async getAnalytics(companyId: string, year?: number) {
     const cId = new mongoose.Types.ObjectId(companyId);
@@ -277,126 +293,12 @@ export const dashboardService = {
     const startOfYear = new Date(targetYear, 0, 1);
     const endOfYear = new Date(targetYear, 11, 31, 23, 59, 59, 999);
 
-    const monthNames = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
-    ];
-
-    // ── Monthly trend for the target year ────────────────────────────────────
-    const monthlyInvoices = await Invoice.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          status: { $in: ["Paid", "Partial"] },
-          updatedAt: { $gte: startOfYear, $lte: endOfYear },
-        },
-      },
-      {
-        $group: {
-          _id: { $month: "$updatedAt" },
-          revenue: { $sum: "$amountPaid" },
-        },
-      },
-    ]);
-
-    const monthlyBills = await Bill.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          status: { $in: ["Paid", "Partial"] },
-          updatedAt: { $gte: startOfYear, $lte: endOfYear },
-        },
-      },
-      {
-        $group: {
-          _id: { $month: "$updatedAt" },
-          expenses: { $sum: "$amountPaid" },
-        },
-      },
-    ]);
-
-    const revenueByMonth: Record<number, number> = {};
-    for (const r of monthlyInvoices) revenueByMonth[r._id] = r.revenue;
-
-    const expensesByMonth: Record<number, number> = {};
-    for (const e of monthlyBills) expensesByMonth[e._id] = e.expenses;
-
-    const monthlyTrend = monthNames.map((month, idx) => {
-      const monthNum = idx + 1;
-      const revenue = revenueByMonth[monthNum] ?? 0;
-      const expenses = expensesByMonth[monthNum] ?? 0;
-      return { month, revenue, expenses, profit: revenue - expenses };
-    });
-
-    // ── Revenue by account category (Revenue accounts, credit ledger entries) ──
-    const revenueByCategory = await Ledger.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          transactionDate: { $gte: startOfYear, $lte: endOfYear },
-          credit: { $gt: 0 },
-        },
-      },
-      {
-        $lookup: {
-          from: "accounts",
-          localField: "accountId",
-          foreignField: "_id",
-          as: "account",
-        },
-      },
-      { $unwind: "$account" },
-      { $match: { "account.accountType": "Revenue" } },
-      {
-        $group: {
-          _id: "$account.accountName",
-          amount: { $sum: "$credit" },
-        },
-      },
-      { $project: { _id: 0, category: "$_id", amount: 1 } },
-      { $sort: { amount: -1 } },
-      { $limit: 10 },
-    ]);
-
-    // ── Expense by account category (Expense accounts, debit ledger entries) ───
-    const expenseByCategory = await Ledger.aggregate([
-      {
-        $match: {
-          companyId: cId,
-          transactionDate: { $gte: startOfYear, $lte: endOfYear },
-          debit: { $gt: 0 },
-        },
-      },
-      {
-        $lookup: {
-          from: "accounts",
-          localField: "accountId",
-          foreignField: "_id",
-          as: "account",
-        },
-      },
-      { $unwind: "$account" },
-      { $match: { "account.accountType": "Expense" } },
-      {
-        $group: {
-          _id: "$account.accountName",
-          amount: { $sum: "$debit" },
-        },
-      },
-      { $project: { _id: 0, category: "$_id", amount: 1 } },
-      { $sort: { amount: -1 } },
-      { $limit: 10 },
-    ]);
+    const [monthlyTrend, revenueByCategory, expenseByCategory] =
+      await Promise.all([
+        monthlyRevenueExpenses(cId, startOfYear, endOfYear),
+        categoryBreakdown(cId, startOfYear, endOfYear, "Revenue"),
+        categoryBreakdown(cId, startOfYear, endOfYear, "Expense"),
+      ]);
 
     return {
       year: targetYear,

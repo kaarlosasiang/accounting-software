@@ -79,9 +79,11 @@ async function backfill() {
         entryNumber: je.entryNumber ?? "",
         transactionDate: je.entryDate,
         description: line.description ?? "",
-        debit: debit.toString(),
-        credit: credit.toString(),
+        debit,
+        credit,
         runningBalance,
+        entryType: je.entryType,
+        isClosingEntry: je.isClosingEntry ?? false,
       });
 
       console.log(

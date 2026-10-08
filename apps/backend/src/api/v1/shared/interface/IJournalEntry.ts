@@ -48,6 +48,10 @@ export interface IJournalEntry {
   totalDebit: number; // Must equal totalCredit
   totalCredit: number; // Must equal totalDebit
   isClosingEntry?: boolean; // True if this is a period closing entry
+  reversalOfEntryId?: Types.ObjectId; // Set on a reversing entry
+  reversedByEntryId?: Types.ObjectId; // Set on the entry it reverses
+  sourceType?: "Invoice" | "Bill" | "Payment" | "Period"; // Originating document
+  sourceId?: Types.ObjectId;
   postedBy?: Types.ObjectId; // User who posted the entry
   createdBy: Types.ObjectId;
   voidedAt?: Date;

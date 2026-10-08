@@ -112,7 +112,11 @@ export const billController = {
         });
       }
 
-      const bill = await billService.createBill(companyId, userId, req.body);
+      const bill = await billService.createBill(
+        companyId,
+        userId,
+        validationResult.data,
+      );
 
       auditLogService.log({
         companyId,
@@ -166,7 +170,12 @@ export const billController = {
         });
       }
 
-      const bill = await billService.updateBill(companyId, id, req.body);
+      const bill = await billService.updateBill(
+        companyId,
+        id,
+        validationResult.data,
+        getUserId(req),
+      );
 
       auditLogService.log({
         companyId,
@@ -253,7 +262,7 @@ export const billController = {
         });
       }
 
-      const bill = await billService.voidBill(companyId, id);
+      const bill = await billService.voidBill(companyId, id, getUserId(req));
 
       return res.status(200).json({
         success: true,
@@ -423,11 +432,26 @@ export const billController = {
         });
       }
 
-      const paymentData = {
-        ...req.body,
-        billId: id,
-        companyId,
-      };
+      // This endpoint pays a single document: default the allocation to it
+      // and reject allocations that target any other document.
+      const allocations =
+        Array.isArray(req.body?.allocations) && req.body.allocations.length > 0
+          ? req.body.allocations
+          : [
+              {
+                documentId: id,
+                allocatedAmount: req.body?.amount,
+                documentType: "BILL",
+              },
+            ];
+      if (allocations.some((a: any) => String(a?.documentId) !== id)) {
+        return res.status(400).json({
+          success: false,
+          error: "Allocations must target this document only",
+        });
+      }
+
+      const paymentData = { ...req.body, allocations };
 
       const result = await paymentService.recordPaymentMade(
         companyId,
@@ -466,7 +490,7 @@ export const billController = {
         });
       }
 
-      const bill = await billService.approveBill(companyId, id);
+      const bill = await billService.approveBill(companyId, id, getUserId(req));
 
       return res.status(200).json({
         success: true,

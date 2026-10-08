@@ -1,15 +1,17 @@
 import mongoose from "mongoose";
 
 import logger from "../../config/logger.js";
-import Account from "../../models/Account.js";
 import { Invoice } from "../../models/Invoice.js";
 import { JournalEntry } from "../../models/JournalEntry.js";
-import { Ledger } from "../../models/Ledger.js";
 import {
-  IJournalEntryLine,
+  JournalEntryService,
+  PostingLineInput,
+} from "../../services/journalEntryService.js";
+import {
   JournalEntryStatus,
   JournalEntryType,
 } from "../../shared/interface/IJournalEntry.js";
+import { ledgerService } from "../ledger/ledgerService.js";
 
 interface CreateJournalEntryInput {
   companyId: mongoose.Types.ObjectId;
@@ -17,14 +19,14 @@ interface CreateJournalEntryInput {
   entryDate: Date;
   referenceNumber?: string;
   description?: string;
-  lines: IJournalEntryLine[];
+  lines: PostingLineInput[];
 }
 
 interface UpdateJournalEntryInput {
   entryDate?: Date;
   referenceNumber?: string;
   description?: string;
-  lines?: IJournalEntryLine[];
+  lines?: PostingLineInput[];
 }
 
 const hasMalformedInvoiceDescription = (description?: string | null) =>
@@ -228,7 +230,7 @@ export const journalEntryService = {
   },
 
   /**
-   * Create a new manual journal entry
+   * Create a new manual journal entry (saved as a DRAFT).
    */
   async createJournalEntry(data: CreateJournalEntryInput) {
     const session = await mongoose.startSession();
@@ -244,36 +246,21 @@ export const journalEntryService = {
         lines,
       } = data;
 
-      // Validate that debits equal credits
-      const totalDebit = lines.reduce((sum, line) => sum + line.debit, 0);
-      const totalCredit = lines.reduce((sum, line) => sum + line.credit, 0);
+      await JournalEntryService.validatePeriodNotClosed(
+        companyId,
+        entryDate,
+        false,
+        session,
+      );
 
-      if (Math.abs(totalDebit - totalCredit) > 0.01) {
-        throw new Error(
-          `Journal entry is not balanced. Debits: ${totalDebit}, Credits: ${totalCredit}`,
-        );
-      }
+      // Resolves accounts from the DB (company-scoped, active), rounds
+      // amounts and rejects negative values. Balance is enforced by the model.
+      const builtLines = await JournalEntryService.buildLines(
+        companyId,
+        lines ?? [],
+        { session },
+      );
 
-      // Validate all accounts exist and belong to the company
-      for (const line of lines) {
-        const account = await Account.findOne({
-          _id: line.accountId,
-          companyId,
-        }).session(session);
-
-        if (!account) {
-          throw new Error(`Account not found: ${line.accountId}`);
-        }
-
-        // Verify account code and name match
-        if (account.accountCode !== line.accountCode) {
-          throw new Error(
-            `Account code mismatch for account ${line.accountId}`,
-          );
-        }
-      }
-
-      // Create the journal entry
       const journalEntry = new JournalEntry({
         companyId,
         entryDate,
@@ -281,9 +268,7 @@ export const journalEntryService = {
         description,
         entryType: JournalEntryType.MANUAL,
         status: JournalEntryStatus.DRAFT,
-        lines,
-        totalDebit,
-        totalCredit,
+        lines: builtLines,
         createdBy: userId,
       });
 
@@ -298,7 +283,7 @@ export const journalEntryService = {
 
       return journalEntry;
     } catch (error) {
-      await session.abortTransaction();
+      if (session.inTransaction()) await session.abortTransaction();
       logger.logError(error as Error, {
         operation: "create-journal-entry",
         companyId: data.companyId,
@@ -335,57 +320,37 @@ export const journalEntryService = {
         throw new Error("Only draft entries can be updated");
       }
 
-      // Update fields
-      if (updates.entryDate) entry.entryDate = updates.entryDate;
+      if (updates.entryDate) {
+        await JournalEntryService.validatePeriodNotClosed(
+          companyId,
+          updates.entryDate,
+          false,
+          session,
+        );
+        entry.entryDate = updates.entryDate;
+      }
       if (updates.referenceNumber !== undefined)
         entry.referenceNumber = updates.referenceNumber;
       if (updates.description !== undefined)
         entry.description = updates.description;
 
-      // Update lines if provided
       if (updates.lines) {
-        // Validate balance
-        const totalDebit = updates.lines.reduce(
-          (sum, line) => sum + line.debit,
-          0,
+        entry.lines = await JournalEntryService.buildLines(
+          companyId,
+          updates.lines,
+          { session },
         );
-        const totalCredit = updates.lines.reduce(
-          (sum, line) => sum + line.credit,
-          0,
-        );
-
-        if (Math.abs(totalDebit - totalCredit) > 0.01) {
-          throw new Error(
-            `Journal entry is not balanced. Debits: ${totalDebit}, Credits: ${totalCredit}`,
-          );
-        }
-
-        // Validate accounts
-        for (const line of updates.lines) {
-          const account = await Account.findOne({
-            _id: line.accountId,
-            companyId: new mongoose.Types.ObjectId(companyId),
-          }).session(session);
-
-          if (!account) {
-            throw new Error(`Account not found: ${line.accountId}`);
-          }
-        }
-
-        entry.lines = updates.lines;
-        entry.totalDebit = totalDebit;
-        entry.totalCredit = totalCredit;
       }
 
       await entry.save({ session });
 
       await session.commitTransaction();
 
-      logger.info("Journal entry updated", { entryId, companyId });
+      logger.info("Journal entry updated", { entryId, companyId, userId });
 
       return entry;
     } catch (error) {
-      await session.abortTransaction();
+      if (session.inTransaction()) await session.abortTransaction();
       logger.logError(error as Error, {
         operation: "update-journal-entry",
         entryId,
@@ -429,7 +394,7 @@ export const journalEntryService = {
   },
 
   /**
-   * Post a journal entry (create ledger entries)
+   * Post a draft journal entry (writes ledger rows via the posting engine)
    */
   async postJournalEntry(companyId: string, entryId: string, userId: string) {
     const session = await mongoose.startSession();
@@ -445,67 +410,7 @@ export const journalEntryService = {
         throw new Error("Journal entry not found");
       }
 
-      if (entry.status !== JournalEntryStatus.DRAFT) {
-        throw new Error("Only draft entries can be posted");
-      }
-
-      // Change status to posted
-      entry.status = JournalEntryStatus.POSTED;
-      entry.postedBy = new mongoose.Types.ObjectId(userId);
-      await entry.save({ session });
-
-      // Create ledger entries for each line.
-      // Use an in-memory map so that if the same account appears more than once
-      // in a single JE, each subsequent line's running balance chains off the
-      // previous line's computed balance rather than re-fetching a stale DB value.
-      const runningBalanceMap = new Map<string, number>();
-      const ledgerEntries = [];
-      for (const line of entry.lines) {
-        const account = await Account.findById(line.accountId).session(session);
-        if (!account) {
-          throw new Error(`Account not found: ${line.accountId}`);
-        }
-
-        const accountKey = line.accountId.toString();
-        if (!runningBalanceMap.has(accountKey)) {
-          const previousBalance = await this.getAccountBalance(
-            companyId,
-            accountKey,
-            entry.entryDate,
-          );
-          runningBalanceMap.set(accountKey, previousBalance);
-        }
-
-        let runningBalance = runningBalanceMap.get(accountKey)!;
-
-        // Update balance based on account type
-        if (["Asset", "Expense"].includes(account.accountType)) {
-          // Normal debit balance accounts
-          runningBalance += line.debit - line.credit;
-        } else {
-          // Normal credit balance accounts (Liability, Equity, Revenue)
-          runningBalance += line.credit - line.debit;
-        }
-
-        runningBalanceMap.set(accountKey, runningBalance);
-
-        const ledgerEntry = new Ledger({
-          companyId: entry.companyId,
-          accountId: line.accountId,
-          accountName: line.accountName,
-          journalEntryId: entry._id,
-          entryNumber: entry.entryNumber,
-          transactionDate: entry.entryDate,
-          description: line.description || entry.description || "",
-          debit: line.debit.toString(),
-          credit: line.credit.toString(),
-          runningBalance,
-        });
-
-        ledgerEntries.push(ledgerEntry);
-      }
-
-      await Ledger.insertMany(ledgerEntries, { session });
+      await JournalEntryService.postDraftEntry(entry, userId, session);
 
       await session.commitTransaction();
 
@@ -513,7 +418,7 @@ export const journalEntryService = {
 
       return entry;
     } catch (error) {
-      await session.abortTransaction();
+      if (session.inTransaction()) await session.abortTransaction();
       logger.logError(error as Error, {
         operation: "post-journal-entry",
         entryId,
@@ -525,7 +430,9 @@ export const journalEntryService = {
   },
 
   /**
-   * Void a journal entry (reverse it)
+   * Void a posted manual journal entry by posting a reversing entry.
+   * Automatic entries (invoice/bill/payment) must be voided through their
+   * source document so the document and the GL stay in sync.
    */
   async voidJournalEntry(companyId: string, entryId: string, userId: string) {
     const session = await mongoose.startSession();
@@ -541,77 +448,31 @@ export const journalEntryService = {
         throw new Error("Journal entry not found");
       }
 
-      if (entry.status !== JournalEntryStatus.POSTED) {
-        throw new Error("Only posted entries can be voided");
+      if (entry.entryType !== JournalEntryType.MANUAL) {
+        throw new Error(
+          "Automatic journal entries cannot be voided directly. Void the related invoice, bill or payment instead.",
+        );
+      }
+      if (entry.isClosingEntry) {
+        throw new Error(
+          "Closing entries cannot be voided directly. Reopen the accounting period instead.",
+        );
       }
 
-      // Update status to void
-      entry.status = JournalEntryStatus.VOID;
-      entry.voidedAt = new Date();
-      entry.voidedBy = new mongoose.Types.ObjectId(userId);
-      await entry.save({ session });
-
-      // Create reversing ledger entries.
-      // Use an in-memory map so that same-account lines chain correctly and
-      // throw immediately if any account is missing so the transaction aborts
-      // cleanly rather than silently committing an incomplete reversal.
-      const voidDate = new Date();
-      const voidBalanceMap = new Map<string, number>();
-      const reversalEntries = [];
-      for (const line of entry.lines) {
-        const account = await Account.findById(line.accountId).session(session);
-        if (!account) {
-          throw new Error(
-            `Account not found during void: ${line.accountId}. Transaction aborted.`,
-          );
-        }
-
-        const accountKey = line.accountId.toString();
-        if (!voidBalanceMap.has(accountKey)) {
-          const previousBalance = await this.getAccountBalance(
-            companyId,
-            accountKey,
-            voidDate,
-          );
-          voidBalanceMap.set(accountKey, previousBalance);
-        }
-
-        let runningBalance = voidBalanceMap.get(accountKey)!;
-
-        // Reverse the original entry (opposite sign of posting)
-        if (["Asset", "Expense"].includes(account.accountType)) {
-          runningBalance += line.credit - line.debit;
-        } else {
-          runningBalance += line.debit - line.credit;
-        }
-
-        voidBalanceMap.set(accountKey, runningBalance);
-
-        const reversalEntry = new Ledger({
-          companyId: entry.companyId,
-          accountId: line.accountId,
-          accountName: line.accountName,
-          journalEntryId: entry._id,
-          entryNumber: `${entry.entryNumber}-VOID`,
-          transactionDate: voidDate,
-          description: `VOID: ${line.description || entry.description || ""}`,
-          debit: line.credit.toString(), // Swap debit and credit
-          credit: line.debit.toString(),
-          runningBalance,
-        });
-
-        reversalEntries.push(reversalEntry);
-      }
-
-      await Ledger.insertMany(reversalEntries, { session });
+      const { originalEntry } = await JournalEntryService.reverseEntry({
+        companyId,
+        journalEntryId: entryId,
+        userId,
+        session,
+      });
 
       await session.commitTransaction();
 
       logger.info("Journal entry voided", { entryId, companyId });
 
-      return entry;
+      return originalEntry;
     } catch (error) {
-      await session.abortTransaction();
+      if (session.inTransaction()) await session.abortTransaction();
       logger.logError(error as Error, {
         operation: "void-journal-entry",
         entryId,
@@ -623,52 +484,18 @@ export const journalEntryService = {
   },
 
   /**
-   * Helper: Get account balance up to a date.
-   * Computes from the sum of all debit/credit entries rather than relying
-   * on the denormalized runningBalance field, which can become stale when
-   * entries are inserted out of chronological order.
+   * Helper: Get account balance up to a date (normal-direction sign).
    */
   async getAccountBalance(
     companyId: string,
     accountId: string,
     upToDate: Date,
   ): Promise<number> {
-    try {
-      const account = await Account.findById(
-        new mongoose.Types.ObjectId(accountId),
-      ).lean();
-
-      const result = await Ledger.aggregate([
-        {
-          $match: {
-            companyId: new mongoose.Types.ObjectId(companyId),
-            accountId: new mongoose.Types.ObjectId(accountId),
-            transactionDate: { $lte: upToDate },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            totalDebit: { $sum: { $toDouble: "$debit" } },
-            totalCredit: { $sum: { $toDouble: "$credit" } },
-          },
-        },
-      ]);
-
-      if (!result.length) return 0;
-
-      const { totalDebit, totalCredit } = result[0];
-      const isDebitNormal =
-        account?.accountType === "Asset" || account?.accountType === "Expense";
-      return isDebitNormal
-        ? totalDebit - totalCredit
-        : totalCredit - totalDebit;
-    } catch (error) {
-      logger.logError(error as Error, {
-        operation: "get-account-balance",
-        accountId,
-      });
-      return 0;
-    }
+    const { balance } = await ledgerService.getAccountBalance(
+      companyId,
+      accountId,
+      upToDate,
+    );
+    return balance;
   },
 };

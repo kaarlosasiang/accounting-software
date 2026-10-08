@@ -3,11 +3,18 @@ import mongoose from "mongoose";
 import logger from "../../config/logger.js";
 import Account from "../../models/Account.js";
 import { AccountingPeriod } from "../../models/AccountingPeriod.js";
+import {
+  findSystemAccount,
+  SystemAccount,
+} from "../../services/accountResolver.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
+import { round2 } from "../../shared/helpers/money.js";
 import {
   PeriodStatus,
   PeriodType,
 } from "../../shared/interface/IAccountingPeriod.js";
+import { JournalEntryType } from "../../shared/interface/IJournalEntry.js";
+import { ledgerService } from "../ledger/ledgerService.js";
 
 /**
  * Accounting Period Service
@@ -139,18 +146,20 @@ export const periodService = {
 
   /**
    * Close a period
-   * - Creates closing journal entry (Revenue/Expense → Retained Earnings)
-   * - Sets status to Closed
-   * - Records who closed it and when
+   * - Posts a closing journal entry that zeroes every revenue and expense
+   *   account (cumulative ledger balance up to the period end, including any
+   *   earlier closings) into Retained Earnings
+   * - Sets status to Closed and records who closed it and when
    */
   async closePeriod(companyId: string, periodId: string, userId: string) {
     const session = await mongoose.startSession();
     session.startTransaction();
 
     try {
+      const companyObjectId = new mongoose.Types.ObjectId(companyId);
       const period = await AccountingPeriod.findOne({
         _id: periodId,
-        companyId: new mongoose.Types.ObjectId(companyId),
+        companyId: companyObjectId,
       }).session(session);
 
       if (!period) {
@@ -163,126 +172,91 @@ export const periodService = {
         );
       }
 
-      // Get all Revenue and Expense accounts
-      const revenueAccounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountType: "Revenue",
-        isActive: true,
-      }).session(session);
+      // Include inactive accounts: an archived account can still carry a
+      // balance that must be closed.
+      const plAccounts = await Account.find({
+        companyId: companyObjectId,
+        accountType: { $in: ["Revenue", "Expense"] },
+      })
+        .session(session)
+        .lean();
 
-      const expenseAccounts = await Account.find({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountType: "Expense",
-        isActive: true,
-      }).session(session);
-
-      // Find or create Retained Earnings account
-      let retainedEarningsAccount = await Account.findOne({
-        companyId: new mongoose.Types.ObjectId(companyId),
-        accountCode: "3200", // Standard code for Retained Earnings
-        accountType: "Equity",
-      }).session(session);
-
-      if (!retainedEarningsAccount) {
-        // Create Retained Earnings account if it doesn't exist
-        retainedEarningsAccount = new Account({
-          companyId: new mongoose.Types.ObjectId(companyId),
-          accountCode: "3200",
-          accountName: "Retained Earnings",
-          accountType: "Equity",
-          normalBalance: "Credit",
-          balance: 0,
-          isActive: true,
-        });
-        await retainedEarningsAccount.save({ session });
-
-        logger.info("Created Retained Earnings account", {
-          accountId: retainedEarningsAccount._id,
-          companyId,
-        });
-      }
-
-      // Calculate net income (Revenue - Expenses)
-      // Revenue accounts have credit balances, so we use their balance directly
-      // Expense accounts have debit balances, so we subtract them
-      const totalRevenue = revenueAccounts.reduce(
-        (sum, acc) => sum + (acc.balance || 0),
-        0,
-      );
-      const totalExpenses = expenseAccounts.reduce(
-        (sum, acc) => sum + (acc.balance || 0),
-        0,
+      const retainedEarningsAccount = await this.getOrCreateRetainedEarnings(
+        companyObjectId,
+        session,
       );
 
-      const netIncome = totalRevenue - totalExpenses;
+      const balances = await ledgerService.getBalancesByAccount(
+        companyId,
+        plAccounts,
+        { to: period.endDate },
+      );
 
-      // Create closing journal entry
-      const closingEntries: Array<{
+      const closingLines: Array<{
         accountId: string;
-        debit: string;
-        credit: string;
+        debit: number;
+        credit: number;
         description: string;
       }> = [];
+      let totalRevenue = 0;
+      let totalExpenses = 0;
 
-      // Close Revenue accounts (debit Revenue, credit Retained Earnings)
-      for (const account of revenueAccounts) {
-        if (account.balance && account.balance !== 0) {
-          closingEntries.push({
-            accountId: account._id.toString(),
-            debit: account.balance.toFixed(2),
-            credit: "0.00",
-            description: `Close ${account.accountName} to Retained Earnings`,
-          });
-        }
+      for (const account of plAccounts) {
+        const balance = balances.get(account._id.toString()) ?? 0;
+        if (balance === 0) continue;
+
+        const isRevenue = account.accountType === "Revenue";
+        if (isRevenue) totalRevenue += balance;
+        else totalExpenses += balance;
+
+        // Post the opposite of the account's normal-direction balance.
+        // A negative balance (contra account) flips sides.
+        const amount = Math.abs(balance);
+        const debitSide = isRevenue ? balance > 0 : balance < 0;
+        closingLines.push({
+          accountId: account._id.toString(),
+          debit: debitSide ? amount : 0,
+          credit: debitSide ? 0 : amount,
+          description: `Close ${account.accountName} to Retained Earnings`,
+        });
       }
 
-      // Close Expense accounts (credit Expense, debit Retained Earnings)
-      for (const account of expenseAccounts) {
-        if (account.balance && account.balance !== 0) {
-          closingEntries.push({
-            accountId: account._id.toString(),
-            debit: "0.00",
-            credit: account.balance.toFixed(2),
-            description: `Close ${account.accountName} to Retained Earnings`,
-          });
-        }
-      }
+      totalRevenue = round2(totalRevenue);
+      totalExpenses = round2(totalExpenses);
+      const netIncome = round2(totalRevenue - totalExpenses);
 
-      // Transfer net income to Retained Earnings
       if (netIncome !== 0) {
-        closingEntries.push({
+        closingLines.push({
           accountId: retainedEarningsAccount._id.toString(),
-          debit: netIncome < 0 ? Math.abs(netIncome).toFixed(2) : "0.00",
-          credit: netIncome > 0 ? netIncome.toFixed(2) : "0.00",
+          debit: netIncome < 0 ? Math.abs(netIncome) : 0,
+          credit: netIncome > 0 ? netIncome : 0,
           description: `Net ${netIncome > 0 ? "Income" : "Loss"} for ${period.periodName}`,
         });
       }
 
       let closingJournalEntry = null;
-
-      // Only create closing entry if there are transactions to close
-      if (closingEntries.length > 0) {
-        closingJournalEntry = await JournalEntryService.createJournalEntry(
+      if (closingLines.length > 0) {
+        closingJournalEntry = await JournalEntryService.postEntry({
           companyId,
           userId,
-          {
-            transactionDate: period.endDate,
-            description: `Closing entry for ${period.periodName}`,
-            referenceNumber: `CLOSE-${period.periodName.replace(/\s+/g, "-")}`,
-            entries: closingEntries,
-            notes: `Automated closing entry. Net ${netIncome >= 0 ? "Income" : "Loss"}: ${Math.abs(netIncome).toFixed(2)}`,
-            isClosingEntry: true,
-          },
+          entryDate: period.endDate,
+          entryType: JournalEntryType.MANUAL,
+          description: `Closing entry for ${period.periodName}`,
+          referenceNumber: `CLOSE-${period.periodName.replace(/\s+/g, "-")}`,
+          lines: closingLines,
+          isClosingEntry: true,
+          sourceType: "Period",
+          sourceId: period._id,
+          allowInactiveAccounts: true,
           session,
-        );
+        });
       }
 
-      // Update period status
       period.status = PeriodStatus.CLOSED;
       period.closedBy = new mongoose.Types.ObjectId(userId);
       period.closedAt = new Date();
       if (closingJournalEntry) {
-        period.closingJournalEntryId = closingJournalEntry._id;
+        period.closingJournalEntryId = closingJournalEntry._id as any;
       }
 
       await period.save({ session });
@@ -305,12 +279,20 @@ export const periodService = {
           totalRevenue,
           totalExpenses,
           netIncome,
-          revenueAccountsClosed: revenueAccounts.length,
-          expenseAccountsClosed: expenseAccounts.length,
+          revenueAccountsClosed: plAccounts.filter(
+            (a) =>
+              a.accountType === "Revenue" &&
+              (balances.get(a._id.toString()) ?? 0) !== 0,
+          ).length,
+          expenseAccountsClosed: plAccounts.filter(
+            (a) =>
+              a.accountType === "Expense" &&
+              (balances.get(a._id.toString()) ?? 0) !== 0,
+          ).length,
         },
       };
     } catch (error) {
-      await session.abortTransaction();
+      if (session.inTransaction()) await session.abortTransaction();
       logger.logError(error as Error, {
         operation: "close-period",
         companyId,
@@ -323,8 +305,58 @@ export const periodService = {
   },
 
   /**
+   * Find the Retained Earnings account (by name/subtype — NOT by code: the
+   * seeded chart uses 3200 for Common Stock), creating it if missing.
+   */
+  async getOrCreateRetainedEarnings(
+    companyId: mongoose.Types.ObjectId,
+    session: mongoose.ClientSession,
+  ) {
+    const existing = await findSystemAccount(
+      companyId,
+      SystemAccount.RETAINED_EARNINGS,
+      session,
+    );
+    if (existing) return existing;
+
+    for (const code of ["3300", "3900", "3990"]) {
+      const taken = await Account.exists({
+        companyId,
+        accountCode: code,
+      }).session(session);
+      if (taken) continue;
+
+      const [created] = await Account.create(
+        [
+          {
+            companyId,
+            accountCode: code,
+            accountName: "Retained Earnings",
+            accountType: "Equity",
+            subType: "Retained Earnings",
+            normalBalance: "Credit",
+            balance: 0,
+            isActive: true,
+          },
+        ],
+        { session },
+      );
+      logger.info("Created Retained Earnings account", {
+        accountId: created._id,
+        companyId: companyId.toString(),
+      });
+      return created.toObject();
+    }
+
+    throw new Error(
+      "Retained Earnings account not found and no free account code to create one. Please add a Retained Earnings equity account.",
+    );
+  },
+
+  /**
    * Reopen a closed period
-   * - Reverses the closing journal entry
+   * - Reverses the closing journal entry (dated at the period end, so the
+   *   reversal stays inside the period)
    * - Sets status back to Open
    */
   async reopenPeriod(companyId: string, periodId: string, userId: string) {
@@ -347,17 +379,17 @@ export const periodService = {
         );
       }
 
-      // Void the closing journal entry if it exists
       if (period.closingJournalEntryId) {
-        await JournalEntryService.voidJournalEntry(
+        await JournalEntryService.reverseEntry({
           companyId,
-          period.closingJournalEntryId.toString(),
+          journalEntryId: period.closingJournalEntryId,
           userId,
+          date: period.endDate,
+          reason: `Reopened ${period.periodName}`,
           session,
-        );
+        });
       }
 
-      // Update period status
       period.status = PeriodStatus.OPEN;
       period.closedBy = undefined;
       period.closedAt = undefined;
@@ -375,7 +407,7 @@ export const periodService = {
 
       return period;
     } catch (error) {
-      await session.abortTransaction();
+      if (session.inTransaction()) await session.abortTransaction();
       logger.logError(error as Error, {
         operation: "reopen-period",
         companyId,

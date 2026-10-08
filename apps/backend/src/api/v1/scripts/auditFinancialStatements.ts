@@ -69,11 +69,11 @@ async function audit() {
   }).lean();
 
   const totalDebits = allLedger.reduce(
-    (s, e) => s + parseFloat(e.debit || "0"),
+    (s, e) => s + parseFloat(String(e.debit ?? 0)),
     0,
   );
   const totalCredits = allLedger.reduce(
-    (s, e) => s + parseFloat(e.credit || "0"),
+    (s, e) => s + parseFloat(String(e.credit ?? 0)),
     0,
   );
 
@@ -104,8 +104,8 @@ async function audit() {
     const isDebitNormal = acct.normalBalance === "Debit";
     let runningBalance = 0;
     for (const entry of entries) {
-      const debit = parseFloat(entry.debit || "0");
-      const credit = parseFloat(entry.credit || "0");
+      const debit = parseFloat(String(entry.debit ?? 0));
+      const credit = parseFloat(String(entry.credit ?? 0));
       runningBalance += isDebitNormal ? debit - credit : credit - debit;
 
       const stored = parseFloat(entry.runningBalance?.toString() || "0");
@@ -178,7 +178,7 @@ async function audit() {
         transactionDate: { $gte: startOfYear, $lte: today },
       }).lean();
       return entries.reduce(
-        (s, e) => s + parseFloat(e.credit || "0") - parseFloat(e.debit || "0"),
+        (s, e) => s + parseFloat(String(e.credit ?? 0)) - parseFloat(String(e.debit ?? 0)),
         0,
       );
     }),
@@ -191,7 +191,7 @@ async function audit() {
         transactionDate: { $gte: startOfYear, $lte: today },
       }).lean();
       return entries.reduce(
-        (s, e) => s + parseFloat(e.debit || "0") - parseFloat(e.credit || "0"),
+        (s, e) => s + parseFloat(String(e.debit ?? 0)) - parseFloat(String(e.credit ?? 0)),
         0,
       );
     }),
@@ -334,7 +334,7 @@ async function audit() {
       transactionDate: { $gte: startOfYear, $lte: today },
     }).lean();
     depAmount += depEntries.reduce(
-      (s, e) => s + parseFloat(e.debit || "0") - parseFloat(e.credit || "0"),
+      (s, e) => s + parseFloat(String(e.debit ?? 0)) - parseFloat(String(e.credit ?? 0)),
       0,
     );
   }
