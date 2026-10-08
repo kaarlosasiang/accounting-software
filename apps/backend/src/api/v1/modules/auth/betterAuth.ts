@@ -7,6 +7,9 @@ import { constants } from "../../config/index.js";
 import logger from "../../config/logger.js";
 import { EmailService } from "../../services/email.service.js";
 
+// better-auth needs a native MongoClient. It cannot reuse mongoose's client:
+// mongoose 9 bundles MongoDB driver 7 while the app depends on driver 6, so
+// this stays a separate (small) pool. Everything else uses mongoose.
 const mongoClient = new MongoClient(constants.mongodbUri, {
   maxPoolSize: 5,
 });

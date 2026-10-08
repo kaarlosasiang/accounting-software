@@ -1,22 +1,16 @@
-import { MongoClient, ObjectId } from "mongodb";
+import mongoose from "mongoose";
 
-import { constants } from "../../config/index.js";
 import logger from "../../config/logger.js";
+import User from "../../models/User.js";
 
-// Use the same MongoDB connection as Better Auth to ensure we update the correct collection
-const mongoClient = new MongoClient(constants.mongodbUri, {
-  maxPoolSize: 5,
-});
-
-const db = mongoClient.db(constants.dbName);
-const usersCollection = db.collection("users");
-
-// Connect to MongoDB
-mongoClient.connect().catch((error) => {
-  logger.error("Failed to connect to MongoDB for subscription service", {
-    error,
-  });
-});
+/**
+ * Subscription state lives on the better-auth `users` documents. It is read
+ * and written through the app's mongoose connection (same database) rather
+ * than a dedicated MongoClient, so the service no longer opens its own
+ * connection pool.
+ */
+const usersCollection = () => User.collection;
+const toObjectId = (id: string) => new mongoose.Types.ObjectId(id);
 
 const subscriptionService = {
   // Define your service methods here
@@ -25,8 +19,8 @@ const subscriptionService = {
     try {
       // Update user with subscription details using native MongoDB driver
       // This ensures we update the same collection Better Auth uses
-      const result = await usersCollection.updateOne(
-        { _id: new ObjectId(userId) },
+      const result = await usersCollection().updateOne(
+        { _id: toObjectId(userId) },
         {
           $set: {
             hasActiveSubscription: true,
@@ -52,8 +46,8 @@ const subscriptionService = {
 
   getSubscription: async (userId: string) => {
     try {
-      const user = await usersCollection.findOne(
-        { _id: new ObjectId(userId) },
+      const user = await usersCollection().findOne(
+        { _id: toObjectId(userId) },
         {
           projection: {
             hasActiveSubscription: 1,
@@ -72,8 +66,8 @@ const subscriptionService = {
 
   cancelSubscription: async (userId: string) => {
     try {
-      const result = await usersCollection.updateOne(
-        { _id: new ObjectId(userId) },
+      const result = await usersCollection().updateOne(
+        { _id: toObjectId(userId) },
         {
           $set: {
             hasActiveSubscription: false,

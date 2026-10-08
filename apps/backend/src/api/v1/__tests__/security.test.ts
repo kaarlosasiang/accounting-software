@@ -95,6 +95,21 @@ describe("Security regressions", () => {
       expect(other?.hasActiveSubscription).toBeUndefined();
     });
 
+    it("lets a user activate their own subscription (written to users)", async () => {
+      mockedAuthServer.api.getSession = sessionAs("user");
+      const res = await request(app)
+        .post("/api/v1/subscriptions/activate")
+        .send({ planId: "pro" });
+      expect(res.status).toBe(200);
+
+      const user = await mongoClient
+        .db()
+        .collection("users")
+        .findOne({ _id: userId });
+      expect(user?.hasActiveSubscription).toBe(true);
+      expect(user?.subscriptionPlan).toBe("pro");
+    });
+
     it("allows a user to read their own subscription", async () => {
       mockedAuthServer.api.getSession = sessionAs("user");
       const res = await request(app).get(
