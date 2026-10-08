@@ -1,12 +1,123 @@
-import { Types } from "mongoose";
+import mongoose, { ClientSession, Types } from "mongoose";
 
 import logger from "../../config/logger.js";
 import { InventoryItem } from "../../models/InventoryItem.js";
 import { InventoryTransaction } from "../../models/InventoryTransaction.js";
 import {
+  findSystemAccount,
+  getOrCreateOpeningBalanceEquity,
+  SystemAccount,
+} from "../../services/accountResolver.js";
+import { JournalEntryService } from "../../services/journalEntryService.js";
+import { round2 } from "../../shared/helpers/money.js";
+import {
   InventoryReferenceType,
   InventoryTransactionType,
 } from "../../shared/interface/IInventoryTransaction.js";
+import { JournalEntryType } from "../../shared/interface/IJournalEntry.js";
+
+/**
+ * Post a change in the value of an item's stock to the general ledger.
+ *
+ *   amount > 0: Dr Inventory / Cr offset   (stock value increases)
+ *   amount < 0: Dr offset   / Cr Inventory (stock value decreases)
+ *
+ * The offset is Inventory Adjustment (shrinkage, count corrections,
+ * revaluations) or Opening Balance Equity (opening stock). Returns the
+ * journal entry id, or null when nothing was posted (zero value, or the
+ * chart of accounts has no suitable accounts — logged as a warning).
+ */
+async function postInventoryValueChange(params: {
+  companyId: string | Types.ObjectId;
+  item: { _id: unknown; itemName: string; inventoryAccountId?: unknown };
+  amount: number;
+  offset: "adjustment" | "openingEquity";
+  userId: string | Types.ObjectId;
+  description: string;
+  session: ClientSession;
+}): Promise<Types.ObjectId | null> {
+  const amount = round2(params.amount);
+  if (amount === 0) return null;
+
+  const inventoryAccountId =
+    params.item.inventoryAccountId ??
+    (
+      await findSystemAccount(
+        params.companyId,
+        SystemAccount.INVENTORY,
+        params.session,
+      )
+    )?._id;
+  const offsetAccountId =
+    params.offset === "openingEquity"
+      ? (
+          await getOrCreateOpeningBalanceEquity(
+            params.companyId,
+            params.session,
+          )
+        )._id
+      : (
+          await findSystemAccount(
+            params.companyId,
+            SystemAccount.INVENTORY_ADJUSTMENT,
+            params.session,
+          )
+        )?._id;
+
+  if (!inventoryAccountId || !offsetAccountId) {
+    logger.warn("Inventory value change not posted: missing accounts", {
+      companyId: String(params.companyId),
+      itemId: String(params.item._id),
+      amount,
+    });
+    return null;
+  }
+
+  const value = Math.abs(amount);
+  const increase = amount > 0;
+  const entry = await JournalEntryService.postEntry({
+    companyId: params.companyId,
+    userId: params.userId,
+    entryDate: new Date(),
+    entryType: JournalEntryType.MANUAL,
+    description: params.description,
+    referenceNumber: "INVENTORY",
+    lines: [
+      {
+        accountId: String(inventoryAccountId),
+        debit: increase ? value : 0,
+        credit: increase ? 0 : value,
+        description: params.description,
+      },
+      {
+        accountId: String(offsetAccountId),
+        debit: increase ? 0 : value,
+        credit: increase ? value : 0,
+        description: params.description,
+      },
+    ],
+    session: params.session,
+  });
+  return entry._id as Types.ObjectId;
+}
+
+/** Run `fn` in a transaction, aborting on error. */
+async function inTransaction<T>(
+  fn: (session: ClientSession) => Promise<T>,
+): Promise<T> {
+  const session = await mongoose.startSession();
+  try {
+    session.startTransaction();
+    const result = await fn(session);
+    await session.commitTransaction();
+    return result;
+  } catch (error) {
+    if (session.inTransaction()) await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+}
 
 /**
  * Inventory Service
@@ -203,6 +314,7 @@ const inventoryService = {
       purchaseTaxRate?: number;
       isActive?: boolean;
     },
+    userId?: string | Types.ObjectId,
   ) => {
     try {
       // Check if SKU already exists
@@ -217,16 +329,35 @@ const inventoryService = {
         );
       }
 
-      const item = new InventoryItem({
-        ...itemData,
-        companyId,
-        quantityOnHand: itemData.quantityOnHand ?? 0,
-        quantityAsOfDate: itemData.quantityAsOfDate ?? new Date(),
-        reorderLevel: itemData.reorderLevel ?? 0,
-        isActive: itemData.isActive ?? true,
-      });
+      const item = await inTransaction(async (session) => {
+        const created = new InventoryItem({
+          ...itemData,
+          companyId,
+          quantityOnHand: itemData.quantityOnHand ?? 0,
+          quantityAsOfDate: itemData.quantityAsOfDate ?? new Date(),
+          reorderLevel: itemData.reorderLevel ?? 0,
+          isActive: itemData.isActive ?? true,
+        });
+        await created.save({ session });
 
-      await item.save();
+        // Opening stock has a value that must be on the books.
+        const openingValue =
+          created.itemType === "Product"
+            ? (created.quantityOnHand || 0) * (created.unitCost || 0)
+            : 0;
+        if (openingValue > 0 && userId) {
+          await postInventoryValueChange({
+            companyId,
+            item: created,
+            amount: openingValue,
+            offset: "openingEquity",
+            userId,
+            description: `Opening stock - ${created.itemName}`,
+            session,
+          });
+        }
+        return created;
+      });
 
       logger.info("Inventory item created successfully", {
         itemId: item._id,
@@ -277,13 +408,59 @@ const inventoryService = {
       purchaseTaxRate: number;
       isActive: boolean;
     }>,
+    userId?: string | Types.ObjectId,
   ) => {
     try {
-      const item = await InventoryItem.findOneAndUpdate(
-        { _id: itemId, companyId },
-        { $set: updateData },
-        { new: true, runValidators: true },
-      )
+      // Quantities only change through bills, invoices and adjustments.
+      const {
+        quantityOnHand: _qty,
+        companyId: _company,
+        ...changes
+      } = updateData as Record<string, unknown>;
+
+      await inTransaction(async (session) => {
+        const current = await InventoryItem.findOne({
+          _id: itemId,
+          companyId,
+        }).session(session);
+        if (!current) {
+          throw new Error("Inventory item not found");
+        }
+
+        // A unit-cost correction revalues the stock on hand.
+        const newCost =
+          changes.unitCost !== undefined ? Number(changes.unitCost) : null;
+        const revaluation =
+          newCost !== null && current.itemType === "Product"
+            ? round2(
+                (newCost - (current.unitCost || 0)) *
+                  (current.quantityOnHand || 0),
+              )
+            : 0;
+
+        await InventoryItem.updateOne(
+          { _id: itemId, companyId },
+          { $set: changes },
+          { runValidators: true, session },
+        );
+
+        if (revaluation !== 0) {
+          if (!userId) {
+            throw new Error("A user is required to revalue inventory");
+          }
+          await postInventoryValueChange({
+            companyId,
+            item: current,
+            amount: revaluation,
+            offset: "adjustment",
+            userId,
+            description: `Cost revaluation - ${current.itemName}`,
+            session,
+          });
+        }
+      });
+
+      const item = await InventoryItem.findOne({ _id: itemId, companyId })
         .populate("inventoryAccountId", "accountCode accountName")
         .populate("cogsAccountId", "accountCode accountName")
         .populate("incomeAccountId", "accountCode accountName")
@@ -356,36 +533,60 @@ const inventoryService = {
     userId: string | Types.ObjectId,
   ) => {
     try {
-      const item = await InventoryItem.findOne({
-        _id: itemId,
-        companyId,
+      const item = await inTransaction(async (session) => {
+        const found = await InventoryItem.findOne({
+          _id: itemId,
+          companyId,
+        }).session(session);
+
+        if (!found) {
+          throw new Error("Inventory item not found");
+        }
+
+        const newQuantity = (found.quantityOnHand || 0) + adjustment;
+        if (newQuantity < 0) {
+          throw new Error(
+            `Insufficient inventory. Available: ${found.quantityOnHand}, Requested: ${Math.abs(adjustment)}`,
+          );
+        }
+        found.quantityOnHand = newQuantity;
+        await found.save({ session });
+
+        const unitCost = found.unitCost || 0;
+        const value = round2(adjustment * unitCost);
+
+        // Shrinkage / count corrections change the value of stock.
+        const journalEntryId =
+          found.itemType === "Product"
+            ? await postInventoryValueChange({
+                companyId,
+                item: found,
+                amount: value,
+                offset: "adjustment",
+                userId,
+                description: `Inventory adjustment - ${found.itemName}: ${reason}`,
+                session,
+              })
+            : null;
+
+        await new InventoryTransaction({
+          companyId,
+          inventoryItemId: itemId,
+          transactionType: InventoryTransactionType.ADJUSTMENT,
+          transactionDate: new Date(),
+          referenceType: InventoryReferenceType.JOURNAL_ENTRY,
+          referenceId: journalEntryId ?? found._id,
+          quantityIn: adjustment > 0 ? adjustment : 0,
+          quantityOut: adjustment < 0 ? Math.abs(adjustment) : 0,
+          unitCost,
+          totalValue: Math.abs(value),
+          balanceAfter: found.quantityOnHand,
+          notes: reason,
+          createdBy: userId,
+        }).save({ session });
+
+        return found;
       });
-
-      if (!item) {
-        throw new Error("Inventory item not found");
-      }
-
-      // Adjust quantity using instance method
-      await item.adjustQuantity(adjustment, reason);
-
-      // Create inventory transaction
-      const transaction = new InventoryTransaction({
-        companyId,
-        inventoryItemId: itemId,
-        transactionType: InventoryTransactionType.ADJUSTMENT,
-        transactionDate: new Date(),
-        referenceType: InventoryReferenceType.JOURNAL_ENTRY,
-        referenceId: new Types.ObjectId(), // Placeholder - should be journal entry ID
-        quantityIn: adjustment > 0 ? adjustment : 0,
-        quantityOut: adjustment < 0 ? Math.abs(adjustment) : 0,
-        unitCost: item.unitCost,
-        totalValue: Math.abs(adjustment) * item.unitCost,
-        balanceAfter: item.quantityOnHand,
-        notes: reason,
-        createdBy: userId,
-      });
-
-      await transaction.save();
 
       logger.info("Inventory quantity adjusted successfully", {
         itemId: item._id,

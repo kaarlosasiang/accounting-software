@@ -20,7 +20,17 @@ interface TotalsDocument {
   totalAmount: number;
   amountPaid: number;
   balanceDue: number;
+  taxBase?: TaxBase | null;
 }
+
+/**
+ * How tax is computed:
+ * - "afterDiscount": tax = (subtotal − discount) × rate. Used for every new
+ *   document (it matches what the invoice/bill forms show).
+ * - "beforeDiscount" (or missing): tax = subtotal × rate. Legacy documents
+ *   keep this so re-saving them never changes amounts already posted.
+ */
+export type TaxBase = "afterDiscount" | "beforeDiscount";
 
 /**
  * Recompute all derived amounts from the line items, rounded to cents.
@@ -32,10 +42,16 @@ export function applyDocumentTotals(doc: TotalsDocument): void {
   }
 
   doc.subtotal = sumMoney(doc.lineItems.map((item) => item.amount));
-  doc.taxAmount = round2((doc.subtotal * (doc.taxRate || 0)) / 100);
   doc.discount = round2(doc.discount || 0);
 
-  const total = round2(doc.subtotal + doc.taxAmount - doc.discount);
+  const afterDiscount = doc.taxBase === "afterDiscount";
+  if (afterDiscount && doc.discount > doc.subtotal) {
+    throw new Error("Discount cannot exceed the subtotal");
+  }
+  const taxable = afterDiscount ? doc.subtotal - doc.discount : doc.subtotal;
+  doc.taxAmount = round2((taxable * (doc.taxRate || 0)) / 100);
+
+  const total = round2(doc.subtotal - doc.discount + doc.taxAmount);
   if (total < 0) {
     throw new Error("Discount cannot exceed the subtotal plus tax");
   }

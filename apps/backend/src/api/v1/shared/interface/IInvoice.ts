@@ -40,6 +40,7 @@ export interface IInvoice {
   subtotal: number;
   taxRate: number;
   taxAmount: number;
+  taxBase?: "afterDiscount" | "beforeDiscount";
   discount: number;
   totalAmount: number;
   amountPaid: number;

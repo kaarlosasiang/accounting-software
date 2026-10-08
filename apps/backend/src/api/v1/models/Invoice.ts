@@ -116,6 +116,12 @@ const InvoiceSchema = new Schema<IInvoice>(
       min: [0, "Tax rate cannot be negative"],
       default: 0,
     },
+    // No schema default on purpose: a default would also be applied to
+    // legacy documents when they are loaded and silently change their tax.
+    taxBase: {
+      type: String,
+      enum: ["afterDiscount", "beforeDiscount"],
+    },
     taxAmount: {
       type: Number,
       required: false,

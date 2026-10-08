@@ -277,11 +277,11 @@ describe("Invoice Module", () => {
       expect(response.status).toBe(201);
       // 5*200 + 3*150 = 1000 + 450 = 1450
       expect(response.body.data.subtotal).toBe(1450);
-      // tax = 1450 * 10/100 = 145
-      expect(response.body.data.taxAmount).toBe(145);
-      // total = 1450 + 145 - 50 = 1545
-      expect(response.body.data.totalAmount).toBe(1545);
-      expect(response.body.data.balanceDue).toBe(1545);
+      // tax is charged on the discounted amount: (1450 - 50) * 10% = 140
+      expect(response.body.data.taxAmount).toBe(140);
+      // total = 1450 - 50 + 140 = 1540
+      expect(response.body.data.totalAmount).toBe(1540);
+      expect(response.body.data.balanceDue).toBe(1540);
     });
 
     it("should reject unauthenticated requests", async () => {

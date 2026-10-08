@@ -3,6 +3,7 @@ import { Types } from "mongoose";
 import logger from "../../config/logger.js";
 import Account from "../../models/Account.js";
 import { Ledger } from "../../models/Ledger.js";
+import { getOrCreateOpeningBalanceEquity } from "../../services/accountResolver.js";
 import { JournalEntryService } from "../../services/journalEntryService.js";
 import { escapeRegex } from "../../shared/helpers/escapeRegex.js";
 import { round2 } from "../../shared/helpers/money.js";
@@ -36,33 +37,7 @@ async function postOpeningBalance(
   amount: number,
   userId: string,
 ) {
-  let equity = await Account.findOne({
-    companyId,
-    accountType: "Equity",
-    accountName: /^opening balance equity$/i,
-  });
-  if (!equity) {
-    const code = ["3900", "3950", "3999"];
-    for (const accountCode of code) {
-      if (await Account.exists({ companyId, accountCode })) continue;
-      equity = await Account.create({
-        companyId,
-        accountCode,
-        accountName: "Opening Balance Equity",
-        accountType: "Equity",
-        subType: "Owner's Equity",
-        normalBalance: "Credit",
-        balance: 0,
-        isActive: true,
-      });
-      break;
-    }
-  }
-  if (!equity) {
-    throw new Error(
-      "Could not create an Opening Balance Equity account. Please create one and post the opening balance as a journal entry.",
-    );
-  }
+  const equity = await getOrCreateOpeningBalanceEquity(companyId);
 
   const value = round2(Math.abs(amount));
   const debitNormal =

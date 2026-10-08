@@ -24,6 +24,7 @@ export enum SystemAccount {
   PURCHASE_DISCOUNT = "PURCHASE_DISCOUNT",
   COGS = "COGS",
   INVENTORY = "INVENTORY",
+  INVENTORY_ADJUSTMENT = "INVENTORY_ADJUSTMENT",
   DEFAULT_EXPENSE = "DEFAULT_EXPENSE",
   RETAINED_EARNINGS = "RETAINED_EARNINGS",
 }
@@ -106,6 +107,16 @@ const RULES: Record<SystemAccount, AccountRule> = {
     criteria: [
       { accountName: /^purchase discounts?$/i },
       { accountName: /purchase discount/i, normalBalance: "Credit" },
+    ],
+  },
+  [SystemAccount.INVENTORY_ADJUSTMENT]: {
+    accountType: "Expense",
+    label: "Inventory Adjustment",
+    criteria: [
+      { accountName: /^inventory (adjustments?|shrinkage)$/i },
+      { accountName: /inventory (adjustment|shrinkage)/i },
+      { accountName: /^cost of goods sold$/i },
+      { subType: "Cost of Sales", normalBalance: "Debit" },
     ],
   },
   [SystemAccount.COGS]: {
@@ -194,4 +205,50 @@ export async function requireSystemAccount(
     );
   }
   return account;
+}
+
+/**
+ * Find (or create) the Opening Balance Equity account used as the offset for
+ * starting balances (account opening balances, opening inventory).
+ */
+export async function getOrCreateOpeningBalanceEquity(
+  companyId: mongoose.Types.ObjectId | string,
+  session?: ClientSession | null,
+): Promise<ResolvedAccount> {
+  const cId = new mongoose.Types.ObjectId(String(companyId));
+  const existing = await Account.findOne({
+    companyId: cId,
+    accountType: "Equity",
+    accountName: /^opening balance equity$/i,
+  })
+    .session(session ?? null)
+    .lean();
+  if (existing) return existing as unknown as ResolvedAccount;
+
+  for (const accountCode of ["3900", "3950", "3999"]) {
+    const taken = await Account.exists({ companyId: cId, accountCode }).session(
+      session ?? null,
+    );
+    if (taken) continue;
+    const [created] = await Account.create(
+      [
+        {
+          companyId: cId,
+          accountCode,
+          accountName: "Opening Balance Equity",
+          accountType: "Equity",
+          subType: "Owner's Equity",
+          normalBalance: "Credit",
+          balance: 0,
+          isActive: true,
+        },
+      ],
+      { session: session ?? undefined },
+    );
+    return created.toObject() as unknown as ResolvedAccount;
+  }
+
+  throw new Error(
+    "Could not create an Opening Balance Equity account. Please create one and post the opening balance as a journal entry.",
+  );
 }

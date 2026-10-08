@@ -769,11 +769,56 @@ export class JournalEntryService {
       .lean();
     const validIds = new Set(validAccounts.map((a) => a._id.toString()));
 
+    // Purchases of stocked products must increase the Inventory account the
+    // item is tracked in, whatever account was picked on the line —
+    // otherwise on-hand quantity and the GL inventory balance drift apart.
+    const productIds = bill.lineItems
+      .map((item) => item.inventoryItemId)
+      .filter(Boolean)
+      .map((id) => toObjectId(id as any));
+    const products = productIds.length
+      ? ((await InventoryItem.find({
+          _id: { $in: productIds },
+          companyId,
+          itemType: "Product",
+        })
+          .select("inventoryAccountId")
+          .session(session ?? null)
+          .lean()) as unknown as Array<{
+          _id: mongoose.Types.ObjectId;
+          inventoryAccountId?: mongoose.Types.ObjectId;
+        }>)
+      : [];
+    const inventoryAccountByItem = new Map<string, string>();
+    let defaultInventory: ResolvedAccount | null | undefined;
+    for (const product of products) {
+      let accountId = product.inventoryAccountId
+        ? String(product.inventoryAccountId)
+        : "";
+      if (!accountId) {
+        if (defaultInventory === undefined) {
+          defaultInventory = await findSystemAccount(
+            companyId,
+            SystemAccount.INVENTORY,
+            session,
+          );
+        }
+        accountId = defaultInventory?._id.toString() ?? "";
+      }
+      if (accountId)
+        inventoryAccountByItem.set(product._id.toString(), accountId);
+    }
+
     let defaultExpense: ResolvedAccount | null = null;
     const debitByAccount = new Map<string, number>();
     for (const item of bill.lineItems) {
       let accountId = item.accountId ? String(item.accountId) : "";
-      if (!validIds.has(accountId)) {
+      const inventoryAccount = item.inventoryItemId
+        ? inventoryAccountByItem.get(String(item.inventoryItemId))
+        : undefined;
+      if (inventoryAccount) {
+        accountId = inventoryAccount;
+      } else if (!validIds.has(accountId)) {
         defaultExpense ??= await requireSystemAccount(
           companyId,
           SystemAccount.DEFAULT_EXPENSE,

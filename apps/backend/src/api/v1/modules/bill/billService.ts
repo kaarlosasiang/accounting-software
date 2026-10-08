@@ -168,6 +168,7 @@ export const billService = {
         createdBy: userId,
         status: BillStatus.DRAFT,
         amountPaid: 0,
+        taxBase: "afterDiscount",
       });
 
       await bill.save({ session });
@@ -502,6 +503,20 @@ export const billService = {
 
       if (inventoryItem.itemType !== "Product") continue;
 
+      // Moving weighted-average cost: blend the purchase price into the
+      // cost of the stock already on hand.
+      const onHand = Math.max(0, inventoryItem.quantityOnHand || 0);
+      const totalQty = onHand + lineItem.quantity;
+      if (totalQty > 0) {
+        inventoryItem.unitCost =
+          Math.round(
+            ((onHand * (inventoryItem.unitCost || 0) +
+              lineItem.quantity * lineItem.unitPrice) /
+              totalQty) *
+              10000,
+          ) / 10000;
+      }
+
       inventoryItem.quantityOnHand += lineItem.quantity;
       await inventoryItem.save({ session });
 
@@ -524,7 +539,8 @@ export const billService = {
   },
 
   /**
-   * Reverse bill items (decrease inventory when a posted bill is voided)
+   * Reverse bill items (decrease inventory when a posted bill is voided).
+   * The weighted-average unit cost is not rolled back.
    */
   async reverseBillItems(bill: any, session: ClientSession) {
     for (const lineItem of bill.lineItems) {

@@ -22,6 +22,7 @@ import { Payment } from "../models/Payment.js";
 import { Supplier } from "../models/Supplier.js";
 import "../models/User.js";
 import { billService } from "../modules/bill/billService.js";
+import inventoryService from "../modules/inventory/inventoryService.js";
 import { invoiceService } from "../modules/invoice/invoiceService.js";
 import { journalEntryService } from "../modules/journalEntry/journalEntryService.js";
 import { ledgerService } from "../modules/ledger/ledgerService.js";
@@ -305,24 +306,25 @@ describe("Accounting integrity", () => {
     });
 
     postedInvoiceId = invoice!._id.toString();
-    // subtotal 500 + 301.11 = 801.11; tax 12% = 96.13; total 847.24
+    // subtotal 801.11, discount 50, tax 12% of (801.11 - 50) = 90.13,
+    // total 841.24
     expect(invoice!.subtotal).toBe(801.11);
-    expect(invoice!.taxAmount).toBe(96.13);
-    expect(invoice!.totalAmount).toBe(847.24);
+    expect(invoice!.taxAmount).toBe(90.13);
+    expect(invoice!.totalAmount).toBe(841.24);
     expect(invoice!.journalEntryId).toBeTruthy();
 
     const entry = await linesOf(invoice!.journalEntryId);
     expect(entry.entryDate.getTime()).toBe(invoiceDate.getTime());
     expect(entry.totalDebit).toBe(entry.totalCredit);
 
-    expect(amountFor(entry, "ar")).toEqual({ debit: 847.24, credit: 0 });
+    expect(amountFor(entry, "ar")).toEqual({ debit: 841.24, credit: 0 });
     expect(amountFor(entry, "salesDiscounts")).toEqual({
       debit: 50,
       credit: 0,
     });
     expect(amountFor(entry, "sales")).toEqual({ debit: 0, credit: 500 });
     expect(amountFor(entry, "service")).toEqual({ debit: 0, credit: 301.11 });
-    expect(amountFor(entry, "outputVat")).toEqual({ debit: 0, credit: 96.13 });
+    expect(amountFor(entry, "outputVat")).toEqual({ debit: 0, credit: 90.13 });
     // COGS at unit cost (5 × 60), not selling price
     expect(amountFor(entry, "cogs")).toEqual({ debit: 300, credit: 0 });
     expect(amountFor(entry, "inventory")).toEqual({ debit: 0, credit: 300 });
@@ -330,7 +332,7 @@ describe("Accounting integrity", () => {
     const item = await InventoryItem.findById(productId).lean();
     expect(item!.quantityOnHand).toBe(95);
     const customer = await Customer.findById(customerId).lean();
-    expect(customer!.currentBalance).toBe(847.24);
+    expect(customer!.currentBalance).toBe(841.24);
   });
 
   it("never double-posts: sending an invoice created as Sent is a no-op for the books", async () => {
@@ -350,7 +352,7 @@ describe("Accounting integrity", () => {
     expect(postings).toBe(1);
 
     const customer = await Customer.findById(customerId).lean();
-    expect(customer!.currentBalance).toBe(847.24);
+    expect(customer!.currentBalance).toBe(841.24);
   });
 
   it("rejects financial edits on a posted invoice", async () => {
@@ -399,7 +401,7 @@ describe("Accounting integrity", () => {
     const after = await InventoryItem.findById(productId).lean();
     expect(after!.quantityOnHand).toBe(before!.quantityOnHand);
     const customer = await Customer.findById(customerId).lean();
-    expect(customer!.currentBalance).toBe(847.24);
+    expect(customer!.currentBalance).toBe(841.24);
   });
 
   it("voiding a posted invoice reverses the GL, customer balance and inventory", async () => {
@@ -438,7 +440,7 @@ describe("Accounting integrity", () => {
     const item = await InventoryItem.findById(productId).lean();
     expect(item!.quantityOnHand).toBe(95);
     const customer = await Customer.findById(customerId).lean();
-    expect(customer!.currentBalance).toBe(847.24);
+    expect(customer!.currentBalance).toBe(841.24);
   });
 
   // ─── Bills ─────────────────────────────────────────────────────────────────
@@ -577,7 +579,7 @@ describe("Accounting integrity", () => {
 
     const invoice = await Invoice.findById(postedInvoiceId).lean();
     expect(invoice!.amountPaid).toBe(400);
-    expect(invoice!.balanceDue).toBe(447.24);
+    expect(invoice!.balanceDue).toBe(441.24);
     expect(invoice!.status).toBe("Partial");
   });
 
@@ -767,5 +769,126 @@ describe("Accounting integrity", () => {
     expect(new Set(numbers).size).toBe(5);
     expect(numbers).toContain(`JE-${year}-1000`);
     expect(numbers.every((n) => n !== `JE-${year}-999`)).toBe(true);
+  });
+  // ─── Tax base & inventory valuation ───────────────────────────────────────
+
+  it("keeps the stored totals of legacy (pre-change) invoices when re-saved", async () => {
+    const legacyId = new mongoose.Types.ObjectId();
+    await Invoice.collection.insertOne({
+      _id: legacyId,
+      companyId,
+      customerId,
+      invoiceNumber: "INV-LEGACY-1",
+      invoiceDate: new Date(),
+      dueDate: new Date(thisYear + 1, 0, 1),
+      status: "Sent",
+      lineItems: [
+        { description: "x", quantity: 1, unitPrice: 1000, amount: 1000, accountId: ids.sales },
+      ],
+      subtotal: 1000,
+      taxRate: 12,
+      taxAmount: 120, // legacy: tax on the subtotal before discount
+      discount: 100,
+      totalAmount: 1020,
+      amountPaid: 0,
+      balanceDue: 1020,
+      createdBy: new mongoose.Types.ObjectId(userId),
+    });
+
+    const legacy = await Invoice.findById(legacyId);
+    legacy!.notes = "touched";
+    await legacy!.save();
+
+    const reloaded = await Invoice.findById(legacyId).lean();
+    expect(reloaded!.taxAmount).toBe(120);
+    expect(reloaded!.totalAmount).toBe(1020);
+    await Invoice.deleteOne({ _id: legacyId });
+  });
+
+  let gadgetId: string;
+
+  it("posts opening stock against Opening Balance Equity", async () => {
+    const item = await inventoryService.createItem(
+      companyId,
+      {
+        sku: `GADGET-${companyIdStr}`,
+        itemName: "Gadget",
+        category: "Non-Food",
+        unit: "pcs",
+        quantityOnHand: 10,
+        unitCost: 50,
+        sellingPrice: 120,
+        inventoryAccountId: ids.inventory,
+        cogsAccountId: ids.cogs,
+        incomeAccountId: ids.sales,
+        salesTaxEnabled: false,
+      },
+      userId,
+    );
+    gadgetId = item._id.toString();
+
+    const entry = await JournalEntry.findOne({
+      companyId,
+      description: "Opening stock - Gadget",
+    }).lean();
+    expect(entry).toBeTruthy();
+    expect(amountFor(entry!, "inventory")).toEqual({ debit: 500, credit: 0 });
+    const obe = entry!.lines.find((l) => l.accountName === "Opening Balance Equity");
+    expect(obe?.credit).toBe(500);
+  });
+
+  it("debits Inventory for product purchases and updates the weighted-average cost", async () => {
+    const bill = await billService.createBill(companyIdStr, userId, {
+      supplierId,
+      billDate: new Date(),
+      dueDate: new Date(thisYear + 1, 0, 1),
+      status: "Sent",
+      lineItems: [
+        {
+          description: "Gadgets",
+          quantity: 10,
+          unitPrice: 70,
+          accountId: ids.rent, // wrong account picked on the line
+          inventoryItemId: gadgetId,
+        },
+      ],
+    });
+
+    const entry = await linesOf(bill!.journalEntryId);
+    expect(amountFor(entry, "inventory")).toEqual({ debit: 700, credit: 0 });
+    expect(amountFor(entry, "rent")).toBeNull();
+
+    const item = await InventoryItem.findById(gadgetId).lean();
+    expect(item!.quantityOnHand).toBe(20);
+    // (10 × 50 + 10 × 70) / 20
+    expect(item!.unitCost).toBe(60);
+  });
+
+  it("posts quantity adjustments and cost revaluations to the GL", async () => {
+    await inventoryService.adjustQuantity(
+      companyId,
+      gadgetId,
+      -2,
+      "Damaged in storage",
+      userId,
+    );
+    const shrink = await JournalEntry.findOne({
+      companyId,
+      description: /^Inventory adjustment - Gadget/,
+    }).lean();
+    // 2 × 60 written off against the adjustment account (falls back to COGS)
+    expect(amountFor(shrink!, "inventory")).toEqual({ debit: 0, credit: 120 });
+    expect(amountFor(shrink!, "cogs")).toEqual({ debit: 120, credit: 0 });
+
+    await inventoryService.updateItem(companyId, gadgetId, { unitCost: 65 }, userId);
+    const reval = await JournalEntry.findOne({
+      companyId,
+      description: "Cost revaluation - Gadget",
+    }).lean();
+    // (65 − 60) × 18 on hand
+    expect(amountFor(reval!, "inventory")).toEqual({ debit: 90, credit: 0 });
+
+    const tb = await ledgerService.getTrialBalance(companyIdStr);
+    expect(tb.totals.balanced).toBe(true);
   });
 });

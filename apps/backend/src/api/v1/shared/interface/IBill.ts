@@ -40,6 +40,7 @@ export interface IBill {
   subtotal: number;
   taxRate: number;
   taxAmount: number;
+  taxBase?: "afterDiscount" | "beforeDiscount";
   totalAmount: number;
   discount: number;
   amountPaid: number;

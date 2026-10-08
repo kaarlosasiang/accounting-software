@@ -362,7 +362,11 @@ const inventoryController = {
         }
       }
 
-      const item = await inventoryService.createItem(companyId, filteredData);
+      const item = await inventoryService.createItem(
+        companyId,
+        filteredData,
+        req.authUser?.id,
+      );
 
       return res.status(201).json({
         success: true,
@@ -497,6 +501,7 @@ const inventoryController = {
         companyId,
         id,
         filteredData,
+        req.authUser?.id,
       );
 
       return res.status(200).json({

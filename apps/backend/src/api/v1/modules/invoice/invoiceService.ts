@@ -153,6 +153,7 @@ export const invoiceService = {
         createdBy: userId,
         status: InvoiceStatus.DRAFT,
         amountPaid: 0,
+        taxBase: "afterDiscount",
       });
 
       await invoice.save({ session });
