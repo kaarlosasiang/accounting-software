@@ -7,6 +7,7 @@ import {
   AuditAction,
   auditLogService,
 } from "../../services/auditLog.service.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
 import supplierService from "./supplierService.js";
@@ -46,7 +47,7 @@ const supplierController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch suppliers",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -80,7 +81,7 @@ const supplierController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch active suppliers",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -122,7 +123,7 @@ const supplierController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch supplier",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -164,7 +165,7 @@ const supplierController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch supplier",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -206,7 +207,7 @@ const supplierController = {
       return res.status(500).json({
         success: false,
         message: "Failed to search suppliers",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -269,14 +270,14 @@ const supplierController = {
       ) {
         return res.status(409).json({
           success: false,
-          message: (error as Error).message,
+          message: clientErrorMessage(error),
         });
       }
 
       return res.status(500).json({
         success: false,
         message: "Failed to create supplier",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -348,14 +349,14 @@ const supplierController = {
       ) {
         return res.status(409).json({
           success: false,
-          message: (error as Error).message,
+          message: clientErrorMessage(error),
         });
       }
 
       return res.status(500).json({
         success: false,
         message: "Failed to update supplier",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -410,7 +411,7 @@ const supplierController = {
       return res.status(500).json({
         success: false,
         message: "Failed to delete supplier",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },

@@ -6,6 +6,10 @@ import morgan from "morgan";
 
 import registerRoutes from "../routes/index.js";
 import {
+  clientErrorMessage,
+  clientErrorStatus,
+} from "../shared/helpers/errors.js";
+import {
   errorLogger,
   requestLogger,
 } from "../shared/middleware/logger.middleware.js";
@@ -133,11 +137,13 @@ export default (app: Application): Application => {
       correlationId: req.correlationId,
     });
 
-    res.status(err.status || 500).json({
+    // Business-rule/validation messages are returned as-is; unexpected
+    // errors (driver, programming) are masked outside development.
+    res.status(clientErrorStatus(err)).json({
       error:
-        constants.nodeEnv === "production"
-          ? "Internal server error"
-          : err.message,
+        constants.nodeEnv === "development"
+          ? err?.message
+          : clientErrorMessage(err),
       correlationId: req.correlationId,
     });
   });

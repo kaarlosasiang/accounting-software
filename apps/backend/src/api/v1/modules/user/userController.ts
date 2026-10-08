@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { createPersonnelSchema } from "@sas/validators";
 
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
 
 import userService from "./userService.js";
@@ -61,7 +62,7 @@ const userController = {
       return res.status(500).json({
         success: false,
         message: "Failed to update user role",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: clientErrorMessage(error, "Unknown error"),
       });
     }
   },
@@ -102,8 +103,7 @@ const userController = {
         data: user,
       });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "Failed to create personnel";
+      const message = clientErrorMessage(error, "Failed to create personnel");
       const status = message.includes("already exists") ? 409 : 500;
       return res.status(status).json({
         success: false,

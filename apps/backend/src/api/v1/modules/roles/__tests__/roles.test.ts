@@ -164,7 +164,7 @@ describe("Roles API", () => {
         permissions: [],
       });
 
-      expect(res.status).toBe(500); // service throws Error, caught by global handler
+      expect(res.status).toBe(400); // business-rule error → 400 via global handler
     });
   });
 
@@ -177,10 +177,10 @@ describe("Roles API", () => {
       expect(res.body.name).toBe("Test Role Senior Accountant");
     });
 
-    it("returns 500 for a non-existent role ID", async () => {
+    it("returns 404 for a non-existent role ID", async () => {
       const fakeId = new ObjectId().toString();
       const res = await request(app).get(`/api/v1/roles/${fakeId}`);
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(404);
     });
   });
 
@@ -211,7 +211,7 @@ describe("Roles API", () => {
         .put(`/api/v1/roles/${owner.id ?? owner._id}`)
         .send({ description: "Hacked" });
 
-      expect(res.status).toBe(500); // service throws "System roles cannot be modified"
+      expect(res.status).toBe(400); // "System roles cannot be modified"
     });
   });
 
@@ -223,7 +223,7 @@ describe("Roles API", () => {
       expect(res.status).toBe(204);
     });
 
-    it("returns 500 when trying to delete a system role", async () => {
+    it("returns 400 when trying to delete a system role", async () => {
       const rolesRes = await request(app).get("/api/v1/roles");
       const staff = rolesRes.body.find(
         (r: any) => r.name === "staff" && r.isSystem,
@@ -233,7 +233,7 @@ describe("Roles API", () => {
       const res = await request(app).delete(
         `/api/v1/roles/${staff.id ?? staff._id}`,
       );
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(400);
     });
   });
 

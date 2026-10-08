@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import logger from "../../config/logger.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId, parseQueryDate } from "../../shared/helpers/utils.js";
 
 import { ledgerService } from "./ledgerService.js";
@@ -47,7 +48,7 @@ export const ledgerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch ledger entries",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -86,7 +87,7 @@ export const ledgerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch general ledger",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -128,7 +129,7 @@ export const ledgerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch ledger entries by account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -167,7 +168,7 @@ export const ledgerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch ledger entries by journal entry",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -213,7 +214,7 @@ export const ledgerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch ledger entries by date range",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -254,7 +255,7 @@ export const ledgerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch account balance",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -291,7 +292,7 @@ export const ledgerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch trial balance",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },

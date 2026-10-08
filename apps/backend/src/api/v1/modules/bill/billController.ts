@@ -7,6 +7,7 @@ import {
   AuditAction,
   auditLogService,
 } from "../../services/auditLog.service.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 import { paymentService } from "../payment/paymentService.js";
 
@@ -43,7 +44,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "getAllBills" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -80,8 +81,7 @@ export const billController = {
         )
         .json({
           success: false,
-          error:
-            error instanceof Error ? error.message : "Internal server error",
+          error: clientErrorMessage(error, "Internal server error"),
         });
     }
   },
@@ -139,7 +139,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "createBill" });
       return res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : "Failed to create bill",
+        error: clientErrorMessage(error, "Failed to create bill"),
       });
     }
   },
@@ -198,7 +198,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "updateBill" });
       return res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : "Failed to update bill",
+        error: clientErrorMessage(error, "Failed to update bill"),
       });
     }
   },
@@ -241,7 +241,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "deleteBill" });
       return res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : "Failed to delete bill",
+        error: clientErrorMessage(error, "Failed to delete bill"),
       });
     }
   },
@@ -273,7 +273,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "voidBill" });
       return res.status(400).json({
         success: false,
-        error: error instanceof Error ? error.message : "Failed to void bill",
+        error: clientErrorMessage(error, "Failed to void bill"),
       });
     }
   },
@@ -305,7 +305,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "getBillsBySupplier" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -340,7 +340,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "getBillsByStatus" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -371,7 +371,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "getOverdueBills" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -410,7 +410,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "searchBills" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -468,8 +468,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "recordPayment" });
       return res.status(400).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to record payment",
+        error: clientErrorMessage(error, "Failed to record payment"),
       });
     }
   },
@@ -501,8 +500,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "approveBill" });
       return res.status(400).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to approve bill",
+        error: clientErrorMessage(error, "Failed to approve bill"),
       });
     }
   },
@@ -534,8 +532,7 @@ export const billController = {
       logger.logError(error as Error, { operation: "getBillPayments" });
       return res.status(500).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to get payments",
+        error: clientErrorMessage(error, "Failed to get payments"),
       });
     }
   },

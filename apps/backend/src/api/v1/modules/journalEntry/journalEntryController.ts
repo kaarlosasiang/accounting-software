@@ -6,6 +6,7 @@ import {
   AuditAction,
   auditLogService,
 } from "../../services/auditLog.service.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 import {
   JournalEntryStatus,
@@ -58,7 +59,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch journal entries",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -96,7 +97,7 @@ export const journalEntryController = {
       return res.status(404).json({
         success: false,
         message: "Journal entry not found",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -142,7 +143,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch journal entries by date range",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -181,7 +182,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch journal entries by type",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -220,7 +221,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch journal entries by status",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -283,7 +284,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to create journal entry",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -344,7 +345,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to update journal entry",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -394,7 +395,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to delete journal entry",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -435,7 +436,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to post journal entry",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -476,7 +477,7 @@ export const journalEntryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to void journal entry",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },

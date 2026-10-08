@@ -5,6 +5,8 @@ import {
   subscriptionCancellationSchema,
 } from "@sas/validators";
 
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
+
 import subscriptionService from "./subscriptionService.js";
 
 const subscriptionController = {
@@ -53,7 +55,7 @@ const subscriptionController = {
       return res.status(500).json({
         success: false,
         message: "Failed to activate subscription",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: clientErrorMessage(error, "Unknown error"),
       });
     }
   },
@@ -84,7 +86,7 @@ const subscriptionController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch subscription",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: clientErrorMessage(error, "Unknown error"),
       });
     }
   },
@@ -125,7 +127,7 @@ const subscriptionController = {
       return res.status(500).json({
         success: false,
         message: "Failed to cancel subscription",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: clientErrorMessage(error, "Unknown error"),
       });
     }
   },

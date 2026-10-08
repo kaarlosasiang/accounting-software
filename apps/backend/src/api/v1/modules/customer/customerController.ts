@@ -7,6 +7,7 @@ import {
   AuditAction,
   auditLogService,
 } from "../../services/auditLog.service.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
 import customerService from "./customerService.js";
@@ -45,7 +46,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch customers",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -79,7 +80,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch active customers",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -121,7 +122,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to search customers",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -163,7 +164,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch customer",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -205,7 +206,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch customer",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -287,7 +288,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to create customer",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -378,7 +379,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to update customer",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -432,7 +433,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to delete customer",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -480,7 +481,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to toggle customer status",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -535,7 +536,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to update customer balance",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -589,7 +590,7 @@ const customerController = {
       return res.status(500).json({
         success: false,
         message: "Failed to check credit availability",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },

@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 
 import logger from "../../config/logger.js";
+import {
+  clientErrorMessage,
+  clientErrorStatus,
+} from "../../shared/helpers/errors.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
 
 import companySettingsService from "./companySettingsService.js";
@@ -40,7 +44,7 @@ const companySettingsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch company settings",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -77,7 +81,7 @@ const companySettingsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to update general settings",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -114,7 +118,7 @@ const companySettingsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to update accounting settings",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -151,7 +155,7 @@ const companySettingsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to add bank account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -194,10 +198,10 @@ const companySettingsController = {
       logger.logError(error as Error, {
         operation: "update-bank-account-controller",
       });
-      return res.status(500).json({
+      return res.status(clientErrorStatus(error)).json({
         success: false,
         message: "Failed to update bank account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -239,10 +243,10 @@ const companySettingsController = {
       logger.logError(error as Error, {
         operation: "remove-bank-account-controller",
       });
-      return res.status(500).json({
+      return res.status(clientErrorStatus(error)).json({
         success: false,
         message: "Failed to remove bank account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -283,10 +287,10 @@ const companySettingsController = {
       logger.logError(error as Error, {
         operation: "get-bank-account-controller",
       });
-      return res.status(500).json({
+      return res.status(clientErrorStatus(error)).json({
         success: false,
         message: "Failed to fetch bank account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },

@@ -5,6 +5,7 @@ import {
   AuditAction,
   auditLogService,
 } from "../../services/auditLog.service.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 import { paymentService } from "../payment/paymentService.js";
 
@@ -41,7 +42,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "getAllInvoices" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -78,8 +79,7 @@ export const invoiceController = {
         )
         .json({
           success: false,
-          error:
-            error instanceof Error ? error.message : "Internal server error",
+          error: clientErrorMessage(error, "Internal server error"),
         });
     }
   },
@@ -128,8 +128,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "createInvoice" });
       return res.status(400).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to create invoice",
+        error: clientErrorMessage(error, "Failed to create invoice"),
       });
     }
   },
@@ -179,8 +178,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "updateInvoice" });
       return res.status(400).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to update invoice",
+        error: clientErrorMessage(error, "Failed to update invoice"),
       });
     }
   },
@@ -224,8 +222,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "deleteInvoice" });
       return res.status(400).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to delete invoice",
+        error: clientErrorMessage(error, "Failed to delete invoice"),
       });
     }
   },
@@ -261,8 +258,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "voidInvoice" });
       return res.status(400).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to void invoice",
+        error: clientErrorMessage(error, "Failed to void invoice"),
       });
     }
   },
@@ -297,7 +293,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "getInvoicesByCustomer" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -332,7 +328,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "getInvoicesByStatus" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -363,7 +359,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "getOverdueInvoices" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -402,7 +398,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "searchInvoices" });
       return res.status(500).json({
         success: false,
-        error: error instanceof Error ? error.message : "Internal server error",
+        error: clientErrorMessage(error, "Internal server error"),
       });
     }
   },
@@ -440,8 +436,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "sendInvoice" });
       return res.status(400).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to send invoice",
+        error: clientErrorMessage(error, "Failed to send invoice"),
       });
     }
   },
@@ -499,8 +494,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "recordPayment" });
       return res.status(400).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to record payment",
+        error: clientErrorMessage(error, "Failed to record payment"),
       });
     }
   },
@@ -532,8 +526,7 @@ export const invoiceController = {
       logger.logError(error as Error, { operation: "getInvoicePayments" });
       return res.status(500).json({
         success: false,
-        error:
-          error instanceof Error ? error.message : "Failed to get payments",
+        error: clientErrorMessage(error, "Failed to get payments"),
       });
     }
   },

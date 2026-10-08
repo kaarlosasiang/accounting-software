@@ -466,9 +466,13 @@ CompanySettingsSchema.methods.removeBankAccount = function (accountId: string) {
   if (!this.banking || !this.banking.accounts) {
     throw new Error("No banking settings found");
   }
-  this.banking.accounts = this.banking.accounts.filter(
+  const remaining = this.banking.accounts.filter(
     (acc: any) => acc.id !== accountId,
   );
+  if (remaining.length === this.banking.accounts.length) {
+    throw new Error("Bank account not found");
+  }
+  this.banking.accounts = remaining;
   return this.save();
 };
 

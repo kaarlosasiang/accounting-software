@@ -222,13 +222,13 @@ describe("Member Permissions API", () => {
       expect(res.body.revocations).toHaveLength(0);
     });
 
-    it("returns 500 when patching a user with no existing permission record", async () => {
+    it("returns 400 when patching a user with no existing permission record", async () => {
       const ghostId = new ObjectId().toString();
       const res = await request(app)
         .patch(`/api/v1/members/${ghostId}/permissions/overrides`)
         .send({ grants: [] });
 
-      expect(res.status).toBe(500);
+      expect(res.status).toBe(400);
     });
   });
 

@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { accountSchema } from "@sas/validators";
 
 import logger from "../../config/logger.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 
 import accountsService from "./accountsService.js";
@@ -42,7 +43,7 @@ const accountsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch accounts",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -80,7 +81,7 @@ const accountsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch accounts by type",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -122,7 +123,7 @@ const accountsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -172,7 +173,7 @@ const accountsController = {
       return res.status(400).json({
         success: false,
         message: "Failed to create account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -230,7 +231,7 @@ const accountsController = {
       return res.status(400).json({
         success: false,
         message: "Failed to update account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -273,7 +274,7 @@ const accountsController = {
       return res.status(400).json({
         success: false,
         message: "Failed to delete account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -315,7 +316,7 @@ const accountsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch account balance",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -358,7 +359,7 @@ const accountsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to search accounts",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -393,7 +394,7 @@ const accountsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch chart of accounts",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -436,7 +437,7 @@ const accountsController = {
       return res.status(400).json({
         success: false,
         message: "Failed to archive account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -479,7 +480,7 @@ const accountsController = {
       return res.status(400).json({
         success: false,
         message: "Failed to restore account",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -527,7 +528,7 @@ const accountsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to reconcile account balance",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -563,7 +564,7 @@ const accountsController = {
       return res.status(500).json({
         success: false,
         message: "Failed to reconcile account balances",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },

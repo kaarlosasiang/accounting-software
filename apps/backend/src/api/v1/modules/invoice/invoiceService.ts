@@ -671,7 +671,7 @@ export const invoiceService = {
         invoiceId,
       });
       throw new Error(
-        `Invoice ${populated!.invoiceNumber} was posted but the email could not be sent: ${(error as Error).message}`,
+        `Invoice ${populated!.invoiceNumber} was posted but the email could not be sent. Please try sending it again later.`,
       );
     }
 

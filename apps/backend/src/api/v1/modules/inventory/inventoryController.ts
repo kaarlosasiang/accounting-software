@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import { inventoryItemSchema } from "@sas/validators";
 
 import logger from "../../config/logger.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId } from "../../shared/helpers/utils.js";
 
 import inventoryService from "./inventoryService.js";
@@ -42,7 +43,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch inventory items",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -76,7 +77,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch active inventory items",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -118,7 +119,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch inventory item",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -160,7 +161,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch inventory item",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -198,7 +199,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch inventory items by category",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -232,7 +233,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch items needing reorder",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -274,7 +275,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to search inventory items",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -381,14 +382,14 @@ const inventoryController = {
       if ((error as Error).message.includes("already exists")) {
         return res.status(409).json({
           success: false,
-          message: (error as Error).message,
+          message: clientErrorMessage(error),
         });
       }
 
       return res.status(400).json({
         success: false,
         message: "Failed to create inventory item",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -524,7 +525,7 @@ const inventoryController = {
       return res.status(400).json({
         success: false,
         message: "Failed to update inventory item",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -567,7 +568,7 @@ const inventoryController = {
       return res.status(400).json({
         success: false,
         message: "Failed to delete inventory item",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -625,14 +626,14 @@ const inventoryController = {
       if ((error as Error).message.includes("Insufficient inventory")) {
         return res.status(400).json({
           success: false,
-          message: (error as Error).message,
+          message: clientErrorMessage(error),
         });
       }
 
       return res.status(400).json({
         success: false,
         message: "Failed to adjust inventory quantity",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -666,7 +667,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch total inventory value",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -704,7 +705,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch item transactions",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -738,7 +739,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch transactions",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -784,7 +785,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch movement summary",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -830,7 +831,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to calculate COGS",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -863,7 +864,7 @@ const inventoryController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch inventory valuation",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },

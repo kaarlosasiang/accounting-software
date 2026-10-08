@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 
 import logger from "../../config/logger.js";
+import { clientErrorMessage } from "../../shared/helpers/errors.js";
 import { getCompanyId, getUserId } from "../../shared/helpers/utils.js";
 import {
   PeriodStatus,
@@ -48,7 +49,7 @@ export const periodController = {
       return res.status(500).json({
         success: false,
         message: "Failed to fetch accounting periods",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -82,7 +83,7 @@ export const periodController = {
       return res.status(404).json({
         success: false,
         message: "Period not found",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -141,7 +142,7 @@ export const periodController = {
       return res.status(400).json({
         success: false,
         message: "Failed to create accounting period",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -192,7 +193,7 @@ export const periodController = {
       return res.status(400).json({
         success: false,
         message: "Failed to close period",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -239,7 +240,7 @@ export const periodController = {
       return res.status(400).json({
         success: false,
         message: "Failed to reopen period",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -274,7 +275,7 @@ export const periodController = {
       return res.status(400).json({
         success: false,
         message: "Failed to lock period",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -321,7 +322,7 @@ export const periodController = {
       return res.status(500).json({
         success: false,
         message: "Failed to check period status",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -361,7 +362,7 @@ export const periodController = {
       return res.status(400).json({
         success: false,
         message: "Failed to update period",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -396,7 +397,7 @@ export const periodController = {
       return res.status(400).json({
         success: false,
         message: "Failed to delete period",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },
@@ -440,7 +441,7 @@ export const periodController = {
       return res.status(500).json({
         success: false,
         message: "Failed to find period",
-        error: (error as Error).message,
+        error: clientErrorMessage(error),
       });
     }
   },

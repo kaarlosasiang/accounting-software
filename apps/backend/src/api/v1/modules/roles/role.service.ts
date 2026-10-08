@@ -80,9 +80,11 @@ export const roleService = {
       permissions: { resource: string; actions: string[] }[];
     }>,
   ) {
+    // System roles (companyId: null) are visible to every company, so look
+    // them up too and refuse with a clear message rather than "not found".
     const role = await Role.findOne({
       _id: new Types.ObjectId(roleId),
-      companyId: new Types.ObjectId(companyId),
+      companyId: { $in: [new Types.ObjectId(companyId), null] },
     });
 
     if (!role) throw new Error("Role not found");
@@ -100,9 +102,11 @@ export const roleService = {
    * System roles cannot be deleted.
    */
   async deleteRole(roleId: string, companyId: string) {
+    // System roles (companyId: null) are visible to every company, so look
+    // them up too and refuse with a clear message rather than "not found".
     const role = await Role.findOne({
       _id: new Types.ObjectId(roleId),
-      companyId: new Types.ObjectId(companyId),
+      companyId: { $in: [new Types.ObjectId(companyId), null] },
     });
 
     if (!role) throw new Error("Role not found");
